@@ -81,6 +81,12 @@ See [BUILD.md](BUILD.md). Short form: standard LineageOS 23.2 `repo init`,
 drop `manifests/pepito.xml` into `.repo/local_manifests/`, sync, and
 `lunch lineage_Mi8937-bp4a-userdebug`.
 
+## The full record
+
+The complete working notes — every subsystem's bring-up plan, investigation
+log, and dead end — live in [plans/](plans/), included verbatim for the
+record. [plans/PLAN.md](plans/PLAN.md) is the map.
+
 ## Screenshots
 
 Coming to [screenshots/](screenshots/) — the phone, the QS volume slider,
