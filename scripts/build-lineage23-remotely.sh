@@ -55,6 +55,17 @@ REMOTE_BUILD_ARGS_STR="${REMOTE_BUILD_ARGS[*]:-}"
 
 ssh "$TARGET" -- "mkdir -p '$REMOTE_ROOT'"
 
+# scripts/ and PLAN*.md at the tree root are symlinks into the landing repo
+# (~/Projects/lineageos-pepito). The server mirrors the same /home/kyle
+# layout, so mirror the (small) landing repo first and the symlinks resolve
+# there exactly as they do locally. Do NOT be tempted by --copy-unsafe-links
+# on the tree sync instead: the tree holds other absolute symlinks it would
+# materialize into the transfer, incl. a 32 GB stock-backup link.
+LANDING_ROOT=/home/kyle/Projects/lineageos-pepito
+ssh "$TARGET" -- "mkdir -p '$LANDING_ROOT'"
+rsync "${RSYNC_COMMON[@]}" --exclude='/.git/' \
+    "$LANDING_ROOT"/ "$TARGET:$LANDING_ROOT"/
+
 rsync "${RSYNC_COMMON[@]}" "${SOURCE_DELETE[@]}" "${SOURCE_EXCLUDES[@]}" \
     "$LOCAL_ROOT"/ "$TARGET:$REMOTE_ROOT"/
 
