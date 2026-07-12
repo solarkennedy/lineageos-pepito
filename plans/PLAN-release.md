@@ -50,39 +50,26 @@ Remotes on all three repos = `github → LineageOS/...` (read-only for us). No u
 
 ## Gate 0 — Prerequisites (Kyle)
 
-- [ ] Create personal remotes (fork or fresh repos) — **full worksheet below** (fill the "New
-  remote" column as they're created). Full-tree sweep 2026-07-11 found **13 repos carrying pepito
-  work**, not 3: also recovery, LineageParts, frameworks/base, lineage-sdk, hardware/interfaces,
-  qcom-caf/bt, system/core, vendor/lineage, PepitoLauncher2.
+- [ ] Create personal remotes (fork or fresh repos) — **worksheet lives in the landing repo
+  [README §Source repos](../README.md#source-repos)** (fill the "Fork" column as they're
+  created). Full-tree sweep 2026-07-11 found **13 repos carrying pepito work**, not 3: also
+  recovery, LineageParts, frameworks/base, lineage-sdk, hardware/interfaces, qcom-caf/bt,
+  system/core, vendor/lineage, PepitoLauncher2.
 
-### Repo → remote worksheet (surveyed 2026-07-11)
+### Repo → remote worksheet — MOVED
 
-| Repo path | Branch | Pepito work | Current remote (`fetch`) | New remote (TBD) |
-|---|---|---|---|---|
-| `kernel/xiaomi/msm8937` | `pepito-rmnet` | 66 commits | `github` → `LineageOS/android_kernel_xiaomi_msm8937` | TBD |
-| `device/xiaomi/Mi8937` | `pepito-rmnet` | 50 commits | `github` → `LineageOS/android_device_xiaomi_Mi8937` | TBD |
-| `device/xiaomi/mithorium-common` | `pepito-rmnet` | 59 commits | `github` → `LineageOS/android_device_xiaomi_mithorium-common` | TBD |
-| `packages/apps/LineageParts` | `pepito-lineageparts` | 8 commits (QS slider toggle) | `github` → `LineageOS/android_packages_apps_LineageParts` | TBD |
-| `bootable/recovery` | `lineage23-pepito` | 12 commits (power-key nav, EDL menu, ⚠️ `adbd as root` — must be **stripped**, Phase 3 security item) | `github` → `LineageOS/android_bootable_recovery` | TBD |
-| `frameworks/base` | `pepito-qs-volume-slider` | 1 commit (QS slider SystemUI, `f11c17b26043`) | `github` → `LineageOS/android_frameworks_base` | TBD |
-| `lineage-sdk` | `pepito-qs-volume-slider` | 1 commit (setting + DB 24→25 upgrade, `742d375c`) | `github` → `LineageOS/android_lineage-sdk` | TBD |
-| `hardware/interfaces` | `pepito` (ref; HEAD detached) | 2 commits (BT binary BDADDR, sensors HAL input group) | `github` → `LineageOS/android_hardware_interfaces` | TBD |
-| `hardware/qcom-caf/bt` | `pepito` (ref; HEAD detached) | 2 commits (Pronto/SMD libbt-vendor bring-up) | `github` → `LineageOS/android_hardware_qcom_bt` | TBD |
-| `system/core` | `pepito` (ref; HEAD detached) | 1 commit (silence f2fs recovery log — candidate to just drop) | `github` → `LineageOS/android_system_core` | TBD / drop |
-| `vendor/lineage` | `pepito` (ref; HEAD detached) | 1 commit (kernel-headers symlink farm — load-bearing for build) | `github` → `LineageOS/android_vendor_lineage` | TBD |
-| `packages/apps/PepitoLauncher2` | `master` | whole app (manual clone, not in manifest) | `origin` → local `~/Projects/PepitoLauncher2` | TBD — needs its own GitHub repo **+ manifest entry** |
-| `~/Projects/lineageos-pepito` | `lineageos23.2` | **landing/index repo** (created 2026-07-11): README + repo index, BUILD.md skeleton, transitional local manifest, `plans/` full record, screenshots/release-notes stubs | none yet | TBD — the public face; create first |
-| `vendor/xiaomi` | — | blob tree, **not a git repo** | — | TBD — `proprietary_vendor_xiaomi` (Phase 6 decision) |
-| `diag-tools/` | — | not a git repo; must not ship in the image | — | TBD — optional tools repo |
-| `scripts/` | — | ✅ moved into the landing repo 2026-07-12 (tree keeps a folder symlink); incl. `boot-signing/` copied from `~/Projects/android-pepito-pvg100-kernel-upgrade` (canonical home; that repo is itself dirty + remote-less — decide its fate) | in landing repo | — (rides with landing repo) |
-| `build/make` | dirty (local-only) | `envsetup.sh` netbook4 build guard — do NOT ship; keep local or move to a shell profile | `github` → `LineageOS/android_build` | — (no fork) |
-| `hardware/qcom-caf/common` | dirty (artifact) | untracked `kernel/` header-export artifact — do not commit | `github` → `LineageOS/android_hardware_qcom-caf_common` | — (no fork) |
+**Single source of truth is now the landing repo's [README §Source repos](../README.md#source-repos)**
+(moved 2026-07-12 to avoid drift). Update branch names, commit counts, and the Fork/TBD column
+there. Bench-only notes that stay here rather than the public table:
 
-Survey hazards, **both fixed 2026-07-11**: the frameworks/base + lineage-sdk QS-slider work was
-uncommitted on detached HEADs (`repo sync` could have eaten it) → committed on
-`pepito-qs-volume-slider`; hardware/interfaces, qcom-caf/bt, system/core, vendor/lineage had
-local commits on detached HEADs with no branch ref (GC/sync exposure) → `pepito` branch refs
-pinned on all four.
+- `scripts/`: moved into the landing repo 2026-07-12 (tree keeps a folder symlink);
+  `boot-signing/` copied from `~/Projects/android-pepito-pvg100-kernel-upgrade` — that predecessor
+  repo is itself dirty + remote-less, decide its fate.
+- QS-slider framework commits: frameworks/base `f11c17b26043`, lineage-sdk `742d375c`.
+- Survey hazards, both fixed 2026-07-11: frameworks/base + lineage-sdk QS work was uncommitted on
+  detached HEADs (repo sync could have eaten it) → committed; hardware/interfaces, qcom-caf/bt,
+  system/core, vendor/lineage had commits on detached HEADs with no branch ref → `pepito` refs
+  pinned.
 - [ ] Decide on **release signing keys**: generate a dedicated `.android-certs` keyset (releasekey,
   platform, shared, media, networkstack) — no root `.android-certs` exists today (test-keys ship
   by default and are unsafe for a real release; also required for a stable OTA update chain).
