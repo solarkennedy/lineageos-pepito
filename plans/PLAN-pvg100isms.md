@@ -2,6 +2,18 @@
 A quick tile that enables/disables zenmode & DND and activates deepsleep?
 No persistent service
 
+**Status: IMPLEMENTED — staged 2026-07-12, needs build+flash validation.** See
+PLAN-lifemode.md. QS tile = master switch; on every screen-off it silences (DND
+Priority, never total) and stops app chatter, restoring everything on screen-on.
+Three knobs in Pepito Tweaks (LineageParts): "Restrict background data" (on by
+default), "Turn on Battery Saver" (on by default — stacks with the Extreme Battery
+Saver CPU/GPU levers for free, since those already follow stock Battery Saver), and
+"Turn off Wi-Fi" (opt-in — safe here only because VoLTE means calls
+still ride LTE). No new app: hosted in XiaomiParts, which is already
+android:persistent and system-UID, so the screen-on/off receiver (which cannot be
+a manifest receiver) costs no extra process; pepito-gated at runtime, tile ships
+disabled so it never appears on sibling variants.
+
 * Basic Face Unlock
 May be super hard, would only enable convenince level and Lineage has no face detection hal
 
