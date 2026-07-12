@@ -70,7 +70,7 @@ Remotes on all three repos = `github → LineageOS/...` (read-only for us). No u
 | `system/core` | `pepito` (ref; HEAD detached) | 1 commit (silence f2fs recovery log — candidate to just drop) | `github` → `LineageOS/android_system_core` | TBD / drop |
 | `vendor/lineage` | `pepito` (ref; HEAD detached) | 1 commit (kernel-headers symlink farm — load-bearing for build) | `github` → `LineageOS/android_vendor_lineage` | TBD |
 | `packages/apps/PepitoLauncher2` | `master` | whole app (manual clone, not in manifest) | `origin` → local `~/Projects/PepitoLauncher2` | TBD — needs its own GitHub repo **+ manifest entry** |
-| `~/Projects/lineageos-pepito` | `main` | **landing/index repo** (created 2026-07-11): README + repo index, BUILD.md skeleton, transitional local manifest, screenshots/release-notes stubs | none yet | TBD — the public face; create first |
+| `~/Projects/lineageos-pepito` | `lineageos23.2` | **landing/index repo** (created 2026-07-11): README + repo index, BUILD.md skeleton, transitional local manifest, `plans/` full record, screenshots/release-notes stubs | none yet | TBD — the public face; create first |
 | `vendor/xiaomi` | — | blob tree, **not a git repo** | — | TBD — `proprietary_vendor_xiaomi` (Phase 6 decision) |
 | `diag-tools/` + `scripts/` | — | not git repos; diag-tools must not ship; `scripts/build-lineage23.sh` un-versioned | — | TBD — optional tools repo |
 | `build/make` | dirty (local-only) | `envsetup.sh` netbook4 build guard — do NOT ship; keep local or move to a shell profile | `github` → `LineageOS/android_build` | — (no fork) |
@@ -262,8 +262,10 @@ Base audit: `PLAN-kernel.md`. **That audit predates the qmux WIN** — re-triage
   `PRODUCT_PACKAGES`/`PRODUCT_COPY_FILES`; keep it in the source repo (or a separate tools repo) but
   out of the flashable build. (`libqmi_force_ipcr` source now lives in the device tree under `qmux/`,
   not `diag-tools/` — verify the shipping copy is the device-tree one.)
-- [ ] Prune obsolete `PLAN-*.old*.md` / falsified-lane docs or clearly mark them archival so the repo
-  reads cleanly.
+- [x] Prune obsolete `PLAN-*.old*.md` / falsified-lane docs or clearly mark them archival — done
+  2026-07-12: all 44 PLAN files moved into the landing repo `plans/` (kept verbatim for the
+  record; `plans/README.md` marks `*.old*` archival), tree root keeps symlinks so in-tree
+  references resolve.
 
 ---
 
@@ -325,6 +327,9 @@ Flash the **release build**, wipe userdata, first-boot setup wizard, then confir
   landing repo README.
 - [ ] Screenshots for the landing repo (shot list in `screenshots/README.md`: launcher, QS volume
   slider, about screen, in-call, camera, hardware scale shot).
+- [ ] **Before the landing repo goes public:** one review pass over `plans/` for private info —
+  bench IPs/serials, home paths, carrier/account specifics — decide what's fine for the record vs
+  worth scrubbing.
 - [ ] **Blog post — DRAFT before release.** Write the write-up (the bring-up story: pepito as a
   Mi8937 variant, the three-cluster model, the multi-year modem-fatal saga and the qmux/ipc_router
   WIN, sensors/camera/audio/crypto highlights). Draft it while the work is fresh; hold for publish.
