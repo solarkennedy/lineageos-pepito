@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Local manifest for the pepito (Palm PVG100) LineageOS 23.2 build.
+  Drop into .repo/local_manifests/ before `repo sync`.
+
+  STATUS: TRANSITIONAL. This currently mirrors the bench tree's
+  roomservice.xml (LineageOS upstreams, lineage-23.2). As the pepito forks
+  are pushed (PLAN-release.md Gate 0 / Phase 7), each project below gets
+  repointed to the fork + pepito branch, and the commented-out framework/
+  recovery overrides become active. The manifest is not reproducible until
+  that happens.
+-->
+<manifest>
+  <!-- TBD: <remote name="pepito" fetch="https://github.com/TBD/" /> -->
+
+  <project path="device/xiaomi/Mi8937" name="LineageOS/android_device_xiaomi_Mi8937" remote="github" revision="lineage-23.2" />
+  <project path="device/xiaomi/mithorium-common" name="LineageOS/android_device_xiaomi_mithorium-common" remote="github" revision="lineage-23.2" />
+  <project path="kernel/xiaomi/msm8937" name="LineageOS/android_kernel_xiaomi_msm8937" remote="github" revision="lineage-23.2" />
+
+  <!-- TBD once forks exist: repoint the three projects above, e.g.
+  <project path="device/xiaomi/Mi8937" name="android_device_xiaomi_Mi8937" remote="pepito" revision="pepito-23.2" />
+  -->
+
+  <!-- TBD: overrides for stock-manifest projects carrying pepito patches.
+       These need <remove-project> + re-add, activated when forks are pushed:
+  <remove-project name="LineageOS/android_bootable_recovery" />
+  <project path="bootable/recovery" name="android_bootable_recovery" remote="pepito" revision="pepito-23.2" />
+  <remove-project name="LineageOS/android_frameworks_base" />
+  <project path="frameworks/base" name="android_frameworks_base" remote="pepito" revision="pepito-23.2" />
+  <remove-project name="LineageOS/android_lineage-sdk" />
+  <project path="lineage-sdk" name="android_lineage-sdk" remote="pepito" revision="pepito-23.2" />
+  <remove-project name="LineageOS/android_packages_apps_LineageParts" />
+  <project path="packages/apps/LineageParts" name="android_packages_apps_LineageParts" remote="pepito" revision="pepito-23.2" />
+  <remove-project name="LineageOS/android_hardware_interfaces" />
+  <project path="hardware/interfaces" name="android_hardware_interfaces" remote="pepito" revision="pepito-23.2" />
+  <remove-project name="LineageOS/android_hardware_qcom_bt" />
+  <project path="hardware/qcom-caf/bt" name="android_hardware_qcom_bt" remote="pepito" revision="pepito-23.2" />
+  <remove-project name="LineageOS/android_system_core" />
+  <project path="system/core" name="android_system_core" remote="pepito" revision="pepito-23.2" />
+  <remove-project name="LineageOS/android_vendor_lineage" />
+  <project path="vendor/lineage" name="android_vendor_lineage" remote="pepito" revision="pepito-23.2" />
+  -->
+
+  <!-- TBD: launcher + vendor blobs, once their repos exist:
+  <project path="packages/apps/PepitoLauncher2" name="PepitoLauncher2" remote="pepito" revision="master" />
+  <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="pepito" revision="pepito-23.2" />
+  -->
+</manifest>
