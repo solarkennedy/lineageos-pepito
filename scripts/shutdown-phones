@@ -1,0 +1,4 @@
+#!/bin/sh
+android16-adb shell reboot -p
+android11-adb shell reboot -p
+android8-adb  shell reboot -p
