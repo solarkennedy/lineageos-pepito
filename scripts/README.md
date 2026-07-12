@@ -32,16 +32,17 @@ Copied from the predecessor project
 - `scripts/build-bootimage.sh`, `scripts/flash-staging.sh`,
   `scripts/extract-dtbs.py` — mkbootimg wrapper, flash staging, DTB tooling.
 
-**Keys are not bundled.** `sign-boot.py` expects `keys/verity.pk8` +
-`keys/verity.x509.pem` next to `scripts/` (i.e. `boot-signing/keys/`). This is
-the *publicly distributed* Android dev/test verity keypair that ships in the
-well-known `Disable_Dm-Verity` zip — the PVG100 bootloader trusts it and boots
-yellow-state. Grab it from that zip, or from the predecessor repo's `keys/`:
+**Keys:** `boot-signing/keys/` bundles `verity.pk8` + `verity.x509.pem` —
+the **standard AOSP development verity keypair** (self-signed,
+`CN=Android/O=Android`, RSA-2048, serial `970F983909AA8949`, sha256
+fingerprint `8A:D1:27:AB:…:7B:3B:86`), committed publicly to AOSP in the
+Lollipop era and also distributed in the well-known `Disable_Dm-Verity` zip.
+**It is not a secret** — the private half is public, every PVG100 owner uses
+the same pair, and it is bundled here deliberately so the signing pipeline
+runs out of the box.
 
-```bash
-cp ~/Projects/android-pepito-pvg100-kernel-upgrade/keys/verity.{pk8,x509.pem} \
-   boot-signing/keys/
-```
-
-(It is not a secret — every PVG100 owner uses the same pair — but bundling
-key material in a repo is a deliberate choice, so it's left out by default.)
+Trust model: the PVG100 LK bootloader (AVBv1, `BOOT.BF.3.3 boot_verifier`)
+boots images signed with this key in **yellow state** (warning screen, then
+boots). Green state would require TCL's production key, which nobody outside
+TCL has. Consequence: there is no meaningful secure boot on this device —
+anyone can sign a bootable image with a public key.
