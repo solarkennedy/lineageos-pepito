@@ -39,7 +39,8 @@ pushed source tree**. This file is the release tracker; per-item detail lives in
 All three working trees clean as of 2026-07-11; **one validation flash pending** covering: exactly
 one qcrild + MT call rings, `vendor.qmux.ims_enabler` → ok/applied, GPS init-launched fix (sky
 view), Venus HW video encode (scrcpy/screenrecord), QS volume-slider default on dirty flash.
-`scripts/build-lineage23.sh` is still un-versioned (release item).
+`scripts/` (incl. build-lineage23.sh) is versioned in the landing repo as of 2026-07-12
+(symlinked from the tree root).
 
 Remotes on all three repos = `github → LineageOS/...` (read-only for us). No upstream tracking set.
 `local_manifest` pins the three projects to `revision="lineage-23.2"` but the working branch is
@@ -72,7 +73,8 @@ Remotes on all three repos = `github → LineageOS/...` (read-only for us). No u
 | `packages/apps/PepitoLauncher2` | `master` | whole app (manual clone, not in manifest) | `origin` → local `~/Projects/PepitoLauncher2` | TBD — needs its own GitHub repo **+ manifest entry** |
 | `~/Projects/lineageos-pepito` | `lineageos23.2` | **landing/index repo** (created 2026-07-11): README + repo index, BUILD.md skeleton, transitional local manifest, `plans/` full record, screenshots/release-notes stubs | none yet | TBD — the public face; create first |
 | `vendor/xiaomi` | — | blob tree, **not a git repo** | — | TBD — `proprietary_vendor_xiaomi` (Phase 6 decision) |
-| `diag-tools/` + `scripts/` | — | not git repos; diag-tools must not ship; `scripts/build-lineage23.sh` un-versioned | — | TBD — optional tools repo |
+| `diag-tools/` | — | not a git repo; must not ship in the image | — | TBD — optional tools repo |
+| `scripts/` | — | ✅ moved into the landing repo 2026-07-12 (tree keeps a folder symlink); incl. `boot-signing/` copied from `~/Projects/android-pepito-pvg100-kernel-upgrade` (canonical home; that repo is itself dirty + remote-less — decide its fate) | in landing repo | — (rides with landing repo) |
 | `build/make` | dirty (local-only) | `envsetup.sh` netbook4 build guard — do NOT ship; keep local or move to a shell profile | `github` → `LineageOS/android_build` | — (no fork) |
 | `hardware/qcom-caf/common` | dirty (artifact) | untracked `kernel/` header-export artifact — do not commit | `github` → `LineageOS/android_hardware_qcom-caf_common` | — (no fork) |
 

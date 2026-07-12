@@ -87,6 +87,10 @@ The complete working notes — every subsystem's bring-up plan, investigation
 log, and dead end — live in [plans/](plans/), included verbatim for the
 record. [plans/PLAN.md](plans/PLAN.md) is the map.
 
+The bench build/flash tooling is in [scripts/](scripts/), including
+[scripts/boot-signing/](scripts/boot-signing/) — the AVBv1 signing tool that
+makes a boot image the PVG100 bootloader will actually boot.
+
 ## Screenshots
 
 Coming to [screenshots/](screenshots/) — the phone, the QS volume slider,
