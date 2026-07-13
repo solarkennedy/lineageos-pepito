@@ -30,13 +30,17 @@ EXCLUDES=(
 ZSTD_LEVEL=12
 # --------------------------------------------------------------------------
 
-# Resolve the tree root as the parent of this script's dir. LOGICAL path
-# (pwd, not pwd -P): the tree's scripts/ is a symlink into the landing repo
-# (~/Projects/lineageos-pepito), and physical resolution would follow it and
-# "back up" the 1 MB landing repo instead of the tree it was invoked from.
+# Resolve the tree root from the invocation path, in two deliberate steps:
+#  1. LOGICAL dirname/.. (pwd, not -P): the tree's scripts/ is a symlink into
+#     the landing repo (~/Projects/lineageos-pepito); physical resolution here
+#     would follow it and "back up" the 1 MB landing repo (the 387 KB
+#     2026-07-12 archive).
+#  2. Then PHYSICAL (pwd -P) on the tree root itself: the tree may be reached
+#     via a path symlink (e.g. ~/Projects/lineage-23 -> ../android/lineage-23),
+#     and tar-ing that name archives one symlink — a 109-byte "backup".
 # Override with TREE_ROOT=... when invoking from outside a tree.
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-TREE_ROOT="${TREE_ROOT:-"$(cd -- "$SCRIPT_DIR/.." && pwd)"}"
+TREE_ROOT="${TREE_ROOT:-"$(cd -- "$SCRIPT_DIR/.." && pwd -P)"}"
 TREE_NAME="$(basename -- "$TREE_ROOT")"
 TREE_PARENT="$(dirname -- "$TREE_ROOT")"
 
