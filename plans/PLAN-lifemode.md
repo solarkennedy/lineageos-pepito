@@ -119,6 +119,7 @@ there is nothing to observe and no state to keep in sync.
 | `persist.lifemode.restrict_data` | Pepito Tweaks | `1` | Data Saver on while screen off |
 | `persist.lifemode.battery_saver` | Pepito Tweaks | `1` | stock Battery Saver on while screen off |
 | `persist.lifemode.wifi_off` | Pepito Tweaks | `0` | Wi-Fi off while screen off |
+| `persist.lifemode.grayscale` | Pepito Tweaks | `1` | screen greyscale while Life Mode is ON (**not** screen-tied) |
 | `persist.lifemode.gps_off` | Pepito Tweaks | `0` | location off while screen off |
 | `persist.lifemode.bt_off` | Pepito Tweaks | `0` | Bluetooth off while screen off |
 | `persist.lifemode.active` + `saved_filter` / `saved_restrict` / `saved_battery_saver` / `saved_wifi` | controller | — | the persisted undo snapshot |
@@ -146,6 +147,84 @@ offlines the fast CPU cluster and/or caps the GPU. Nothing to wire up — we fli
 Battery Saver, the receiver hears it, the levers apply. (This is also why Battery Saver
 and restrict-background are separate knobs and not one: Data Saver is a *network* policy,
 Battery Saver is a *scheduling* one, and either is useful without the other.)
+
+### Greyscale — the one lever that breaks the pattern (added 2026-07-12)
+
+Every other lever hangs off **screen-off**. Greyscale hangs off the **master switch**:
+grey while the Life Mode tile is on, colour when it's off. Applying it on screen-off would
+be pointless — nobody's looking. It's the one lever meant to be *seen*: picking the phone
+up is deliberately less rewarding. **On by default.**
+
+Not a Palm behavior — the stock APK has no greyscale (confirmed). It's **Digital
+Wellbeing's Bedtime Mode**, which is GMS-only and therefore absent from our build, so we
+drive the underlying machinery ourselves.
+
+- **API: `ColorDisplayManager.setSaturationLevel(0..100)`**, needs
+  `CONTROL_DISPLAY_COLOR_TRANSFORMS` (`signature|privileged` — the system-UID carve-out
+  covers it, no privapp entry).
+- ⭐ **Deliberately NOT the accessibility daltonizer's Monochromacy mode**, which is the
+  other obvious way to grey a screen: that's *colour correction*, and commandeering it
+  would stomp on a user who actually needs it. Global saturation is the orthogonal knob.
+- **The only lever needing no snapshot.** Saturation is a *runtime* transform with a known
+  default (100), not persistent system state — nothing to strand, nothing to put back. A
+  reboot resets it to colour by itself, so `register()` simply re-asserts it at boot if the
+  tile is still on.
+- **The only knob with an apply step.** It's instantly visible, so flipping it while Life
+  Mode is already on must land *now*, not at the next screen-off nobody is watching.
+  LineageParts applies it directly (same shape as `applyBatterySaverLever`). That
+  duplicates the `(enabled && grayscale)` condition in `LifeModeController.applyGrayscale()`
+  across two apps — **keep them in sync**.
+
+#### ⭐⭐ Greyscale exposed a pre-existing display bug — ✅ ROOT-CAUSED + FIXED (packaging gap)
+
+**Outcome:** colour transforms now work **in hardware**. Root cause was the never-packaged
+`libsdm-color.so` (+ `libtinyxml2_1.so`, `libsdm-diag.so`) — declared in
+`proprietary-files-qc-vndr.txt` but never extracted. Fixed by shipping them from the
+**Mi8937 nightly** (the A8 copy is the wrong CAF generation and fails). This also fixes
+**Night Light and accessibility colour correction**, which were silently dead too. Full
+story + the falsified theories: memory `display-color-transform`. The HAL workaround below
+(`IsColorTransformSupported() → false`) was written and then **REVERTED** — unnecessary, and
+it would force a GPU pass instead of using the DSPP.
+
+<details><summary>Original investigation notes (kept — the reasoning chain is instructive)</summary>
+
+First flash: the tile went on, the framework reported `Global saturation: Activated: true`,
+and **the screen stayed in colour**. Our code was blameless — the matrix was being dropped
+below the framework:
+```
+E SDM: HWCDisplay::HandleColorModeTransform: Failed to set Color Transform Matrix
+```
+`HWCSession::GetCapabilities` advertises `HWC2_CAPABILITY_SKIP_CLIENT_COLOR_TRANSFORM` —
+a *promise* to SF that the HWC applies colour matrices in hardware, which makes SF skip its
+own GPU transform (`deviceHandlesColorTransform = usesDeviceComposition || getSkipColorTransform()`,
+`Output.cpp:1539`). The capability is driven by `CoreImpl::IsColorTransformSupported()`,
+which was the heuristic `return !has_ppp` — **true on this family, and a lie**:
+`DisplayBase::SetColorTransform` bails with `kErrorNotSupported`.
+
+**This is pre-existing and Life Mode merely exposed it: Night Light and accessibility
+colour correction have silently done nothing on this build too** (the daltonizer fails
+identically — that's how it was isolated).
+
+Chased the obvious suspect first, because it looked exactly like the `libacdbloader` /
+camera-chromatix packaging gaps: `libsdm-color.so` (the colour manager, `color_mgr_`) was
+**never packaged** — declared in `proprietary-files-qc-vndr.txt` but absent from the device
+*and* from the extracted vendor tree, along with `libsdm-diag`/`libsdm-disp-vndapis`; stock
+8.1 ships it. **Falsified by pushing it live** (plus its missing DT_NEEDED dep
+`libtinyxml2_1.so`): the composer loaded both, the colour manager instantiated cleanly (the
+A8 blob's version tag matched our CAF HAL), and `SetColorTransform` **still failed**. There
+is no colour-matrix block in this MDP. Packaging gap is real but separate; not the cause.
+
+**Fix:** `CoreImpl::IsColorTransformSupported()` → `return false`
+(`hardware/qcom-caf/msm8953/display`, new repo project — **fork/push is a release gate**).
+SF then applies the matrix in RenderEngine, which is ~free here: the display already runs
+fully client-composited when idle (verified on a clean boot), and the HWC forces client
+composition whenever a transform is set anyway. Fixes greyscale, Night Light and colour
+correction together.
+
+⚠️ Bench gotcha: **do not `ctl.restart vendor.hwcomposer-2-1` on a live system** — it wedges
+SurfaceFlinger and needs a hard power-off. Push display libs, then reboot.
+
+</details>
 
 **DND is always `INTERRUPTION_FILTER_PRIORITY`, never `_NONE`, and is not a knob.**
 Starred contacts and repeat callers still break through, which is what makes it safe to
