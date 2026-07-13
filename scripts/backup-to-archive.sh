@@ -30,11 +30,22 @@ EXCLUDES=(
 ZSTD_LEVEL=12
 # --------------------------------------------------------------------------
 
-# Resolve the tree root as the parent of this script's dir (path-independent).
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-TREE_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
+# Resolve the tree root as the parent of this script's dir. LOGICAL path
+# (pwd, not pwd -P): the tree's scripts/ is a symlink into the landing repo
+# (~/Projects/lineageos-pepito), and physical resolution would follow it and
+# "back up" the 1 MB landing repo instead of the tree it was invoked from.
+# Override with TREE_ROOT=... when invoking from outside a tree.
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+TREE_ROOT="${TREE_ROOT:-"$(cd -- "$SCRIPT_DIR/.." && pwd)"}"
 TREE_NAME="$(basename -- "$TREE_ROOT")"
 TREE_PARENT="$(dirname -- "$TREE_ROOT")"
+
+if [[ ! -e "$TREE_ROOT/.repo" ]]; then
+  echo "ERROR: '$TREE_ROOT' does not look like a repo tree (no .repo/)." >&2
+  echo "       Invoke via the tree's scripts/ symlink (e.g." >&2
+  echo "       ~/android/lineage-23/scripts/backup-to-archive.sh) or set TREE_ROOT=." >&2
+  exit 1
+fi
 
 STAMP="$(date +%Y%m%d-%H%M%S)"
 
