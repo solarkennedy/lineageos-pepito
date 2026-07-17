@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
 # Prepare flash-staging/ with images ready for qdl:
 #   - Converts sparse system/vendor images to raw
-#   - Signs boot image with AVBv1 verity key
+#   - Signs boot/recovery with our PRIVATE AVBv1 key (vendor/lineage-priv/keys-boot,
+#     auto-created on first run). NB: that key's digest feeds keymaster's Root of
+#     Trust — changing it forces a /data wipe. See boot-signing/scripts/sign-boot.py.
 #   - Zeros first 4 MB of userdata (clears FBE headers; forces fresh format on first boot)
 #
 # Run from anywhere. Then: flash-staging/flash-staging.sh
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 LINEAGE_ROOT="/home/kyle/android/lineage-23"
 FLASH_DIR="/home/kyle/Personal-Projects/lineage-23/flash-staging"
-SIGN_BOOT="/home/kyle/Personal-Projects/android-pepito-pvg100-kernel-upgrade/scripts/sign-boot.py"
+SIGN_BOOT="$SCRIPT_DIR/boot-signing/scripts/sign-boot.py"
+# Passed explicitly: sign-boot.py otherwise locates the keydir by walking up from
+# CWD, and this script is meant to run from anywhere.
+BOOT_KEYS="$LINEAGE_ROOT/vendor/lineage-priv/keys-boot"
 SIMG2IMG="$LINEAGE_ROOT/out/host/linux-x86/bin/simg2img"
 PRODUCT_OUT="$LINEAGE_ROOT/out/target/product/Mi8937"
 
@@ -78,17 +85,17 @@ if [[ "$NO_RAMDISK" -eq 1 ]]; then
         --os_version 16.0.0 \
         --os_patch_level 2026-05 \
         --output "$FLASH_DIR/boot_unsigned.img"
-    /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
+    /usr/bin/python3 "$SIGN_BOOT" --keys "$BOOT_KEYS" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
 else
     echo "==> Signing boot image..."
     cp "$PRODUCT_OUT/boot.img" "$FLASH_DIR/boot_unsigned.img"
-    /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
+    /usr/bin/python3 "$SIGN_BOOT" --keys "$BOOT_KEYS" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
 fi
 
 if [[ "$BOOT_ONLY" -eq 0 ]]; then
     echo "==> Signing recovery image..."
     cp "$PRODUCT_OUT/recovery.img" "$FLASH_DIR/recovery_unsigned.img"
-    /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/recovery_unsigned.img" "$FLASH_DIR/recovery.bin" /recovery
+    /usr/bin/python3 "$SIGN_BOOT" --keys "$BOOT_KEYS" "$FLASH_DIR/recovery_unsigned.img" "$FLASH_DIR/recovery.bin" /recovery
 
     #echo "==> Zeroing first 4 MB of userdata (clears FBE headers)..."
     #dd if=/dev/zero of="$FLASH_DIR/userdata.bin" bs=1M count=4 status=none

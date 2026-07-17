@@ -20,29 +20,46 @@ throughout — read before running. In the bench tree these live behind a
 ## boot-signing/ — making a PVG100-bootable boot image
 
 The Palm PVG100 bootloader implements **AVBv1** (`BOOT.BF.3.3 boot_verifier`):
-it verifies a DER `BootSignature` appended to `boot.img` against a certificate
-it trusts. Without a valid signature the device will not boot the image.
+it verifies a DER `BootSignature` appended to `boot.img`. Without a valid
+signature the device will not boot the image — aboot warns, then powers off
+after 30s (RED state). This device predates AVB 2.0 entirely: there is no
+`vbmeta` and `BOARD_AVB_ENABLE := false`.
 
-Copied from the predecessor project
-(`~/Projects/android-pepito-pvg100-kernel-upgrade`, its canonical home):
+- `scripts/sign-boot.py` — **the** script. Creates the private signing key on
+  first run (idempotent; `--regen` replaces it), appends the AVBv1
+  `BootSignature`, fixes up `img_size`/id, and self-verifies the result. This is
+  what makes a boot image pepito-compatible. Called by `prepare-flash.sh`.
+- `scripts/verify-boot-sig.py` — re-checks any signed image. Reads the cert out
+  of the image itself, so it needs no key and works on foreign/stock images too.
 
-- `scripts/sign-boot.py` — appends the AVBv1 `BootSignature` (also fixes up
-  `img_size`/id); **this is the thing that makes a boot image
-  pepito-compatible.** `verify-boot-sig.py` checks one.
-- `scripts/build-bootimage.sh`, `scripts/flash-staging.sh`,
-  `scripts/extract-dtbs.py` — mkbootimg wrapper, flash staging, DTB tooling.
+Originally from the predecessor project
+(`~/Projects/android-pepito-pvg100-kernel-upgrade`). The mkbootimg wrapper and
+flash-staging copy that came with it were stale relics targeting the old tree and
+are gone — `scripts/flash-staging.sh` is the live one, and `extract-dtbs.py`
+moved up to `scripts/` since it is DTB tooling, not signing.
 
-**Keys:** `boot-signing/keys/` bundles `verity.pk8` + `verity.x509.pem` —
-the **standard AOSP development verity keypair** (self-signed,
-`CN=Android/O=Android`, RSA-2048, serial `970F983909AA8949`, sha256
-fingerprint `8A:D1:27:AB:…:7B:3B:86`), committed publicly to AOSP in the
-Lollipop era and also distributed in the well-known `Disable_Dm-Verity` zip.
-**It is not a secret** — the private half is public, every PVG100 owner uses
-the same pair, and it is bundled here deliberately so the signing pipeline
-runs out of the box.
+**Keys:** the private keypair lives at `vendor/lineage-priv/keys-boot/` in the
+build tree — **never in this repo** — and is auto-created on first run. Losing it
+is not a brick; it only changes the fingerprint on the yellow screen.
 
-Trust model: the PVG100 LK bootloader (AVBv1, `BOOT.BF.3.3 boot_verifier`)
-boots images signed with this key in **yellow state** (warning screen, then
-boots). Green state would require TCL's production key, which nobody outside
-TCL has. Consequence: there is no meaningful secure boot on this device —
-anyone can sign a bootable image with a public key.
+### Trust model — corrected 2026-07-16 (the previous version of this section was wrong)
+
+aboot tries its built-in OEM keystore first (Palm's key → GREEN, unobtainable
+outside TCL). On mismatch it falls back to the pubkey of the cert **embedded in
+the image's own signature block** → YELLOW. The `keystore` partition
+(`mmcblk0p33`) is all zeros, so yellow is always that self-embedded path: at the
+*bootloader* level the key is pinned to no root of trust, and any RSA-2048 key
+boots yellow.
+
+This section used to conclude "there is no meaningful secure boot on this device
+— anyone can sign a bootable image with a public key." **That was a consequence
+of signing with the public AOSP test key, not a property of the device.** aboot
+feeds the boot key digest to the keymaster TA as Root of Trust, and that ROT is
+mixed into keymaster's key derivation — flash-validated 2026-07-16 by booting a
+differently-signed image and getting the "decryption unsuccessful" prompt. So:
+
+- An attacker who reflashes a boot image signed with *their* key **cannot decrypt
+  existing user data**. TEE-enforced, no user vigilance required. That boundary
+  exists only because the signing key is private.
+- The flip side: **changing the key on an existing install forces a wipe.** It is
+  a pre-ship decision, not a later tweak.

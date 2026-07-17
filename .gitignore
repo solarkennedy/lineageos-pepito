@@ -1,0 +1,21 @@
+# This repo is PUBLIC. Private key material must never land here.
+#
+# Not hypothetical: the build tree's scripts/ and plans/ are symlinks INTO this
+# repo, so anything resolving paths through those symlinks (e.g. Python's
+# Path(__file__).resolve()) escapes the tree and writes here instead. On
+# 2026-07-16 that dropped a private boot-signing key into this working copy. It
+# was caught before staging only because someone looked -- there was no
+# .gitignore to stop it. Hence this file.
+#
+# Signing keys belong in the build tree at vendor/lineage-priv/, which is never
+# pushed anywhere.
+*.pk8
+*.pem
+*.key
+*.jks
+*.keystore
+vendor/
+
+# Editor/OS noise
+*.swp
+.DS_Store
