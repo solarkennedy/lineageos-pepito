@@ -19,7 +19,8 @@
 #   ./scripts/release.sh <zip>
 #   ./scripts/release.sh <zip> --tag 20260716 --notes "Fixes X, Y"
 #   ./scripts/release.sh <zip> --dry-run
-#   ./scripts/release.sh <zip> --skip-edl
+#   ./scripts/release.sh <zip> --skip-edl    # OTA zip + JSON only, no EDL bundle
+#   ./scripts/release.sh <zip> --edl-only    # EDL bundle only, no OTA zip or JSON
 #
 # Device/version/romtype/date are parsed from a standard LineageOS filename
 # (lineage-<version>-<YYYYMMDD>-<romtype>-<device>[-signed].zip); override any
@@ -43,6 +44,7 @@ NOTES=""
 DRY_RUN=false
 ASSUME_YES=false
 SKIP_EDL=false
+EDL_ONLY=false           # publish only the EDL bundle: no OTA zip asset, no OTA JSON
 EDL_DIR="/home/kyle/android/lineage-23/flash-staging"
 # config.bin is a 32 KB zero-fill (written by prepare-flash.sh) that clears a
 # stale FRP token so A15+ FRP can auto-deactivate after a wipe. userdata is
@@ -173,6 +175,7 @@ while [[ $# -gt 0 ]]; do
         --keep) KEEP="$2"; shift 2 ;;
         --edl-dir) EDL_DIR="$2"; shift 2 ;;
         --skip-edl) SKIP_EDL=true; shift ;;
+        --edl-only) EDL_ONLY=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         --yes|-y) ASSUME_YES=true; shift ;;
         -h|--help) usage ;;
@@ -181,8 +184,12 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-[[ -n "$ZIP" ]] || { echo "Usage: $0 <path-to-signed-ota-zip> [--tag T] [--notes N] [--dry-run] [--skip-edl] ..." >&2; exit 1; }
+[[ -n "$ZIP" ]] || { echo "Usage: $0 <path-to-signed-ota-zip> [--tag T] [--notes N] [--dry-run] [--skip-edl|--edl-only] ..." >&2; exit 1; }
 [[ -f "$ZIP" ]] || { echo "error: $ZIP does not exist" >&2; exit 1; }
+if $EDL_ONLY && $SKIP_EDL; then
+    echo "error: --edl-only and --skip-edl are mutually exclusive (nothing would be released)" >&2
+    exit 1
+fi
 
 FILENAME="$(basename "$ZIP")"
 
@@ -203,6 +210,15 @@ VERSION="${VERSION:-$FN_VERSION}"
 ROMTYPE="${ROMTYPE:-${FN_ROMTYPE:-nightly}}"
 TAG="${TAG:-$FN_DATE}"
 
+# Variant suffix for asset names. Both the vanilla and gapps builds share
+# DEVICE=pepito and (now) ROMTYPE=UNOFFICIAL, so without this the two EDL
+# bundles would get the same filename and clobber each other on the release.
+# The gapps zip's LINEAGE_BUILD (FN_DEVICE) ends in _gapps; carry that through.
+VARIANT_SUFFIX=""
+if [[ "$FN_DEVICE" == *_gapps ]]; then
+    VARIANT_SUFFIX="-gapps"
+fi
+
 [[ -n "$VERSION" ]] || { echo "error: couldn't parse a version from '$FILENAME' — pass --version" >&2; exit 1; }
 [[ -n "$TAG" ]] || { echo "error: couldn't parse a date/tag from '$FILENAME' — pass --tag" >&2; exit 1; }
 
@@ -214,9 +230,8 @@ if (( SIZE_BYTES >= LIMIT_BYTES )); then
     exit 1
 fi
 
-command -v gh >/dev/null || { echo "error: gh (GitHub CLI) not found in PATH" >&2; exit 1; }
-
-EDL_BUNDLE="lineage-${VERSION}-${TAG}-${ROMTYPE}-${DEVICE}-EDL"
+GH="/usr/local/bin/gh"
+EDL_BUNDLE="lineage-${VERSION}-${TAG}-${ROMTYPE}-${DEVICE}${VARIANT_SUFFIX}-EDL"
 TAG_BUNDLE_NAME="$EDL_BUNDLE"   # used by write_edl_readme
 EDL_TAR_NAME="${EDL_BUNDLE}.tar.xz"
 EDL_FIREHOSE="$EDL_DIR/pepito_firehose.elf"
@@ -252,8 +267,12 @@ echo "  romtype:   $ROMTYPE"
 echo "  repo:      $REPO"
 echo "  tag:       $TAG"
 echo "  branch:    $BRANCH"
-echo "  asset url: $RELEASE_URL"
-echo "  ota json:  $OTA_JSON_REL -> $RAW_URL"
+if $EDL_ONLY; then
+    echo "  mode:      EDL-only (no OTA zip asset, no OTA JSON)"
+else
+    echo "  asset url: $RELEASE_URL"
+    echo "  ota json:  $OTA_JSON_REL -> $RAW_URL"
+fi
 if $SKIP_EDL; then
     echo "  edl:       skipped (--skip-edl)"
 else
@@ -267,7 +286,7 @@ if $DRY_RUN; then
     exit 0
 fi
 
-if ! gh auth status --hostname github.com >/dev/null 2>&1; then
+if ! $GH auth status --hostname github.com >/dev/null 2>&1; then
     echo "error: gh is not authenticated for github.com (run: gh auth login --hostname github.com)" >&2
     echo "(on a machine with more than one gh host configured, e.g. a work fork of the CLI," >&2
     echo " make sure that login targets github.com specifically, not a default internal host)" >&2
@@ -295,11 +314,14 @@ fi
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-# --- sha256sum sidecar for the OTA zip --------------------------------------
-SHA_FILE="$WORK/${FILENAME}.sha256sum"
-( cd "$(dirname "$ZIP")" && sha256sum "$FILENAME" ) > "$SHA_FILE"
-
-ASSETS=("$ZIP" "$SHA_FILE")
+# --- OTA zip asset + sha256 sidecar (skipped in --edl-only) -----------------
+if $EDL_ONLY; then
+    ASSETS=()
+else
+    SHA_FILE="$WORK/${FILENAME}.sha256sum"
+    ( cd "$(dirname "$ZIP")" && sha256sum "$FILENAME" ) > "$SHA_FILE"
+    ASSETS=("$ZIP" "$SHA_FILE")
+fi
 
 # --- EDL bundle: firehose + rawprogram + raw images + README, --------------
 # --- compressed as a single .tar.xz (images themselves stay uncompressed) --
@@ -328,48 +350,54 @@ if ! $SKIP_EDL; then
 fi
 
 # --- GitHub release: create, or upload into an existing one ----------------
-if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+if $GH release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
     echo "release $TAG already exists on $REPO — uploading assets (--clobber)"
-    gh release upload "$TAG" "${ASSETS[@]}" --repo "$REPO" --clobber
+    $GH release upload "$TAG" "${ASSETS[@]}" --repo "$REPO" --clobber
 else
     TITLE="LineageOS $VERSION $ROMTYPE $TAG ($DEVICE)"
-    gh release create "$TAG" "${ASSETS[@]}" \
+    $GH release create "$TAG" "${ASSETS[@]}" \
         --repo "$REPO" \
         --title "$TITLE" \
         --notes "${NOTES:-$TITLE}"
 fi
 
-# --- regenerate the OTA JSON (OTA zip only) ---------------------------------
-DATETIME_ARGS=()
-if [[ -n "$FN_DATE" ]]; then
-    DATETIME_ARGS=(--datetime "$(date -u -d "$FN_DATE" +%s)")
-fi
-
-python3 "$GEN_JSON" "$ZIP" \
-    --device "$DEVICE" \
-    --version "$VERSION" \
-    --romtype "$ROMTYPE" \
-    --repo "$REPO" \
-    --tag "$TAG" \
-    --output "$OTA_JSON" \
-    --keep "$KEEP" \
-    "${DATETIME_ARGS[@]}"
-
-# --- commit + push (skipped on a .git-less mirror, see the note above) -----
-if $HAS_GIT; then
-    git -C "$REPO_ROOT" add "$OTA_JSON_REL"
-    if git -C "$REPO_ROOT" diff --cached --quiet -- "$OTA_JSON_REL"; then
-        echo "no change to $OTA_JSON_REL (already up to date)"
-    else
-        git -C "$REPO_ROOT" commit -m "ota: add $FILENAME"
-        git -C "$REPO_ROOT" push origin "HEAD:$BRANCH"
+# --- regenerate the OTA JSON (OTA zip only; skipped in --edl-only) ----------
+if ! $EDL_ONLY; then
+    DATETIME_ARGS=()
+    if [[ -n "$FN_DATE" ]]; then
+        DATETIME_ARGS=(--datetime "$(date -u -d "$FN_DATE" +%s)")
     fi
-else
-    echo "skipped commit/push: $OTA_JSON updated locally, no .git here to push from"
+
+    python3 "$GEN_JSON" "$ZIP" \
+        --device "$DEVICE" \
+        --version "$VERSION" \
+        --romtype "$ROMTYPE" \
+        --repo "$REPO" \
+        --tag "$TAG" \
+        --output "$OTA_JSON" \
+        --keep "$KEEP" \
+        "${DATETIME_ARGS[@]}"
+
+    # --- commit + push (skipped on a .git-less mirror, see the note above) --
+    if $HAS_GIT; then
+        git -C "$REPO_ROOT" add "$OTA_JSON_REL"
+        if git -C "$REPO_ROOT" diff --cached --quiet -- "$OTA_JSON_REL"; then
+            echo "no change to $OTA_JSON_REL (already up to date)"
+        else
+            git -C "$REPO_ROOT" commit -m "ota: add $FILENAME"
+            git -C "$REPO_ROOT" push origin "HEAD:$BRANCH"
+        fi
+    else
+        echo "skipped commit/push: $OTA_JSON updated locally, no .git here to push from"
+    fi
 fi
 
 echo
-echo "Done. OTA feed: $RAW_URL"
+if $EDL_ONLY; then
+    echo "Done (EDL-only: no OTA zip or JSON published)."
+else
+    echo "Done. OTA feed: $RAW_URL"
+fi
 if ! $SKIP_EDL; then
     echo "EDL bundle: $EDL_RELEASE_URL"
 fi

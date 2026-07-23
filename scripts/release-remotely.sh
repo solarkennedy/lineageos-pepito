@@ -61,11 +61,10 @@ if [[ -z "$REMOTE_GH_TOKEN" ]]; then
     echo "with repo scope (or set GH_TOKEN_VAR to the var that holds one)." >&2
     exit 1
 fi
-# Must match build-lineage23.sh's RELEASE_TYPE choices exactly.
+# Both variants build as UNOFFICIAL now; they're told apart by the LINEAGE_BUILD
+# suffix in the filename (Mi8937 vs Mi8937_gapps), not the releasetype — see the
+# zip-selection filter below.
 BUILDTYPE_TAG=UNOFFICIAL
-if $GAPPS; then
-    BUILDTYPE_TAG=SNAPSHOT
-fi
 
 RSYNC_COMMON=(-aP --human-readable)
 
@@ -86,14 +85,25 @@ rsync "${RSYNC_COMMON[@]}" --exclude='/.git/' \
     "$LANDING_ROOT"/ "$TARGET:$LANDING_ROOT"/ | tail -20
 
 DATE_TAG=$(date +%Y%m%d)
-MATCHES=$(ssh "$TARGET" -- "ls '$REMOTE_ROOT/$PRODUCT_OUT'"/lineage-*-"$DATE_TAG"-"$BUILDTYPE_TAG"-*.zip 2>/dev/null || true)
+ALL_ZIPS=$(ssh "$TARGET" -- "ls '$REMOTE_ROOT/$PRODUCT_OUT'"/lineage-*-"$DATE_TAG"-"$BUILDTYPE_TAG"-*.zip 2>/dev/null || true)
+
+# Both variants are UNOFFICIAL, so filter on the _gapps suffix: gapps zips end
+# in -Mi8937_gapps.zip, vanilla in -Mi8937.zip. grep -v drops the gapps ones for
+# a vanilla release and vice versa.
+if $GAPPS; then
+    VARIANT_DESC="gapps (_gapps)"
+    MATCHES=$(grep '_gapps\.zip$' <<< "$ALL_ZIPS" || true)
+else
+    VARIANT_DESC="vanilla (non-_gapps)"
+    MATCHES=$(grep -v '_gapps\.zip$' <<< "$ALL_ZIPS" | grep . || true)
+fi
 NUM_MATCHES=$(grep -c . <<< "$MATCHES" || true)
 
 if [[ "$NUM_MATCHES" -eq 0 ]]; then
-    echo "error: no $BUILDTYPE_TAG zip matching today's date ($DATE_TAG) in $REMOTE_ROOT/$PRODUCT_OUT on $TARGET" >&2
+    echo "error: no $BUILDTYPE_TAG $VARIANT_DESC zip matching today's date ($DATE_TAG) in $REMOTE_ROOT/$PRODUCT_OUT on $TARGET" >&2
     exit 1
 elif [[ "$NUM_MATCHES" -gt 1 ]]; then
-    echo "error: multiple $BUILDTYPE_TAG zips matching today's date ($DATE_TAG) in $REMOTE_ROOT/$PRODUCT_OUT on $TARGET:" >&2
+    echo "error: multiple $BUILDTYPE_TAG $VARIANT_DESC zips matching today's date ($DATE_TAG) in $REMOTE_ROOT/$PRODUCT_OUT on $TARGET:" >&2
     echo "$MATCHES" >&2
     exit 1
 fi
@@ -107,22 +117,7 @@ echo "Using remote zip: $ZIP"
 # briefly visible in the process list on both ends during the run — acceptable
 # for a single-user build server on the LAN. `export` (not a var prefix) so it
 # covers the whole `cd && release.sh` chain, and %q-quote it for safe transport.
+# --edl-only: r1 publishes the EDL bundle only — no OTA zip asset and no OTA
+# JSON, so there's nothing to fetch back or commit afterward.
 ssh -tt "$TARGET" -- \
-    "export GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh $(printf '%q' "$ZIP")"
-
-echo "==> Fetching regenerated OTA JSON from the server..."
-rsync "${RSYNC_COMMON[@]}" --include='*.json' --exclude='*' \
-    "$TARGET:$LANDING_ROOT"/ "$LANDING_ROOT"/ | tail -20
-
-CHANGED=()
-while IFS= read -r -d '' f; do
-    CHANGED+=("$f")
-done < <(git -C "$LANDING_ROOT" status --porcelain -z -- '*.json')
-
-if [[ ${#CHANGED[@]} -eq 0 ]]; then
-    echo "no OTA JSON changes to commit"
-else
-    git -C "$LANDING_ROOT" add -- '*.json'
-    git -C "$LANDING_ROOT" commit -m "ota: update from remote release ($TARGET)"
-    git -C "$LANDING_ROOT" push origin HEAD
-fi
+    "export GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $(printf '%q' "$ZIP")"
