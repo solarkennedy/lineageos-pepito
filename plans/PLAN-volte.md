@@ -41,6 +41,15 @@
   wrote 0, verified readback → "applied (1 NV writes)", prop=applied, IMS re-registered
   FULL_SERVICE within 20s. The fresh-flash / EFS-wipe / refurb path works.
 
+> **2026-07-13 partial validation on a SECOND unit (Gold `81eed371`, fresh flash of the
+> 2026-07-12 build, SIM moved over):** `vendor.qmux.ims_enabler=ok`, qmux stack autonomous,
+> LTE attach HOME 311480, IMS PDN up on rmnet_data1, QMI/DATA daemon status both 1. Item 1
+> ✅ (steady-state `ok`; this unit's NV was likely already clean — it was the A11 IMS
+> witness, so the `applied` heal path wasn't exercised here). Items 2–3 (dialer VoLTE path,
+> call+SMS both ways) still need hands-on. Side finding: the `!` Kyle saw was mobile data
+> defaulting OFF on fresh flashes (upstream `vendor/lineage/config/telephony.mk`
+> `ro.com.android.mobiledata=false`), not an IMS/NV gap — release-notes item.
+
 ### Validate after next flash (Kyle)
 1. Cold boot → `getprop vendor.qmux.ims_enabler` → `ok` (steady state; `applied` on a
    fresh unit) and `logcat -s ims_enabler`.

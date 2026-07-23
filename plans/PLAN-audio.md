@@ -98,7 +98,11 @@ bugs anyone.
 - [x] Validation ✅ 2026-07-11: stereo recorder app confirmed BOTH mics live with
       correct top/bottom separation (Kyle); live call validated — far side reports
       clean voice, NO ECHO (first call ever with real voice cal + working primary mic).
-      Untested: BT-SCO call (bt-sco paths are empty stubs, same as stock).
+      Untested: BT-SCO call. 2026-07-18 audit: NOT stubs — full chain verified
+      stock-identical + complete on Gold (voice bt-sco mixer paths byte-identical to
+      stock; the empty bt-sco device paths are empty in stock too — DSP-internal path,
+      nothing codec-side to set; INT_BT_SCO BEs live in the card; HFP AG up, Chevy
+      bonds+connects with WBS). Only a live car call test remains.
 - [x] Speakerphone echo — no echo reported on the 2026-07-11 validation call (first
       call with voice cal engaged). Watch for complaints in daily use; the EXT_EC
       combo-path question stays as background context if echo ever shows up.

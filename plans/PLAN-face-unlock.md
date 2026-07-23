@@ -1,9 +1,51 @@
 # Pepito Biometric Face Unlock — Plan
 
 **Goal:** add face unlock to the lock screen on Palm PVG-100 (pepito), LineageOS 23.2.
-**Status (2026-07-03):** NOT STARTED — this is a design/scoping plan. Depends on the front
-camera (S5K4H8) working, which the camera bring-up just enabled (`PLAN-camera.md`) but is not
-yet confirmed streaming.
+**Status (2026-07-12 night): ✅✅ FEATURE WORKING ON DUT — real face enrollment (Megvii engine,
+front camera) + keyguard unlock validated hands-on by Kyle. Lane closed except: commit sweep
+(FaceUnlock clone + frameworks/base sense patch incl. the BiometricScheduler null-retriever
+guard + device.mk + mithorium radio-shim/camera-provider noise fixes rode along today),
+release-notes caveats (closed Megvii blobs from Moto; WEAK class — no keystore/payments;
+RGB low-light limits), and optional hands-on matrix (low light, glasses, photo-spoof check,
+camera contention with camera app open).**
+
+Previous status (2026-07-12 evening): Phase 1 ✅ CLOSED (keyguard dismissed by face auth,
+hands-on). Phase 2 = Paranoid Sense port, STAGED, awaiting build+flash. Kyle chose porting crDroid/PA
+"Paranoid Sense" (16.0 branch, real Megvii RGB engine w/ liveness, registers WEAK) over an
+own-built TFLite HAL. Staged across 3 repos:
+- `packages/apps/FaceUnlock` — cloned crDroid 16.0 (app `co.aospa.sense`, Megvii arm64 blobs
+  8.5M + `res/raw/model_file`, `vendor.aospa.biometrics.face` AIDL java_library,
+  FaceUnlockOverlay w/ full Settings strings + `config_face_enroll` enroll redirect + real
+  education lottie — supersedes the interim pepito Settings RRO, which was deleted).
+- `frameworks/base` — new `services/.../face/sense/` provider dir (15 files, verbatim) +
+  4-import/3-hunk FaceService.java hook (Sense replaces AIDL providers when
+  `ro.face.sense_service`=true) + `services/core/Android.bp` static_libs dep.
+- `device.mk` — Phase 1 stanza replaced: `FaceUnlock` + `ro.face.sense_service=true`
+  (PRODUCT_SYSTEM_PROPERTIES), virtual HAL retired, feature XML kept.
+App uses legacy Camera API1 (framework maps to our HAL3), front cam auto-detected
+(`ro.face.sense_service.camera_id` prop can override). Pre-flash: DELETE the Phase 1 face
+enrollment in Settings first (sensor id changes; avoids stale framework face state); the
+orphaned persist.vendor.face.virtual.* props are harmless.
+
+Previous status (2026-07-12, post-flash): Phase 1 FLASHED and remotely validated — HAL running under
+`hal_face_default` (AOSP sepolicy, Enforcing-ready), feature advertised, sensor 4 modality FACE
+registered at CONVENIENCE (4095) in `dumpsys biometric`. ⭐ Gotcha found+fixed: the
+`persist.vendor.face.virtual.*` props are labeled `virtual_face_prop` = Platform-owned
+system_public_prop despite the vendor-ish name → vendor_init is neverallowed to set them, so
+`PRODUCT_VENDOR_PROPERTIES` silently fails (init "Do not have permissions" at boot, HAL falls back
+to STRONG). Fix = `PRODUCT_SYSTEM_PROPERTIES` (staged in device.mk); DUT fixed live via `adb root
+setprop` (persist → sticky). Note `cmd face sync` is for framework-virtualized sensors only —
+does nothing for a vendor IFace HAL. Remaining hands-on: Settings enrollment (needs PIN) +
+keyguard auth attempt. Phase 2 (real recognition) not started. Front-camera prerequisite is
+met (both cameras preview+JPEG verified 2026-07-03). Staged in `device/xiaomi/Mi8937/device.mk`
+(pepito-gated): `android.hardware.biometrics.face-service.default` (AOSP virtual HAL) +
+feature XML to `/vendor/etc/permissions` + `persist.vendor.face.virtual.strength=convenience`
+(HAL default is *strong* — must override) + `type=RGB`. No device sepolicy needed: AOSP
+`system/sepolicy/vendor/` already ships `hal_face_default.te` and labels the exact binary path.
+The rc is lazy-start (`disabled` + `interface aidl`) — servicemanager starts it on demand.
+Validation on flash: Settings → Security shows Face Unlock; enroll (virtual HAL auto-drives via
+`next_enrollment` default); `dumpsys face` shows sensor strength CONVENIENCE; keyguard attempts
+face auth. Phase 2 (real recognition) not started.
 
 ---
 

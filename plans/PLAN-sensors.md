@@ -1,5 +1,146 @@
 # LineageOS 23.2 — Sensors Bring-up (pepito / PVG100)
 
+> ## 🔴 OPEN 2026-07-16 — BHy hub wedges after suspend/resume churn; recovery exists but is unreachable. Fix STAGED, UNFLASHED.
+>
+> This is the real content of the long-running "i2c-2 bus wedge → sensors-HAL
+> binder starvation → ~143s system-wide ANR" story. **The central claim was
+> wrong.** Reproduced and dissected live on Gold (`81eed371`).
+>
+> **The bus is not wedged — only the hub is.** All **76** `i2c-msm-v2
+> TIMEOUT_ERROR` were `slv_addr:0x28` (bhy); **zero** at `0x60` (wusb3801), and
+> wusb3801 read 0x60 successfully *throughout the storm* (zero `Failed to read
+> port status`), including IRQs taken mid-storm. A wedged bus would have failed
+> those too. The Type-C chip is innocent — the contention theory in
+> `bhy_i2c.c`'s header and `pepito.dts`'s `&i2c_2` comment is **falsified**.
+> Not USB/car-related either: the storm started **2m42s after** the plug and
+> **kept climbing after unplug** — the original ANR was never an Android Auto
+> session. **⚠️ Correction (2026-07-18):** the earlier claim here that
+> `persist.vendor.usb.config=adb` "pins the gadget so Android Auto has never
+> been possible / accessory is not supported" is **WRONG**. On the live unit
+> that property is empty, the kernel + configfs gadget fully support accessory
+> mode (`CONFIG_USB_F_ACC=y`, `accessory.gs2`), and the phone *does* enter
+> accessory mode every connection. AA fails for an unrelated reason (missing
+> `SYSTEM_AUTOMOTIVE_PROJECTION` role holder → gearhead `:car` CDM crash). Real
+> cause + fix now tracked in `PLAN-release.md` (Android Auto checklist item).
+>
+> ⭐ **Technique that settled it:** a second, healthy device on the same bus is
+> the cleanest discriminator between "bus wedged" and "slave hung". wusb3801 at
+> 0x60 was the control; it had only just been brought up.
+>
+> **Trigger = suspend/resume churn.** `21:40:21→21:41:12`: 42 resumes, all
+> `IRQ 71, wcnss_wlan`; last resume `21:41:12.327`, first timeout
+> `21:41:12.703` — **376 ms later**. bhy dies on the full wake ending ~51 s of
+> thrash (consistent with the flush-complete-after-resume bug in this lane).
+> The churn only *appears* to stop because the resulting error spin prevents
+> suspend. `hostNSOffload=0` IS working (`quiet mode armed
+> (mcastBcastFilter=1 set=1)`) but **1 = multicast-only; broadcast still
+> wakes** → see `PLAN-perf-battery.md`.
+>
+> **Repro (fast): Wi-Fi connected + screen off + idle ~1 min + wake.**
+> Wi-Fi must be *connected* — that's what drives the churn.
+>
+> **Why it never recovers.** `mcu_monitor_thread` (every 10 s) → `reset()` →
+> `bhy_load_ram_patch()` exists and is correct. During the storm **all four
+> triggers were simultaneously unreachable**:
+>
+> | Trigger | Why dead |
+> |---|---|
+> | Reset#0 `irq_force_disabled` | only set by `int_debug()`, called **only** from `bhy_read_fifo_data()`'s "Zero length FIFO" path — never its three i2c-error returns |
+> | Reset#1 accel timeout (15 s) | gated `if (acc_enabled)` — **false when screen off** |
+> | Reset#2 duplicate-accel | same gate |
+> | Reset#3 MCU watchdog | reached, but `check_watchdog_reset()` reads CHIP_STATUS over the wedged bus, fails, and did `return 0; /* Ignore reg_read fail. */` = **"healthy"** |
+>
+> **Core bug: "I can't read the chip" was reported as "the chip is fine."**
+> The monitor woke ~30× over 5 min and did nothing, silently (its only prints
+> live inside the `acc_enabled` branch). Meanwhile the IRQ
+> (`IRQF_TRIGGER_HIGH | IRQF_ONESHOT`) re-fires forever because only draining
+> the FIFO de-asserts INT → ~11k IRQs and **12,700 log lines that evicted
+> dmesg and destroyed the storm onset**. Use `logcat -b kernel` (separate
+> buffer, wall-clock stamps) for anything time-correlated.
+>
+> **Staged (not yet flashed):**
+> 1. `check_watchdog_reset()` → `return 1` on read failure. Safe:
+>    `bhy_read_reg()` only fails there after `BHY_MAX_RETRY_I2C_XFER` full
+>    retries, or during a breaker cooldown that itself needed a full retry loop
+>    to fail — never transient.
+> 2. New `bhy_i2c_clear_degraded()` (bhy_i2c.c, decl. bhy_core.h) called at the
+>    **top of `reset()`**. Load-bearing: the recovery reloads the RAM patch over
+>    the very bus the breaker tripped on, and runs *because* it tripped —
+>    leaving it armed fails-fast (-EIO) every reload op incl.
+>    `BHY_REG_RESET_REQ`, so the recovery would silently accomplish nothing.
+>
+> ⚠️ **Gotcha:** pepito's `bhy@28` has **no `bhy,ldo_enable`** → `ldo_enable_pin
+> < 0` → `reset()` **always** `goto direct_ram_patch`. **The LDO power-cycle
+> branch is dead code on this device** — put reset-related changes at the *top*
+> of `reset()`.
+>
+> ⚠️ **Open risk:** with no LDO pin, recovery is a **soft** reset (i2c write).
+> If the hub refuses *all* i2c (not just big FIFO reads) it fails too —
+> unknown, since the breaker masked small ops behind fast -EIO. The log
+> decides: `Ram patch loaded successfully` = fixed; `Write reset reg failed` =
+> needs a real power-cycle, next step cycling `bhy,vdd_i2c/1p8/2p85`
+> (pm8937_l5/l6/l10).
+>
+> **Validated, keep:** the `bhy_i2c.c` breaker measurably works — inter-timeout
+> gaps were 68×~2.04 s (in-loop retries) then 7× **15.9 / 24.8 / 17.5×5 s** =
+> the 15 s cooldown + one ~2.37 s retry. The system stayed responsive, **no
+> ANR** — it turned the 143 s ANR into survivable degradation. The widened 15 s
+> was right; the original 2000 ms would have vanished inside the 2.04 s retry
+> cadence.
+>
+> **Test:** reboot, repro, then
+> `dmesg | grep -iE "Reset#|Read chip status failed|Ram patch loaded|Write reset reg failed"`
+> and `cat /proc/interrupts | grep bhy`. Success tell = auto-rotate returns
+> without a reboot.
+>
+> **🔴 2026-07-17 — THE `check_watchdog_reset` FIX IS INSUFFICIENT: caught a live
+> wedge on build #8, recovery did NOT fire, needed a reboot. Follow-up fix STAGED.**
+> First flash (#7) ran 6 heavy-churn cycles clean but never triggered a wedge, so
+> the recovery was unproven. On build #8 (Jul-17 12:22) a **natural wedge fired
+> live** (trigger was a registered adb-TCP session — filter=3 kills *broadcast*
+> churn but adb-TCP is *unicast*, ~46/min, unfilterable → suspend/resume churn →
+> hub wedges on a resume). Captured storm (`bhy_core.c`, `bhy_read_fifo_data`):
+> ~10 real `0x28` i2c timeouts, then the breaker fast-fails → **7,829** iterations
+> of `Read bytes remain reg failed` / `Get firmware timestamp failed` at ~27 µs
+> cadence. **Zero** `MCU Malfunction Detected` / `treating as malfunction` /
+> `Reset#` — the recovery never ran; system went unresponsive (adb dropped) →
+> reboot.
+>
+> **Root cause of the non-recovery (source-confirmed):** `bhy_read_fifo_data`'s two
+> i2c-error returns (`Read bytes remain reg failed` @~2077, `Read fifo data failed`
+> @~2102) do `mutex_unlock; PERR; return` **without disabling the IRQ**. Only the
+> *zero-length-FIFO* path calls `int_debug()` (the sole place that
+> `disable_irq_nosync` + sets `irq_force_disabled`). The IRQ is level-high +
+> `ONESHOT`, so a failed drain re-fires forever, monopolising `mutex_bus_op` at
+> µs cadence. That defeats **both** recovery routes: `Reset#0` needs
+> `irq_force_disabled` (never set here), and `Reset#3` (the `check_watchdog_reset`
+> fix) runs in `mcu_monitor_thread` every 10 s but can't win `mutex_bus_op` against
+> the storm (or its 1-byte `CHIP_STATUS` read slips through and reports "not idle"
+> = 0). **So the check_watchdog_reset return-value fix was necessary but
+> structurally unreachable** — nothing quiesces the screaming IRQ. Secondary: once
+> wedged, `bhy_suspend` fails (`Read host ctrl reg failed` → `bhy_pm_op_suspend
+> returned -5` → `Abort: Callback failed on 2-0028`), aborting system suspend.
+>
+> **FOLLOW-UP FIX STAGED 2026-07-17 (`bhy_core.c`, unflashed):** route both
+> i2c-error returns in `bhy_read_fifo_data` through `int_debug()` — same as the
+> zero-length path — so after `INT_DEBUG_COUNT` (=1000, ~27 ms of fast-fail, or
+> ~8 s incl. the pre-breaker real-timeout phase) the IRQ is masked and
+> `irq_force_disabled` set → `Reset#0` → `reset()` → RAM-patch reload. IRQ
+> refcount stays balanced (`int_debug` disables, `reset()` re-enables). Scoped to
+> `bhy_read_fifo_data` only (the IRQ-driven reader); `detect_init_event` /
+> `detect_self_test_event` share the bug but aren't in the re-fire loop.
+> **Tunable to consider if ~8 s is too slow:** a dedicated lower i2c-error
+> threshold instead of the shared 1000. **Test after flash:** repro the wedge and
+> confirm `Read bytes remain reg failed` count is *bounded* (not 7 k+), followed by
+> `Reset#0` → `Ram patch loaded successfully`, sensors self-restore with no reboot.
+> If instead `Write reset reg failed` appears, the soft reset isn't enough → the
+> regulator power-cycle path (no `ldo_enable` on pepito) is the next lever.
+>
+> ⭐ Meanwhile the **trigger** is reduced in real use: `hostArpOffload=0`
+> (filter=3) took wifi *broadcast*-caused resumes to 0 (`PLAN-perf-battery.md`,
+> 2026-07-17), so an untethered idle phone is much less exposed — but unicast
+> churn (any active connection) can still wedge it until this follow-up fix lands.
+
 > ## ✅ SSC REGRESSION CLOSED — AUTONOMOUS COLD BOOT VALIDATED UNDER ENFORCING 2026-07-11
 > Second validation flash: **fully autonomous cold boot → 20/20 h/w sensors**
 > under Enforcing, zero intervention. Trigger fired at 32.6s

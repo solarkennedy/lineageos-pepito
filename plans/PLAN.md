@@ -49,7 +49,7 @@ Boot, display, touch, hardware keymaster, and the full UI have been solid since 
 | GPS | ✅ 2026-07-08 | gnss HAL preloads force-ipcr → QMI_LOC (svc 16) on ipc_router; satellites found indoors. `PLAN-gps.md` |
 | **VoLTE / IMS** | ✅ **SOLVED + PRODUCTIONIZED 2026-07-10** | **Calls connect BOTH WAYS + SMS both ways on Verizon.** Root cause: 2017 modem speaks only v01 IMSS (A15 qcril is v02-only — enable could never arrive) + modem NV `ims_test_mode=1`. Fixed with two live v01 QMI writes. Productionized: NV proven reboot-persistent, usage=1 voice-centric restored + holds through radiocycle, `ims_enabler` self-heal oneshot staged (enforcing-ready sepolicy) + bench-validated incl. virgin-unit heal — awaiting validation flash. **In-call AUDIO dead → the audio lane's top item** (`PLAN-audio.md`). GUARDRAIL: never run extract-utils regen on mithorium-common. `PLAN-volte.md` |
 | SELinux | ✅ **ENFORCING** 2026-07-11 | Cold-boot validated with full matrix green; skip-list-only denials. LD_PRELOAD→DT_NEEDED shim redesign was the load-bearing fallout (`PLAN-release.md` Phase 5, memory `selinux-enforcing-prep`). |
-| Face unlock | not started | Convenience-class only (no face hw). `PLAN-face-unlock.md` |
+| Face unlock | ✅ 2026-07-12 | Paranoid Sense port (Megvii RGB engine, WEAK class) — real enrollment + keyguard unlock validated on DUT. Remaining: commit sweep + release-notes caveats. `PLAN-face-unlock.md` |
 
 ---
 
@@ -66,15 +66,18 @@ Boot, display, touch, hardware keymaster, and the full UI have been solid since 
 ## PLAN file index
 
 **Active:**
+- [`PLAN-androidauto.md`](PLAN-androidauto.md) — 🚗 wired Android Auto. App layer SOLVED + baked in (preinstalled stub → error 22 gone, no cert/GSF needed, nearby-perm, typec HAL reverted); car now AOAs + gearhead engages. **Open blocker: accessory-mode USB-transport instability** — car suspends the phone ~15s in; cable/car/HAL/cert/session all ruled out. Next: PC accessory-mode stress + f_accessory bulk-endpoint audit.
 - [`PLAN-perf-battery.md`](PLAN-perf-battery.md) — new lane, not blocking: low-level CPU/GPU/IO/thermal/battery tuning. Baseline surveyed 2026-07-10; first moves are BFQ I/O scheduler + a live wakelock audit.
+- [`PLAN-battery-health.md`](PLAN-battery-health.md) — new lane (2026-07-17), not blocking: kernel nodes to populate the Android 16 Battery Health surface (state-of-health %, cycle count, design capacity) the health HAL reports null today. Kernel-only (HAL auto-detects); Surface A charge-limits already work, chargingPolicy is a dead end.
 - [`PLAN-volte.md`](PLAN-volte.md) — 🔴 the blocker for phone calls. imsdatadaemon readiness is the next lever now that data is up.
 - [`PLAN-release.md`](PLAN-release.md) — ⛳ the release tracker: qmux productization (committed `qcrild.rc`, qmux default-on, cold-boot ordering), Enforcing, clean/pushed branches, signing keys, BUILD.md. Update checkboxes there.
+- [`PLAN-aboot.md`](PLAN-aboot.md) — bootloader security posture (old/frozen LK aboot, VB1.0, ships unlocked; integrity enforced above aboot by dm-verity/FBE). Open: secure-boot fuse state, MDTP state. RE lane (`~/Projects/aboot-re/`) parked — assessment only.
 - [`PLAN-rmnet.md`](PLAN-rmnet.md) — data ✅; remaining: sepolicy pass, ipacm (tethering only), early-boot rmts blip.
 - [`PLAN-audio.md`](PLAN-audio.md) — speaker ✅; ACDB ✅ 2026-07-11 (loader was missing, not a format issue; staged, uncommitted).
 - [`PLAN-camera.md`](PLAN-camera.md) — ✅ works; finish-line: face-detect subst validation. Archive: `PLAN-cameras.old.md`.
 - [`PLAN-kernel.md`](PLAN-kernel.md) — kernel-tree change audit: what to commit, revert (incl. the now-safe SSR-panic downgrade), or relocate.
 - [`PLAN-misc.md`](PLAN-misc.md) — papercuts (SIM-slot UI, nav buttons, ramoops, scrcpy, volume tile).
-- [`PLAN-pvg100isms.md`](PLAN-pvg100isms.md) — feature wishlist (Life Mode, face unlock, launcher, volume slider); [`PLAN-lifemode.md`](PLAN-lifemode.md) — Life Mode QS tile; [`PLAN-face-unlock.md`](PLAN-face-unlock.md) — scoping only.
+- [`PLAN-pvg100isms.md`](PLAN-pvg100isms.md) — feature wishlist (Life Mode, face unlock, launcher, volume slider); [`PLAN-lifemode.md`](PLAN-lifemode.md) — Life Mode QS tile; [`PLAN-face-unlock.md`](PLAN-face-unlock.md) — ✅ 2026-07-12 working on DUT (Paranoid Sense/Megvii); remaining: commit sweep + release-notes caveats.
 
 **Solved lanes (kept as evidence — the telephony endgame reads in this order):**
 - [`PLAN-qmux.md`](PLAN-qmux.md) — ⭐ the legacy IPC-stack backport that killed the `rmts_get_buffer` fatal (2026-07-07). Formally reversed the "do NOT port msm_ipc_router" guardrail.

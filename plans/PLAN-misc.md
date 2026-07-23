@@ -97,6 +97,60 @@ The overlay approach is cleaner for LineageOS.
 
 **Confirmed:** navigation works on device.
 
+**2026-07-17 reopened — 3-button nav covers app buttons (taskbar hosts the navbar).**
+Symptom: on the GMS *managed-account* set-screen-lock screen (`FLAG_SECURE`, so
+`screencap` is black), the on-screen 3-button bar overlapped/covered the footer buttons;
+switching to gesture nav made them tappable. Root cause is NOT PepitoLauncher2 and NOT our
+`config_navBarInteractionMode=2` overlay (that override is load-bearing: it makes a *clean*
+flash default to gesture, because the three `com.android.internal.navigation_bar_mode` RROs
+are dynamic/disabled-by-default and priority INT_MAX when enabled — an enabled mode-RRO,
+e.g. from a Google/managed settings restore, stomps our priority-31 overlay → 3-button).
+
+The real bug: this build co-installs `Launcher3QuickStepGo` (`com.android.launcher3`) as the
+QuickStep/recents provider (`config_recentsComponentName`), and SystemUI
+`NavigationBarControllerImpl.supportsTaskbar()` on a phone reduces to
+`com.android.wm.shell.Flags.enableTaskbarOnPhones()`. Runtime confirmed
+`multitasking/com.android.wm.shell.enable_taskbar_on_phones=true` → SystemUI
+`removeNavigationBar()`s and delegates the nav bar to Launcher3's taskbar
+(`Window{… Taskbar}` owned by uid a10135), whose 3-button variant mis-insets on this
+sw436dp panel. Gesture works because the pill path insets fine.
+
+**Why this build hits it at all:** taskbar-on-phones is a **Google platform default**, not ours —
+`enable_taskbar_on_phones` is baked `ENABLED` in `build/release/aconfig/{trunk_staging,bp1a}/`,
+inherited by our `bp4a` (`bp4a → bp3a → … → bp1a`), and GMS also pushes the whole `multitasking/`
+device_config namespace on (incl. `enable_taskbar_navbar_unification=true`). Every A16 GMS phone
+routes nav through the launcher taskbar. What's device-specific is only the **sw436dp micro-display**
+(720×1280 @ 264dpi, 3.3"): the taskbar-hosted **3-button** bar mis-insets and overlaps footer
+buttons there; normal-size phones lay it out fine. (Kyle uses 3-button daily, so this is a
+first-class bug for us, not an edge case.)
+
+**First attempt (flag-only) crash-looped Trebuchet — the flag is ASYMMETRIC.** Forcing
+`enable_taskbar_on_phones` off moved nav hosting back to SystemUI's `NavigationBar0` ✅ but
+crash-looped `com.android.launcher3` ~every 10 min: `TouchInteractionService.onCreate` →
+`TaskbarManagerImpl.addTaskbarRootViewToWindow` → `BadTokenException: another window of type 2019
+[TYPE_NAVIGATION_BAR] already exists`. Cause: the flag is read ONLY by SystemUI
+(`supportsTaskbar()`); Launcher3's `TaskbarManager` creates its type-2019 window **unconditionally**
+(`isTaskbarEnabled()` only checked nav-not-policy-disabled; never read the flag; `createTaskbarActivityContext`
+bails only on null Display). `enable_tiny_taskbar` does NOT help (only gates the dock).
+
+**Fix STAGED (2026-07-17, unbuilt) — two halves that must ship together:**
+1. `vendor/lineage/release/aconfig/bp4a/com.android.wm.shell/{enable_taskbar_on_phones_flag_values.textproto,Android.bp}`
+   → `enable_taskbar_on_phones` DISABLED READ_ONLY (READ_ONLY so the GMS `multitasking` push can't
+   re-enable it). SystemUI then hosts its own `NavigationBar` → 3-button insets correctly.
+2. `packages/apps/Launcher3/quickstep/…/taskbar/TaskbarManagerImpl.java` — patched
+   `isTaskbarEnabled()` to ALSO return false when `deviceProfile.getDeviceProperties().isPhone() &&
+   !enableTaskbarOnPhones()` (+import). Mirrors SystemUI's `supportsTaskbar()`, so Launcher3 stops
+   adding the second nav window → no collision. Tablets/large-screen (isPhone==false) unaffected.
+   Verified both `addTaskbarRootViewToWindow` callers funnel through the guarded early-return
+   (`recreateTaskbarForDisplay` line ~846; `onUserUnlocked` loops the then-empty `mTaskbars`).
+
+Net: SystemUI owns nav in ALL modes (3-button + gesture); Overview/QuickStep/gestures still run
+via `TouchInteractionService`; no taskbar dock. Both edits touch synced repos (`vendor/lineage`,
+`packages/apps/Launcher3`) = bring-up debt. **Verify after flash:** no "Trebuchet keeps stopping";
+`dumpsys window | grep mNavigationBar` = `NavigationBar0` (not `Taskbar`) in BOTH 3-button and
+gesture; 3-button footer buttons reachable on the GMS set-screen-lock screen; Overview
+(recents) still works. `logcat -b crash -d | grep launcher3` clean.
+
 ---
 
 ## 3. Enable Android Go optimizations

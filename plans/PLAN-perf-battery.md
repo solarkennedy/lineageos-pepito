@@ -7,6 +7,11 @@ pass, not a bring-up blocker. Nothing here is on the critical path in `PLAN.md`.
 **Scope:** kernel-level CPU/GPU/IO scheduling, thermal, charging, and wakelock hygiene —
 not app-level battery (Doze/App Standby are stock AOSP and out of scope here).
 
+> **Battery Health *data*** (state-of-health %, cycle count, design capacity for the Android 16
+> Battery Health screen) is a separate lane — see [`PLAN-battery-health.md`](PLAN-battery-health.md).
+> That's about *reporting* numbers the health HAL currently returns null; this file is about
+> *reducing* drain. Charge-limit control (LineageOS `IChargingControl`) already works and needs nothing.
+
 ---
 
 ## Baseline survey (2026-07-10)
@@ -411,3 +416,621 @@ confirms `org.lineageos.settings` is alive and stays alive; toggling Battery Sav
 `cpu4-7` live; `logcat -s GotweaksBatterySaverReceiver` for the on/off log lines; and
 specifically the OR-composition — turn the manual GPU cap toggle on, then toggle
 Battery Saver off, and confirm the GPU stays capped (manual preference must survive).
+
+## Battery benchmark campaign — A8-stock vs A16, idle dataset COMPLETE (2026-07-14)
+
+**Method** (`diag-tools/perf-bench/`): coulomb-counter deltas via `dumpsys battery`
+(works unrooted), on-device samplers, mW-first (mA inflates as voltage sags).
+Acceptance philosophy: same hardware + we own the stack ⇒ any cell where A16
+loses to stock is a bug. Phones: A8 witness `4373dd0f`, A16 DUT2 `81eed371`
+(hw_serial now in every meta — DUT2 will be flashed stock-8.1 for within-unit
+validation of all of this).
+
+| Cell (airplane, mW) | A8 stock | A16 | Verdict |
+|---|---|---|---|
+| Screen-on idle, brightness 255 (matched max) | 780 | 1208/1277 (n=2, ~1243) | ⭐ **+59% — top idle bug** |
+| Screen-on idle, setting 128 | 787/836/843 (~822) | 943/955/879 (~926) | +13% — but A8's 128 ≈ max panel (log mapping, eyeball-confirmed); true gap is the 255 row |
+| Battery Saver screen-on idle | 639 (−22%) | 924 (−3%) | stock saver = framework restrictions; our levers idle-neutral |
+| Forced-Doze standby, Wi-Fi on | ~10 (overnight <1%/9.6h) | 483/420/525 (~476) | ⭐ **~48× — wcnss churn** |
+| Forced-Doze standby, Wi-Fi OFF | — | 142/90 (~116) | residual ~12× vs stock-with-Wi-Fi — bug #3 |
+| Standby w/ saver (churn regime) | — | 475 vs 525 (−10%) | parked cores only help while churning |
+
+**Root causes / open bugs (idle):**
+1. **+59% screen-on idle @ matched max.** Same physical panel model.
+   Backlight-DTS hypothesis FALSIFIED 2026-07-14 (desk): WLED node identical
+   to stock across all 13 params (base pmi8950.dtsi already stock-valued;
+   our `battery_usb.dtsi` override lands OVP 17800mV + 3 strings exactly on
+   stock) and panel bl-min/max 1/4095 both. Next discriminators: screen-on
+   idle cell at brightness 0 on both (gap survives ⇒ pipeline/SoC-floor,
+   gap collapses ⇒ 4.19 qpnp-wled driver behavior — then compare
+   `/sys/class/leds/wled/brightness` at 255 both phones); side-by-side
+   eyeball at 255. One real DTS delta found: stock panel has
+   `qcom,mdss-dsi-pan-enable-dynamic-fps` (dfps porch mode), ours doesn't —
+   weak suspect, keep on list. Then: display pipeline (HWC/GPU composition),
+   SoC floor (960MHz min-freq?).
+2. **wcnss Wi-Fi suspend churn (~360mW of standby).** `dmesg`: "Resume caused
+   by IRQ 71, wcnss_wlan" = 323/324 resumes + `wcnss_wlan_suspend_noirq`
+   returns -1 (aborts). Stock sleeps ~10mW WITH Wi-Fi on ⇒ fix = diff
+   prima/wcnss suspend offloads (ARP/NS, MC filter, wowlan) against live A8.
+   **2026-07-15 desk analysis — host-config FALSIFIED, quiet-mode-arming is
+   the prime suspect (increment 1 staged):**
+   - ini falsified: our `WCNSS_qcom_cfg.ini` vs stock A8's is identical on
+     every power key (`gEnableImps/Bmps=1`, `hostArpOffload=1`,
+     `gEnableSuspend=3`, `McastBcastFilter=3`, modulated DTIM 3). Only two
+     ours-only keys, both PROVEN unparsed by prima (qcacld-isms; zero refs in
+     the driver) — removed as hygiene (`mithorium-common/wifi/`, staged).
+   - Mechanism mapped: fw-side suspend filtering is armed ONLY by the Android
+     "quiet mode" driver command `SETSUSPENDMODE 1` → `hdd_suspend_wlan()`
+     (mcast/bcast filter + ARP offload + modulated-DTIM BMPS re-enter). The
+     kernel's own PM suspend path (`wlan_suspend`) never arms it. Chain on
+     A16 exists end-to-end in source (ClientModeImpl screen-off →
+     WifiNative → supplicant AIDL `sta_iface.cpp` → qcwcn lib_driver_cmd
+     private-ioctl fallthrough → prima `hdd_driver_command`), but whether it
+     FIRES at runtime is unverified — every prima-side log is VOS INFO-level
+     (invisible). The -1 noirq abort = `-EPERM` from
+     `__hddDevSuspendNoIrqHdlr` (isWlanSuspended false, or RX mid-suspend) —
+     consistent with quiet mode never armed.
+   - **Staged for next flash (kernel, 3 pr_info lines):** log SETSUSPENDMODE
+     receipt (`wlan_hdd_main.c`) + "quiet mode armed
+     (mcastBcastFilter=%d set=%d)" / "disarmed" (`wlan_hdd_early_suspend.c`)
+     — every future bench dmesg timestamps arming against IRQ-71 tallies.
+   - **Decisive experiment (works on current build, root, no flash):**
+     `diag-tools/wlan-suspendmode/` (static musl aarch64, built + ioctl
+     smoke-tested against stock prima) hand-sends SETSUSPENDMODE via the
+     same private ioctl. Doze bracket baseline → `wlan-suspendmode 1` →
+     doze bracket → compare resume counts + mW. Churn collapses ⇒ arming
+     gap confirmed (then root-cause framework gating: `ClientModeImpl`
+     `mSuspendOptNeedsDisabled` bits, `wifi_suspend_optimizations_enabled`,
+     high-perf/multicast locks); churn persists ⇒ fw/filter angle next.
+   - Post-flash passive check: watch dmesg for framework-initiated
+     "SETSUSPENDMODE 1 received" at screen-off WITHOUT the tool.
+   **⭐⭐ 2026-07-15 LIVE RESULT (diagnostic flash) — arming WORKS, the
+   FILTER VALUE is the bug:** screen-off → `SETSUSPENDMODE 1` →
+   `quiet mode armed (mcastBcastFilter=0 set=1)`; screen-on disarms. The
+   framework/supplicant/ioctl chain is fully healthy — "never armed" is
+   falsified. The 0 (= FILTER_NONE, ini wants 3) is deterministic masking in
+   `hdd_conf_suspend_ind`/`hdd_conf_hostoffload`: ARP offload clears the
+   broadcast bit (0x02), **NS offload clears the multicast bit (0x01)** —
+   `fhostNSOffload` DEFAULT-ON in our 4.19 CAF prima (`hostNSOffload` unset
+   in both inis; `gMCAddrListEnable` default-0, not involved). Net effect:
+   fw suspends with NO mcast/bcast filter → every LAN SSDP/mDNS/foreign-ARP
+   frame → IRQ 71 host wake (~2-4s cadence on this LAN = the 323/324
+   signature). Hypothesis for stock's ~10mW: 3.18-era prima defaulted
+   hostNSOffload OFF → multicast bit survives (armed value 1) → mcast dies
+   in fw. Stock GPL drop withholds prima (like BHy) — can't source-diff;
+   trade-off of NS-offload-off = IPv6 unreachable while suspended
+   (= stock behavior; harmless: wlan IPv4 has ARP offload, rmnet unaffected).
+   **NEXT (needs rooted adb — dirty flash reset the Rooted-debugging
+   toggle):** append `hostNSOffload=0` to /vendor ini live, reboot (prima
+   built-in, ini read at startup), verify armed line shows
+   `mcastBcastFilter=1`, doze bracket vs 476mW baseline. If confirmed →
+   durable fix = `hostNSOffload=0` in `mithorium-common/wifi/` ini
+   (stock-matching for all prima siblings; flag in commit message).
+   NB: `logcat -b kernel` works as shell — kernel diagnosis no longer
+   needs root. Also observed: screen re-woke itself 20s after keyevent-26
+   off (existing screen-wake bug, not chased).
+   **2026-07-15 pm — fix mechanism CONFIRMED live; power validation
+   pending:** `hostNSOffload=0` live-patched into /vendor ini + reboot →
+   screen-off arms `mcastBcastFilter=1 set=1` exactly as predicted.
+   Durable one-liner STAGED in `mithorium-common/wifi/WCNSS_qcom_cfg.ini`
+   (with comment; affects all prima siblings — stock-matching). Doze
+   bracket was aborted at 12 min for Kyle's clean flash — **rerun after
+   the clean flash** (start-row ritual: unplug, saver off,
+   `doze_enabled=0`, `persist.lifemode.enabled=0`, verify armed line
+   shows filter=1, then force-idle 45 min; compare vs 420–483mW and
+   IRQ-71 resume share). Post-clean-flash re-setup: Rooted debugging
+   toggle, TCP adb, and note DUT ini reverts if the flashed image predates
+   the staged fix (re-apply live). Unrelated find: 07-15 dirty flash lost
+   the gapps set (image-side priv-apps gone → Play Store SecurityException
+   crash-loop from orphaned /data copy) — clean flash + gapps zip resolves.
+   **⭐⭐ 2026-07-16 — `hostNSOffload=0` SHIPPED IN A REAL BUILD, AND THE
+   HYPOTHESIS IS FALSIFIED: armed value is fixed, the churn is NOT.**
+   Observed incidentally while chasing the bhy wedge (`PLAN-sensors.md`) on
+   Gold (`81eed371`, our A16 `_gapps`, build 20:31): screen-off →
+   `SETSUSPENDMODE 1` → `quiet mode armed (mcastBcastFilter=1 set=1)`. So the
+   staged ini fix works end-to-end exactly as designed — value went 0 → 1,
+   the NS-offload mask no longer eats the multicast bit. **But the churn
+   survived it: 42 × `Resume caused by IRQ 71, wcnss_wlan` in 51 s
+   (21:40:21→21:41:12) ≈ 1.2 s cadence — no better than the 2–4 s cadence
+   the fix was meant to cure.** This kills the 07-15 hypothesis that
+   armed=1 ≈ stock's ~10 mW: filtering multicast alone is not sufficient.
+   **Why, in hindsight:** 1 = FILTER_ALL_MULTICAST. The **broadcast** bit
+   (0x02) is still cleared by **ARP** offload (`hdd_conf_hostoffload`), which
+   the 07-15 analysis already identified but treated as benign. Foreign ARP /
+   broadcast frames alone are evidently enough to sustain the churn — and this
+   LAN is broadcast-heavy. The ini wants **3** (mcast+bcast) and we are still
+   only getting 1.
+   **NEXT:** try `hostArpOffload=0` alongside `hostNSOffload=0` → expect
+   `mcastBcastFilter=3 set=1` → churn should collapse if the mechanism is
+   right. Trade-off to weigh before shipping: ARP offload off means the fw no
+   longer answers ARP while suspended, so the host wakes for ARP directed at
+   it (may partially reintroduce wakes; also affects reachability-on-LAN).
+   Measure the resume tally + doze bracket for filter=1 vs filter=3 before
+   choosing. **mW bracket for even the filter=1 state is STILL not run** —
+   both are unmeasured; the falsification above is resume-count-only.
+   ⚠️ This churn is not merely a battery bug: it is the trigger for the bhy
+   hub wedge that kills all sensors until reboot (`PLAN-sensors.md`, bhy dies
+   376 ms after the full wake ending a ~51 s churn burst). Fixing it has a
+   second payoff — and while it is unfixed, **any Wi-Fi-connected idle device
+   is exposed to the sensor wedge**.
+   **✅ 2026-07-17 — `hostArpOffload=0` VALIDATED: filter=3 arms and wifi-caused
+   AP resumes go to ZERO.** Staged in the tree (`mithorium-common/wifi/
+   WCNSS_qcom_cfg.ini`, `hostArpOffload=1`→`0`, with `hostNSOffload=0`). Live-
+   verified on DUT1 (`c39a6acf`, kernel #7 Jul-17): patched both ini copies
+   (see the /data-copy trap below), rebooted → screen-off logs
+   `quiet mode armed (mcastBcastFilter=3 set=1)` (was 1). **Wifi-isolated result:
+   `Resume caused by IRQ 71, wcnss_wlan` = 0 across ~15 min / 3 screen-off
+   adb-disconnected windows**, vs the filter=1 storm (94/boot, 30–70/min bursts).
+   Only remaining wake causes: 3× benign "misconfigured IRQ 1 mpm" + 1× RTC
+   alarm. Connectivity intact (ping 8.8.8.8 23 ms, 0% loss) — the LAN-
+   unreachable-while-asleep trade-off is the accepted, stock-matching cost.
+   ⚠️ **`wakeup_count` is a MISLEADING metric here** — it counts every wake
+   source (timers/alarms/binder), so the quick filter=1(52.7/min)-vs-
+   filter=3(74.7/min) `wakeup_count` bracket looked like a *regression*; it was
+   pure fresh-boot non-wifi noise on the filter=3 side. Use the wifi-isolated
+   `Resume caused by IRQ 71` count, not `wakeup_count`, for this bug.
+   ⚠️ **/data-copy trap:** prima reads `/data/vendor/wifi/WCNSS_qcom_cfg.ini`
+   (`vendor.wlan.driver.config`), which the wifi HAL creates **create-if-missing**
+   from `/vendor` — it is NOT refreshed each boot (observed stale-dated older
+   than the boot). A clean flash (userdata zeroed) regenerates it, so the shipped
+   fix applies fine; but a **dirty** flash or a live `/vendor` edit needs the
+   `/data` copy patched/deleted too or the change is silently ignored.
+   **Still open:** the definitive mW/standby-power delta (filter=1 vs filter=3)
+   — the resume-source elimination is proven, but the battery number is the
+   deferred overnight unplugged bracket (with `adb disconnect` — a registered
+   TCP session alone drives ~46 unicast resumes/min, unfilterable).
+3. **~106mW unattributed Wi-Fi-off residual.** Known minor: health-service
+   BOOTTIME_ALARM every 60s. Next: per-window resume-reason deltas.
+4. **Doze-dream wedge**: ambient DozeService held DOZE_WAKE_LOCK the whole
+   window (no AOD hw). Mitigated `settings put secure doze_enabled 0`; root
+   cause (pulse path) open; consider default-off for pepito if unfixed.
+
+**Workload teaser (parked lane):** dark 2-thread sha256: A8 320mW vs A16 784
+(evening) but next-morning A16 cells 508-626 — between-cell variance exceeds
+lever effects; fixed-power-not-fixed-work confound identified. Needs
+work-counted load v2 (joules/task) before believing any lever ranking.
+CPU-park lever did show −19% same-session. Full table: `results/summarize.sh`.
+
+**Methodology hall of fame (hard-won):** metas record everything incl.
+wakefulness + hw_serial; keyguard forces 10s screen timeout (dismiss + verify
+or the cell is dark); stock-8.1 airplane via `settings put` half-applies
+(cell_on=2 desync — UI toggles only); A8 `wm dismiss-keyguard` is P+ (use
+keyevent 82); load-average is D-state-inflated on these kernels (gate on CPU
+idle%); RTC wakealarm needs clearing before writing; `pgrep -f`/`pkill -f`
+self-match their own wrapper (split the pattern); battery floor lives in
+battery-bench.sh itself (BATT_FLOOR to override).
+
+## CT-3 wall-truth validation (2026-07-15/16) — fuel gauge bypassed, fix impact measured
+
+**Why:** the coulomb-counter method (`dumpsys battery`) is per-unit-gauge-biased —
+cross-unit comparisons were unreliable (the +59%/+13% idle numbers above mixed real
+regression with per-unit gauge calibration noise; see the within-unit stock-flash
+validation that preceded this). Kyle has an AVHzY CT-3 USB power meter with logging
+(`/home/kyle/.bin/AVHzY.py`, serial protocol at `/dev/ttyACM0` — **device node
+renumbers on replug, sometimes to `/dev/ttyUSB0` (wrong — that was a different
+serial cable) or back to `/dev/ttyACM0`; always verify with a quick 3-sample read
+before trusting a path**). Technique: charge phone to 100% through the CT-3
+in-line, wait for `dumpsys battery` `status: 5` (Full, not just `level: 100`) —
+below Full the charger is still delivering real charge current and readings are
+contaminated. Once Full, the CT-3's live reading ≈ true system power, no gauge
+involved. Caveat baked into every number here: phone stays on USB power/CT-3
+throughout (screen-off states are NOT deep-Doze — adb/USB keeps it from fully
+suspending), so absolute screen-off numbers run a bit high vs a true unplugged
+Doze bracket; only same-methodology comparisons (unit-vs-unit, stock-vs-A16) are
+apples-to-apples.
+
+**Gotcha discovered:** a brightness `settings put` doesn't apply instantly — the
+CT-3's 2s-interval log sometimes shows a clean step-change 10-20s (5-10 samples)
+into the window even after a 25-40s pre-wait before starting to sample. Always
+eyeball the raw per-sample sequence for a step and average only the settled tail,
+never trust a flat window-mean blindly.
+
+**Stock-vs-stock cross-unit check (witness `4373dd0f` vs Gold `81eed371`,
+both stock 8.1, same methodology):**
+
+| State | Witness | Gold (stock) | Delta |
+|---|---|---|---|
+| Screen-off | 301mW | 304mW | ~1% |
+| Brightness 128 | 862-886mW | 871mW | ~1-2% |
+| Brightness 255 | 854mW | 900mW | ~5% |
+
+Two different physical units converge tightly — confirms unit-to-unit variance on
+stock is small, and validates the CT-3 method itself (it's the coulomb-counter/fuel-gauge
+that was unreliable cross-unit, not the hardware).
+
+**⭐⭐ Same-unit (Gold `81eed371`) stock vs A16 fixed-build (today's flash, incl.
+`hostNSOffload=0` wcnss fix + BT signing-key fix), wall-truth:**
+
+| State | Stock 8.1 | A16 (fixed build) | Delta |
+|---|---|---|---|
+| Screen-off | 304mW | 410mW | **+35%** |
+| Brightness 128 | 871mW | 931mW | **+7%** (was +13-27% pre-fix) |
+| Brightness 255 | 900mW | 1273mW | **+41%, ~373mW absolute — still the top open bug** |
+
+**Reading these against the fixes:** brightness-128 parity improved substantially
+(the earlier ~800-950mW cross-unit spread collapses to a tight +7%) — plausible
+partial credit to the wcnss/other changes reducing background churn during the
+screen-on window. **But brightness-255 tells a new story**: stock is nearly FLAT
+128→255 (871→900mW, confirming the log-curve/saturation theory), while **A16 shows
+a real, distinct jump 931→1273mW** — i.e. A16's backlight-to-power curve is more
+linear/aggressive than stock's saturating one. This reframes bug #1 above: it's
+not (only) "A16 draws more at the same brightness," it's "A16's 255 setting drives
+something harder than stock's 255 does" — panel backlight duty is prime suspect
+again (the earlier DTS-identical falsification compared *config*, not *runtime
+duty at the top of the curve*; worth re-checking `/sys/class/leds/wled/brightness`
+actual value at setting=255 on both, live, next session) — display pipeline /
+compositor is the fallback suspect if the duty matches.
+
+Screen-off is still elevated (+35%, ~106mW) even on the fixed build and even
+accounting for the USB-attached-not-true-Doze caveat — some background churn
+persists post-wcnss-fix; needs a same-methodology (CT-3, Full, USB-attached)
+screen-off comparison specifically, not the deep-Doze bracket numbers from
+Bug #2 above (different measurement regime, not directly comparable to this row).
+
+**⭐⭐⭐ 2026-07-16 — bug #1 ROOT CAUSE FOUND: missing gamma/log brightness curve, not
+hardware/panel.** Live sysfs read on A16 (Gold, rooted) at 4 settings: 20→wled=321,
+64→wled=1028, 128→wled=2056, 255→wled=4095. Every point satisfies
+`wled = round((setting/255) × 4095)` exactly — **A16's brightness-to-backlight
+mapping is perfectly LINEAR across the entire range, zero gamma/log correction.**
+This directly explains the CT-3 finding above: human brightness perception (and
+every stock Android brightness curve) is logarithmic, so proper implementations
+compress the upper slider range — most of the "useful" differentiation happens
+low-to-mid, and the top of the slider adds only modest extra light for
+disproportionate extra power. Stock's near-flat 871→900mW (128→255) IS the
+gamma-corrected behavior working as intended; ours draws the full linear 2× duty
+increase because there's no curve to compress it. This reframes the bug from
+"hardware/panel/pipeline" (both already falsified) to a **framework brightness-curve
+config bug** — likely a missing/misconfigured `display-device-config.xml`
+brightness-to-nits/nits-to-backlight curve, or `BrightnessMappingStrategy` default
+falling back to linear because the device XML lacks a proper curve table. Fully
+software-fixable, no DTS/kernel/panel work needed. **Confirmed 2026-07-16: no brightness curve exists anywhere.** Searched the full
+device tree (`device/xiaomi/`, all Mi8937 siblings: santoni/land/ugg/prada) for
+`display_device_config`/`brightness curve`/`display-device-config.xml` — zero
+hits. Searched on-device (`/vendor/etc`, `/system/etc`, `/odm/etc`, every XML
+grepped for "brightness") — zero hits, nothing shipped in the built image either.
+This is not pepito-specific; the gap is inherited by the whole shared Mi8937
+family (Lineage/Mi-Thorium tree never added one for this SoC generation), so a
+fix belongs at the `mithorium-common` layer per the usual layering rule, not
+pepito-only. **Fix direction: add a `display-device-config.xml` (or the
+brightness-curve section AOSP expects — check current AOSP/Lineage docs for the
+exact schema+path, `frameworks/base`'s `DisplayDeviceConfig`/
+`BrightnessMappingStrategy` reads it) with a proper gamma-corrected
+brightness-to-backlight curve.** Without one, `BrightnessMappingStrategy` falls
+back to a naive linear default — exactly matching the measured 1:1
+`wled = setting/255 × 4095` behavior. A reasonable starting curve: match or
+approximate stock's observed behavior (near-flat power 128→255, i.e. duty should
+already be ~85-95% by setting=128) — could reverse-engineer stock's actual duty
+curve if unrooted-workaround found, or just start from a standard perceptual
+gamma (~2.2-2.4) mapping setting→duty and tune from real CT-3 measurements after
+each iteration. This is a config-only fix, buildable+testable without any
+kernel/DTS changes — good first target for the bug-fix pass.
+
+**2026-07-16 — sustained dark-load + forced-idle CT-3 numbers (Gold, A16 fixed
+build, same session as the brightness-curve finding above):**
+
+- **Sustained dark load (2×`sha256sum /dev/zero`, non-cycling — fixed the
+  kill/respawn-every-30s script that was too noisy for instantaneous sampling):
+  1949mW, extremely clean (settled range 1942-1969mW, governor ramp-to-max-clock
+  visible as a step at ~20s in).** Stock same-methodology number not yet
+  captured this session (needs the witness A8 back on the CT-3, or Gold
+  reflashed to stock — deferred, noted as a follow-up).
+- **Forced-idle (deep Doze, CT-3-wired so no unreachability risk): 351mW
+  settled, stdev only 11mW, NO periodic wake spikes across a 160s/80-sample
+  window.** Strong positive signal for the wcnss fix — the pre-fix churn
+  signature (IRQ-71 resume every 2-4s) would show as dozens of visible spikes
+  in a window this long, and there are none. Caveat: not a like-for-like
+  comparison against the 476-525mW broken-build numbers above (those used
+  unplugged+airplane+long-window coulomb-counter methodology, this is
+  USB-attached+CT-3+short-window) — but IS directly comparable to this same
+  build's own non-forced-idle screen-off number (410mW, same session, same
+  method) → forced-idle correctly saves ~59mW as expected.
+- **⭐ Follow-up 10-minute forced-idle window (300 samples, 2s interval) —
+  CONFIRMS the short window, no timescale caveat left: 348mW mean, stdev 11mW,
+  min 328/max 401mW, ZERO samples above 1.5× the median across the full 10
+  minutes.** No periodic wake spikes at any timescale from seconds to minutes
+  (rules out both the old IRQ-71-every-2-4s signature and slower Doze
+  maintenance-window churn). This is as clean a standby confirmation as the
+  CT-3 method can give without a true unplugged multi-hour run — **the wcnss
+  `hostNSOffload=0` fix looks solid.**
+
+**⭐⭐ Stock sustained dark-load captured (witness `4373dd0f`, same CT-3
+methodology, Full charge): 1438mW settled** (1401-1579mW range; note the
+transient here runs the OPPOSITE direction from A16's — starts high ~1830mW for
+the first ~20s then drops and settles lower, vs A16's low-then-ramps-up-to-max
+pattern; different governor/thermal behavior, not a measurement artifact —
+settled tail used in both cases).
+
+## Dark-load wall-truth verdict
+
+| Unit/OS | Sustained dark load (2×sha256sum, screen off, CT-3, Full charge) |
+|---|---|
+| Witness (stock 8.1, `4373dd0f`) | 1438mW |
+| Gold (A16 fixed build, `81eed371`) | 1949mW |
+| **Delta** | **+511mW, +36% — real regression, cross-unit but stock-vs-stock cross-unit variance was only ~1-5% elsewhere in this campaign, so unit variance doesn't explain this gap** |
+
+Points back at governor/scheduler tuning (CPU frequency floor, cluster
+placement, DVFS aggressiveness under sustained load) as the likely cause —
+consistent with the original suspicion from the campaign's parked workload/lever
+lane, now confirmed clean and trustworthy with a proper sustained (non-cycling)
+load instead of the noisy kill/respawn script. **Good next target for the fix
+pass**, alongside the brightness-curve fix above: profile CPU frequency/cluster
+residency during this exact sustained-load scenario on both builds (same unit
+ideally) to pin the specific governor knob.
+
+## 2026-07-16 (pm) — framework code read + DUT1 profiling: BOTH fix directions corrected
+
+**⭐⭐ Brightness-curve fix direction was WRONG — a DDC/nits gamma table would not
+have changed anything.** Read the actual A16 framework code before staging:
+
+- `DisplayDeviceConfig.createBacklightConversionSplines()`
+  (`frameworks/base/services/core/java/com/android/server/display/DisplayDeviceConfig.java:2657-2671`)
+  builds the brightness-float→backlight spline as a **linear rescale of the
+  backlight array itself** — the `screenBrightnessMap` nits table (and the
+  `config_screenBrightnessNits`/`config_screenBrightnessBacklight` overlay
+  arrays) feed *autobrightness* and nits conversions only. Adding a
+  gamma-shaped nits map would NOT reshape manual setting→duty. The proposed
+  `display-device-config.xml` fix would have been a no-op flash cycle.
+- Where the perceptual curve actually lives on modern Android: **the Settings
+  slider UI** (`com/android/internal/display/BrightnessUtils.convertGammaToLinear`)
+  maps slider *position* through a gamma curve into the linear brightness
+  float. `settings put system screen_brightness N` **bypasses that** (int→float
+  linear via `BrightnessSynchronizer`) — so the measured `wled = setting/255 ×
+  4095` linearity is *standard modern-AOSP behavior* (a Pixel does the same
+  under `settings put`), not a missing-config bug. A real user dragging the
+  slider already gets gamma compression: mid-slider = low duty.
+- **Consequences for the bench numbers:** the b128 rows compare different
+  luminances (A16 at 50% duty vs stock at ~90% per the eyeball note) — not
+  apples-to-apples. The genuinely open question is only the **top of the
+  range**: at setting 255, A16 drives full 4095 duty; what does *stock* drive
+  at 255? Its kernel-side log map may compress the top (max setting ≠ max
+  duty).
+- **Discriminator (needs Silver `4373dd0f` online, read-only, no root):** set
+  brightness 128 and 255 on stock, read `/sys/class/leds/wled/brightness`
+  (path may differ on 3.18 — enumerate `/sys/class/leds/` first), plus
+  side-by-side eyeball at 255.
+  - Stock duty at 255 **< 4095** ⇒ A16's max is objectively brighter+hungrier
+    than stock's max ⇒ fix = cap max backlight to match stock luminance — the
+    framework knob is a one-line RRO overlay:
+    `config_screenBrightnessSettingMaximumFloat` (falls back to int
+    `config_screenBrightnessSettingMaximum`, default 255 = 1.0 float). Verify
+    which one A16's `DisplayManager` actually honors when staging.
+  - Stock duty at 255 **= 4095** ⇒ same duty, +373mW gap ⇒ per-duty
+    efficiency bug (qpnp-wled runtime register comparison next — DTS *config*
+    matched but 4.19-vs-3.18 driver register programming may not).
+  - Worth computing either way once duty is known: display power *per duty
+    unit* on both (b128 row hints A16 may draw more per duty — 521mW increment
+    at 2056 duty vs stock 567mW at ~3700 — but that hinges on the unverified
+    "128≈max" eyeball).
+
+**⭐⭐ Dark-load +36%: A16-side profiling done on DUT1 (`c39a6acf`, USB,
+2026-07-16) — governor/placement is CLEAN; new prime suspect is a stock
+screen-off freq cap that A16 lacks.**
+
+- Profile under 2×`sha256sum /dev/zero`, screen off: both threads land on the
+  perf cluster (CPUs 1,3), policy0 pegged 1401MHz (time_in_state: ~99s of
+  ~99s window), **power cluster spends ~92% of the window at its 768MHz min**
+  (9082/9917 units) — placement and DVFS are behaving exactly as designed. No
+  smoking gun.
+  - ⚠️ Sampling gotcha: live `scaling_cur_freq` reads showed policy4 "pegged"
+    at 1094MHz every sample — pure observer effect (each sampler wake +
+    `dumpsys` binder call ramps the little cluster right when it's read).
+    `time_in_state` deltas are the trustworthy signal, not polled cur_freq.
+- **Thermal ruled out on A16:** 4 min sustained at 1401MHz → `apc1-cpu*`/
+  `cpuss*` sensors reach only 41-43°C, `scaling_max_freq` untouched, no
+  step-zone mitigation. And since stock would sit at similar temps, stock's
+  1830→1438mW settle at ~20s **cannot be thermal either**.
+- **New hypothesis that fits everything:** the bench ritual forces a 10s
+  screen timeout — stock's ~20s power settle lines up with *screen-off*, and
+  stock Qualcomm perfd classically applies a **screen-off CPU max-freq cap**
+  (msm_performance `cpu_max_freq`, typically to ~1.0-1.1GHz). A16
+  (prebuilt `power-service-qti`, no perfd profile in tree) demonstrably does
+  NOT cap: this whole profile ran screen-off at 1401MHz.
+- **Efficiency math says this would explain the entire delta:** A16 increment
+  = 1949−410 = 1539mW at 1401MHz delivering 2×135 = 271MB/s (measured this
+  session, `dd|sha256sum`) → 5.7mJ/MB. If stock caps at 1094MHz: increment
+  1438−304 = 1134mW at a predicted ~212MB/s → 5.4mJ/MB. **Near-parity
+  joules-per-work** — i.e. not an efficiency regression at all, just a
+  different operating-point policy (A16 races-to-idle at max; stock crawls
+  capped). The fixed-power-not-fixed-work confound again, in wall-power form.
+- **Discriminator (needs a stock unit online, shell-only):** run the same
+  2-thread load on stock, read `scaling_cur_freq` screen-ON vs screen-OFF
+  (expect 1401 → cap), and measure `dd|sha256sum` MB/s for the real
+  joules/MB comparison.
+- **Fix direction if confirmed:** replicate a screen-off max-freq cap on A16.
+  Cheap infra already exists: screen-state receiver in the persistent
+  XiaomiParts process (same pattern as `GotweaksBatterySaverReceiver`) →
+  `persist.gotweak.*` prop → `init.gotweaks.rc` trigger writes
+  `scaling_max_freq` — and the `allow vendor_init
+  sysfs_devices_system_cpu:file rw_file_perms` sepolicy grant from gotweak #4
+  already covers the write. Decide cap value from the stock read. Caveat to
+  weigh: race-to-idle at 1401 is *equally efficient* per the math above, so
+  this only wins wall-power for genuinely unbounded background loads — but
+  matching stock keeps the "equal-or-better every cell" acceptance bar.
+
+## ⭐⭐⭐ 2026-07-16 (later pm) — dark-load "+36% regression" ROOT-CAUSED and
+## DISSOLVED: it was suspend freeze-cycling, not the CPU platform. CPU at parity.
+
+Silver (`4373dd0f`, stock 8.1) on USB+CT-3, DUT1 (`c39a6acf`, A16) moved to TCP
+adb (10.0.2.157:5555). Long falsification chain, every step live-verified:
+
+1. **Screen-off perfd-cap hypothesis (above): FALSIFIED.** Stock keeps the big
+   cluster at 1401MHz under load with the screen off (`mWakefulness=Asleep`,
+   `scaling_max_freq` untouched, 60s watch). No stock screen-off cap exists.
+2. **Throughput anomaly discovered:** stock toybox `dd|sha256sum` = 166MB/s
+   vs A16's 135 (same nominal freq). To kill the toybox-implementation
+   variable, built **`diag-tools/perf-bench/cpubench/`** — static-musl
+   fixed-work SHA-256 bench (same recipe as wlan-suspendmode; `-t` threads,
+   `-d` secs, `-b` buffer bytes), identical binary on both phones. Result:
+   stock 48.5MB/s/thread, A16 **16-18** — 2.9×, buffer-size-independent
+   (16KB L1-resident same as 1MB ⇒ NOT memory/BIMC).
+3. **CPR/voltage hypothesis: FALSIFIED.** `/d/cpr-regulator/apc_corner/debug_info`
+   live: corner 6 IS correct for 1401MHz (`qcom,cpr-corner-frequency-map` in
+   `msm8937-regulator.dtsi:392`; corner 7 = 1497.6 bin-1 only), current_volt
+   1225mV sits 35mV *below* the scaled ceiling (1260) with error ≈ 3 quot —
+   the loop stepped down and settled where this silicon wants it. CPR healthy.
+4. **Clock-lie hypothesis: FALSIFIED.** `simpleperf stat -e cpu-cycles` during
+   the starved run: counter ticks at **1.399GHz** while on-CPU, IPC 1.7 —
+   real clock true, code healthy. But total cycles ÷ rate = the task was
+   **on-CPU only ~34% of wall time**. Starvation, not slowness.
+5. **Starvation mechanisms, traced (ftrace sched_switch/sched_waking on the
+   pinned CPU):** task drops to **D state and the CPU idles ~360ms** per
+   cycle; the thread that eventually wakes it belongs to **pid 544 =
+   `android.system.suspend-service`**. It's the **kernel freezer**: whenever
+   the device is asleep (screen off / Dozing), Android autosuspend repeatedly
+   runs freeze_processes → (suspend attempt aborts) → thaw, freezing ALL
+   userspace ~⅔ of wall time. TCP-adb-over-Wi-Fi keeps pulsing wakeups, so
+   the device thaw/refreezes continuously (each abort cycle also churns
+   migration/N stopper wakeups every ~6.5ms via suspend-service binder
+   traffic). Memory pressure (majflt=0), cgroup quota (not built), autogroup,
+   core_ctl isolation (A/B `enable=0`: no change), and thermal (trips
+   85-125°C vs 34°C actual, cpufreq cooling cur=0) all individually falsified
+   along the way.
+6. **Proof:** verified `mWakefulness=Awake` (the earlier "recovered little /
+   still-starved big" split was literally the 60s screen timeout re-sleeping
+   the device between runs) → **A16 unpinned 2-thread = 48.2MB/s/thread ≡
+   stock's 48.5**. Clocks, CPR, scheduler, placement, IPC: all at parity.
+
+**Consequences:**
+- **The CT-3 dark-load row (1949 vs 1438mW, "+36%") is INVALID as a
+  CPU-efficiency comparison** — the A16 phone was freeze-cycling (~⅓ hashing
+  duty + suspend-churn overhead) while stock hashed at full duty awake. The
+  cross-unit caveat (Gold vs witness silicon) stacks on top. Rerun both
+  same-unit with wakefulness pinned; A16 may well match or win at equal work.
+- **⭐ Bench methodology rule (add to every workload cell):** any screen-off
+  cell with on-device work on A16 runs inside the freezer-cycling regime
+  unless a wakelock is held. Pin wakefulness explicitly: screen-on +
+  `svc power stayon true` (only works while plugged!) or hold
+  `/sys/power/wake_lock` (root) for screen-off work cells, and record
+  `mWakefulness` in the meta at start AND end. This is very likely the
+  root of the old "between-cell variance exceeds lever effects" problem
+  that parked the workload lane.
+- **The screen-off idle +35% row (410 vs 304mW) also mixes regimes** — A16
+  suspend-churning vs stock quietly awake — so part of that gap is churn
+  cost, not platform draw. The suspend-abort churn loop itself (why no
+  backoff? what aborts it while USB-attached?) is now the best candidate
+  for **bug #3's ~106mW residual** and worth its own pass with matched
+  regimes. Note the irony: pre-`hostNSOffload=0`, wcnss aborted suspend so
+  early the freezer barely engaged; the fix makes suspend attempts get
+  further, so work-while-asleep now freezes MORE. Not a regression — asleep
+  phones aren't supposed to be doing shell work — but it changes bench math.
+- Stock big-cluster taskset EINVALs = stock core_ctl HOTPLUGS cores
+  (`online=0,2` at idle, offline cpus reject affinity); A16 core_ctl
+  ISOLATES instead and additionally **rotates the isolated big pair every
+  ~100-300ms** (11000000→01100000→10010000… live-polled). The rotation
+  wasn't the starvation mechanism (falsified by A/B), but it EINVALs
+  pinned-affinity tools at random and is untuned churn — parked observation
+  for the core_ctl item (4).
+
+## ⭐⭐ 2026-07-16 (later pm) — brightness bug #1 ANSWERED: stock's max is only
+## ~70-73% duty; A16's max is real 100% — "the +41% @255" is mostly extra light
+
+CT-3 power-vs-setting sweep on Silver (`4373dd0f`, stock 8.1, battery at Full
+status:5, adaptive off, screen pinned on; sysfs led duty unreadable as shell on
+stock — same-panel power used as the duty proxy, valid since WLED DTS is
+stock-identical). Settled-tail means (b20's first ~18s contaminated by post-wake
+activity — the raw-sequence-eyeball gotcha again):
+
+| setting | stock mW | incr over 363mW screen-off | A16 (Gold, same method) | A16 incr over 410 |
+|---|---|---|---|---|
+| 20 | ~730 | ~375 | — | (~+100 predicted) |
+| 64 | ~815 | ~460 | — | — |
+| 128 | ~960 | ~605 | 931 | 521 |
+| 192 | ~970 | ~615 | — | — |
+| 255 | ~985 | ~630 | 1273 | 863 |
+
+- Stock's curve is loggy and saturates by ~setting 128 (matches the old
+  "A8's 128 ≈ max panel" eyeball); **max display increment ≈ 630mW ≈ 70-73%
+  duty** at A16's measured ~0.21-0.25 mW/duty-step scale.
+- **A16 at 255 = true 4095 duty = ~1.4× stock's max luminance, +~235mW.**
+  At *matched luminance* (A16 setting ≈ 180-190), A16's display increment ≈
+  stock's — the mid-range is already at parity or better (A16 931 vs stock
+  960 @128, though A16 is dimmer there — linear vs log curve).
+- So the remaining true regressions at matched conditions are only the
+  **screen-off baseline gap** (410 vs 363 same-method — suspend-churn regime
+  question, see above) — not the panel, not the pipeline, not the curve
+  per se. The 07-14 "+59% top idle bug" row inherits this dissolution too.
+- Side-by-side eyeball at 255 (A16 should be visibly brighter) = cheap
+  confirmation, needs both phones in hand.
+
+## ⭐⭐ 2026-07-16 (evening) — screen-off churn quantified: the #1 wake source on
+## the bench is the HOST'S adb TCP connection; true standby is ~4× better
+
+Focused session on the screen-off/suspend-churn gap (Kyle's pick). DUT1
+unplugged on TCP adb, all counters from `/sys/power/suspend_stats` + coulomb
+counter, wake cadence from `logcat -b kernel` "Resume caused by" wall
+timestamps.
+
+| regime (screen off, unplugged, Wi-Fi assoc.) | suspends/min | drain |
+|---|---|---|
+| host adb server holds a registered TCP conn — even with ZERO commands sent | 46-47 | 91-94mA ≈ ~350mW |
+| host fully `adb disconnect`ed (582s window, tail incl. reconnect burst) | **6.0** | **33.9mA ≈ ~130mW** |
+
+- Every wake in the churn regime is `IRQ 71 wcnss_wlan` at a metronomic
+  ~550ms — **unicast traffic from the host's adb server connection** (adbd
+  keeps the TCP session; the adb host server chats on it). Not filterable by
+  design — mcast/bcast filters don't apply to unicast-for-us. Hand-arming
+  quiet mode (`wlan-suspendmode 1`, delivered OK) changed nothing, as
+  expected in hindsight.
+- **⭐ BENCH RULE (the big one):** a merely-*registered* TCP adb session
+  multiplies standby wake rate ~8× and drain ~3×. Every screen-off cell
+  taken with TCP adb connected — including this whole campaign's "silent"
+  windows where no commands were sent — carried this tax. `adb disconnect`
+  before any standby window; reconnect after. (USB adb on the CT-3 has an
+  analogous-but-different footprint: USB keeps the SoC from deep suspend
+  entirely — the known caveat.)
+- **~130mW no-adb standby ≈ the old Wi-Fi-OFF residual (116-142mW)** → the
+  wcnss/`hostNSOffload=0` fix is confirmed doing its job at the wake-source
+  level (Wi-Fi-on standby no longer costs more than Wi-Fi-off); what remains
+  is the bug #3 residual class (health-service 60s BOOTTIME alarm etc.), plus
+  reconnect-tail contamination in this quick number. The definitive cell
+  stays the deferred overnight unplugged bracket (with NO adb registered).
+- **Quiet-mode framework arming: still unverified this boot.** No
+  SETSUSPENDMODE/armed prints in the kernel log all boot — but the 07-15
+  21:38 kernel appears to lack the pr_info diagnostic patch (hand-delivered
+  SETSUSPENDMODE also printed nothing, though the tree has the patch —
+  possibly the tool's ioctl enters via the wext priv handler and bypasses
+  the patched `hdd_driver_command` path, so "no print" ≠ "patch absent").
+  Framework state (`dumpsys wifi`) says suspend-opts enabled, ungated, no
+  locks; the `CMD_SET_SUSPEND_OPT_ENABLED` handler lives in the always-active
+  ConnectableState, so the source chain is intact. Re-verify with prints on
+  the next flash that carries the diagnostic patch. Lower priority now: with
+  adb disconnected the wake cadence is ~6/min regardless.
+- **Lever documented for later, deliberately NOT staged:** SystemSuspend's
+  short-suspend backoff is OFF by default upstream
+  (`kDefaultShortSuspendBackoffEnabled=false`, threshold 0 —
+  `system/hardware/interfaces/suspend/1.0/default/main.cpp:64-71`), tunable
+  via `suspend.*` sysprops (`short_suspend_backoff_enabled`,
+  `short_suspend_threshold_millis`, `backoff_threshold_count`,
+  `max_sleep_time_millis`, sysprop names in `SuspendProperties.sysprop`).
+  With the adb tax removed the real cadence (~6/min) doesn't obviously
+  justify it; revisit only if the overnight bracket shows a high
+  short-suspend share (`dumpsys suspend_control_internal` has the counts).
+- Freezer context from the afternoon applies here too: each of those suspend
+  cycles freezes userspace — at 46/min the phone was spending ~⅔ of wall
+  time frozen (the dissolved "CPU regression"), at ~6/min it's a rounding
+  error.
+- Bench-state note: DUT1 still has quiet mode hand-armed (persists until
+  SETSUSPENDMODE 0 or reboot — it's the desired production state anyway);
+  `/data/local/tmp` carries cpubench, wlan-suspendmode, suschurn/,
+  selfbracket scripts. Battery ~75% after the day's diagnostics.
+- ⭐ Tooling gotcha for on-device standby scripts: `sleep` is
+  CLOCK_MONOTONIC and does NOT advance across suspend — a script pacing a
+  quiet window with sleeps advances at the *awake duty cycle* (a 40s wait
+  took >9 wall minutes at ~4% awake). Pace with `date +%s` re-checks on each
+  wake + an RTC `wakealarm` backstop (clear before write), or just bracket
+  from the host with two visits and reconstruct cadence from kernel-log
+  timestamps.
+
+**Decision for Kyle — two clean options:**
+1. **Cap max to stock luminance:** one-line RRO
+   `config_screenBrightnessSettingMaximumFloat ≈ 0.72` (verify exact knob
+   wiring in A16 DisplayDeviceConfig when staging; mithorium-common overlay
+   layer). Max-slider power drops ~235mW → b255 ≈ stock's 985 modulo the
+   baseline gap. Battery parity, loses the brightness headroom.
+2. **Keep the brighter max as a feature** + release-note it ("max brightness
+   exceeds stock ~40%; battery at max slider correspondingly higher").
+   Optionally also reshape the slider curve for perceptual comfort
+   (slider-UI gamma already handles most of it).
+   Leaning matters: Kyle's acceptance bar is "equal-or-better than stock in
+   power" — option 1 satisfies it literally at every setting; option 2
+   satisfies it at matched luminance and is user-visibly better outdoors.
