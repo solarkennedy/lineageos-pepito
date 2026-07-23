@@ -50,6 +50,11 @@ EDL_DIR="/home/kyle/android/lineage-23/flash-staging"
 # stale FRP token so A15+ FRP can auto-deactivate after a wipe. userdata is
 # deliberately excluded — a release flash must not wipe /data as a side effect.
 EDL_IMAGES=(boot.bin recovery.bin system.bin vendor.bin config.bin)
+# qdl flasher bundled into the EDL package so users don't have to build one that
+# works with this device. Prebuilt x86-64 Linux binary from the pepito branch of
+# https://github.com/xerootg/qdl. Override the path with QDL_BIN if needed.
+QDL_BIN="${QDL_BIN:-/usr/local/bin/qdl}"
+QDL_SRC_URL="https://github.com/xerootg/qdl/tree/pepito"
 XZ_LEVEL=6
 # --------------------------------------------------------------------------
 
@@ -77,15 +82,29 @@ usage() { grep '^#' "${BASH_SOURCE[0]}" | sed -n '2,27p' | cut -c3-; exit 1; }
 
 write_edl_readme() {
     # $1 = output path
+
+    # Update path differs by release mode: EDL-only builds ship no OTA zip and
+    # no in-app Updater feed, so the only way to move to a newer build is to
+    # reflash this package.
+    local update_note
+    if $EDL_ONLY; then
+        update_note="**Already running LineageOS and just want to update?** This release ships
+as an EDL package only (no OTA zip, no in-app Updater yet), so updating means
+reflashing a newer EDL package the same way — it keeps \`/data\` intact when
+you're going LineageOS-to-LineageOS."
+    else
+        update_note="**Already running LineageOS and just want to update?** You don't need this — use
+the OTA zip instead (\`adb sideload\` in recovery, or the built-in Updater)."
+    fi
+
     cat > "$1" <<EOF
 # LineageOS $VERSION for the Palm PVG100 ("pepito") — EDL flash package
 
 $ROMTYPE build \`$TAG\` ($DEVICE). This is the low-level **Qualcomm EDL (9008)**
-image set: raw boot / recovery / system / vendor partitions you write with
-\`qdl\` when the phone won't boot or you're coming from stock Android 8.1.
+image set: raw boot / recovery / system / vendor partitions you write with the
+bundled \`qdl\` when the phone won't boot or you're coming from stock Android 8.1.
 
-**Already running LineageOS and just want to update?** You don't need this — use
-the OTA zip instead (\`adb sideload\` in recovery, or the built-in Updater).
+$update_note
 
 - Project & source:  https://github.com/$REPO
 - This release:      https://github.com/$REPO/releases/tag/$TAG
@@ -105,6 +124,11 @@ email kyle@cascade.family.
 - \`config.bin\` — a 32 KB zero-fill flashed over the \`config\` partition to
   clear any stale factory-reset-protection (FRP) token, so you don't get a
   bogus "factory reset" prompt on every boot. It does **not** touch \`/data\`.
+- \`qdl\` — the flasher itself, a prebuilt x86-64 Linux binary from the
+  \`pepito\` branch of $QDL_SRC_URL (stock upstream qdl does not handle this
+  device). Needs common shared libs (libxml2, libudev, libicu, liblzma) — on
+  any modern desktop distro it just runs. If it won't, build it from that
+  branch and use your own \`qdl\` instead.
 
 This package does **not** touch modem, bootloader, TrustZone, RPM, or other
 firmware partitions — those are stock, device-specific, and already on your
@@ -117,8 +141,8 @@ phone. Only boot / recovery / system / vendor are written.
   https://xdaforums.com/t/guide-using-edl-to-backup-a-palm-pvg-100-pepito-on-linux.4719549/
 - **You will lose your data.** Coming from stock (or any mismatched build) the
   first boot reformats \`/data\` for file-based encryption. Save anything you care about.
-- **You need:** a Linux machine with \`qdl\` (https://github.com/linux-msm/qdl)
-  on your PATH, \`xz-utils\`, and a USB cable.
+- **You need:** an x86-64 Linux machine, \`xz-utils\`, and a USB cable. \`qdl\`
+  is bundled — no separate install. (Source: $QDL_SRC_URL.)
 
 ## Flashing
 
@@ -134,9 +158,9 @@ phone. Only boot / recovery / system / vendor are written.
    The screen stays black in EDL — that's expected. Confirm the phone is in EDL
    with \`lsusb\`: a \`Qualcomm ... 9008\` device should appear.
 
-3. Flash:
+3. Flash (the bundled \`./qdl\` — root or a 9008 udev rule is needed for USB):
 
-       qdl --storage emmc --allow-missing pepito_firehose.elf rawprogram0.xml
+       sudo ./qdl --storage emmc --allow-missing pepito_firehose.elf rawprogram0.xml
 
    \`--allow-missing\` is required: \`rawprogram0.xml\` lists the full stock
    partition table and only boot/recovery/system/vendor/config are included here.
@@ -152,8 +176,9 @@ phone. Only boot / recovery / system / vendor are written.
 
 ## Trouble?
 
-- \`qdl\` not found or "permission denied": build qdl and either run it as root
-  or add a udev rule for the 9008 device.
+- \`./qdl\` "permission denied" or no device: run it with \`sudo\`, or add a udev
+  rule for the 9008 device. If the bundled binary won't run at all (missing
+  libs / non-x86-64 host), build qdl from $QDL_SRC_URL.
 - Black screen after flashing: give the first boot ~5 minutes; if nothing, put
   the phone back into EDL and reflash.
 - Bugs and questions: https://github.com/$REPO/issues
@@ -336,6 +361,11 @@ if ! $SKIP_EDL; then
     for img in "${EDL_IMAGES[@]}"; do
         cp "$EDL_DIR/$img" "$PKG_DIR/$img"
     done
+
+    # Bundle the qdl flasher (pepito branch of xerootg/qdl).
+    [[ -f "$QDL_BIN" ]] || { echo "error: qdl binary not found at $QDL_BIN (set QDL_BIN)" >&2; exit 1; }
+    cp "$QDL_BIN" "$PKG_DIR/qdl"
+    chmod +x "$PKG_DIR/qdl"
 
     write_edl_readme "$PKG_DIR/README.md"
 
