@@ -44,7 +44,10 @@ DRY_RUN=false
 ASSUME_YES=false
 SKIP_EDL=false
 EDL_DIR="/home/kyle/android/lineage-23/flash-staging"
-EDL_IMAGES=(boot.bin recovery.bin system.bin vendor.bin)
+# config.bin is a 32 KB zero-fill (written by prepare-flash.sh) that clears a
+# stale FRP token so A15+ FRP can auto-deactivate after a wipe. userdata is
+# deliberately excluded — a release flash must not wipe /data as a side effect.
+EDL_IMAGES=(boot.bin recovery.bin system.bin vendor.bin config.bin)
 XZ_LEVEL=6
 # --------------------------------------------------------------------------
 
@@ -94,9 +97,12 @@ email kyle@cascade.family.
 ## What's in here
 
 - \`pepito_firehose.elf\` — signed Firehose loader for this SoC (MSM8940)
-- \`rawprogram0.xml\` — partition table; only the boot/recovery/system/vendor
-  entries are used here (the rest are skipped with \`--allow-missing\`)
+- \`rawprogram0.xml\` — partition table; only the boot/recovery/system/vendor/
+  config entries are used here (the rest are skipped with \`--allow-missing\`)
 - \`boot.bin\`, \`recovery.bin\`, \`system.bin\`, \`vendor.bin\` — the raw images
+- \`config.bin\` — a 32 KB zero-fill flashed over the \`config\` partition to
+  clear any stale factory-reset-protection (FRP) token, so you don't get a
+  bogus "factory reset" prompt on every boot. It does **not** touch \`/data\`.
 
 This package does **not** touch modem, bootloader, TrustZone, RPM, or other
 firmware partitions — those are stock, device-specific, and already on your
@@ -131,7 +137,7 @@ phone. Only boot / recovery / system / vendor are written.
        qdl --storage emmc --allow-missing pepito_firehose.elf rawprogram0.xml
 
    \`--allow-missing\` is required: \`rawprogram0.xml\` lists the full stock
-   partition table and only boot/recovery/system/vendor are included here.
+   partition table and only boot/recovery/system/vendor/config are included here.
 
 4. When \`qdl\` finishes, let the phone reboot on its own. **The first boot takes
    a few minutes** while it formats \`/data\`. If it instead reboots into recovery

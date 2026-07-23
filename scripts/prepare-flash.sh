@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Prepare flash-staging/ with images ready for qdl:
 #   - Converts sparse system/vendor images to raw
-#   - Signs boot/recovery with our PRIVATE AVBv1 key (vendor/lineage-priv/keys-boot,
-#     auto-created on first run). NB: that key's digest feeds keymaster's Root of
-#     Trust — changing it forces a /data wipe. See boot-signing/scripts/sign-boot.py.
-#   - Zeros first 4 MB of userdata (clears FBE headers; forces fresh format on first boot)
+#   - Builds boot/recovery via the fail-open graft (boot-signing/scripts/sign-boot-graft.py):
+#     no key involved, stock cert+sig grafted verbatim + inflated sig length so aboot's
+#     verifier exits early and boots GREEN. The resulting boot-key/Root-of-Trust is fixed
+#     (hardcoded, not per-build), so it does NOT change between flashes. NB: switching an
+#     EXISTING key-signed install onto this graft changes the ROT once → one /data wipe.
+#   - Writes a ZEROED config.bin (clears a stale FRP token — see below)
+#
+# We deliberately do NOT touch userdata here: the release must not wipe a user's
+# /data as a side effect of flashing. Coming from stock, the first boot formats
+# /data on its own (encryption mismatch); an in-place update keeps it intact.
 #
 # Run from anywhere. Then: flash-staging/flash-staging.sh
 
@@ -14,10 +20,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 LINEAGE_ROOT="/home/kyle/android/lineage-23"
 FLASH_DIR="/home/kyle/Personal-Projects/lineage-23/flash-staging"
-SIGN_BOOT="$SCRIPT_DIR/boot-signing/scripts/sign-boot.py"
-# Passed explicitly: sign-boot.py otherwise locates the keydir by walking up from
-# CWD, and this script is meant to run from anywhere.
-BOOT_KEYS="$LINEAGE_ROOT/vendor/lineage-priv/keys-boot"
+SIGN_BOOT="$SCRIPT_DIR/boot-signing/scripts/sign-boot-graft.py"
 SIMG2IMG="$LINEAGE_ROOT/out/host/linux-x86/bin/simg2img"
 PRODUCT_OUT="$LINEAGE_ROOT/out/target/product/Mi8937"
 
@@ -41,7 +44,7 @@ done
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 [[ -f "$PRODUCT_OUT/boot.img" ]]     || die "boot.img not found — run build first"
-[[ -f "$SIGN_BOOT" ]]                || die "sign-boot.py not found at $SIGN_BOOT"
+[[ -f "$SIGN_BOOT" ]]                || die "boot signing script not found at $SIGN_BOOT"
 
 if [[ "$BOOT_ONLY" -eq 0 ]]; then
     [[ -f "$PRODUCT_OUT/system.img" ]]   || die "system.img not found — run build first"
@@ -85,20 +88,30 @@ if [[ "$NO_RAMDISK" -eq 1 ]]; then
         --os_version 16.0.0 \
         --os_patch_level 2026-05 \
         --output "$FLASH_DIR/boot_unsigned.img"
-    /usr/bin/python3 "$SIGN_BOOT" --keys "$BOOT_KEYS" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
+    /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
 else
     echo "==> Signing boot image..."
     cp "$PRODUCT_OUT/boot.img" "$FLASH_DIR/boot_unsigned.img"
-    /usr/bin/python3 "$SIGN_BOOT" --keys "$BOOT_KEYS" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
+    /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
 fi
 
 if [[ "$BOOT_ONLY" -eq 0 ]]; then
     echo "==> Signing recovery image..."
     cp "$PRODUCT_OUT/recovery.img" "$FLASH_DIR/recovery_unsigned.img"
-    /usr/bin/python3 "$SIGN_BOOT" --keys "$BOOT_KEYS" "$FLASH_DIR/recovery_unsigned.img" "$FLASH_DIR/recovery.bin" /recovery
+    /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/recovery_unsigned.img" "$FLASH_DIR/recovery.bin" /recovery
 
-    #echo "==> Zeroing first 4 MB of userdata (clears FBE headers)..."
-    #dd if=/dev/zero of="$FLASH_DIR/userdata.bin" bs=1M count=4 status=none
+    # Zero the config partition (64 sectors × 512 B = 32 KB per rawprogram0.xml).
+    # The stock/last-owner FRP token lives here. On A15+ a /data wipe deletes
+    # /data/system/frp_secret while this token survives, so FRP can never
+    # auto-deactivate → FrpWarningActivity ("factory reset" prompt) greets every
+    # boot. Shipping config zeroed breaks that desync. Regenerated every run so a
+    # stray stock config.bin can never be flashed in its place.
+    echo "==> Writing zeroed config.bin (clears stale FRP token)..."
+    dd if=/dev/zero of="$FLASH_DIR/config.bin" bs=1K count=32 status=none
+
+    # NB: userdata is intentionally NOT staged here — see header. Leaving
+    # userdata.bin absent means qdl --allow-missing skips it and /data is
+    # untouched.
 fi
 
 echo
