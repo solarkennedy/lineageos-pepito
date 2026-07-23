@@ -67,9 +67,11 @@
   <remove-project name="LineageOS/android_vendor_lineage" />
   <project path="vendor/lineage" name="android_vendor_lineage" remote="pepito" revision="pepito-23.2-r1" />
 
-  <!-- ── Private: blobs (see the warning in the header) ───────────────────── -->
-  <!-- working branch: pepito-vendor -->
-  <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="pepito" revision="pepito-23.2-r1" />
+  <!-- ── Palm-style launcher (public, standalone repo) ────────────────────── -->
   <!-- working branch: master -->
   <project path="packages/apps/PepitoLauncher2" name="PepitoLauncher2" remote="pepito" revision="pepito-23.2-r1" />
+
+  <!-- ── Private: proprietary blobs (see the warning in the header) ────────── -->
+  <!-- working branch: pepito-vendor -->
+  <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="pepito" revision="pepito-23.2-r1" />
 </manifest>
