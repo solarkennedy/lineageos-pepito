@@ -47,6 +47,20 @@ TARGET=${TARGET:-10.0.2.43}
 REMOTE_ROOT=${REMOTE_ROOT:-/home/kyle/android/lineage-23}
 LANDING_ROOT=/home/kyle/Projects/lineageos-pepito
 PRODUCT_OUT=out/target/product/Mi8937
+
+# The build server's own `gh` is logged into an internal host (git.netflix.net)
+# and can't create a github.com release, so we forward a local token instead of
+# relying on the server's gh auth. gh reads GH_TOKEN for github.com directly,
+# which also satisfies release.sh's `gh auth status --hostname github.com` gate.
+# Name the var holding it via GH_TOKEN_VAR (default: GITHUB_TOKEN_PEPITO).
+GH_TOKEN_VAR=${GH_TOKEN_VAR:-GITHUB_TOKEN_PEPITO}
+REMOTE_GH_TOKEN=${!GH_TOKEN_VAR:-}
+if [[ -z "$REMOTE_GH_TOKEN" ]]; then
+    echo "error: \$$GH_TOKEN_VAR is not set in this shell — the remote gh has no" >&2
+    echo "usable github.com auth, so release.sh would fail there. Export a token" >&2
+    echo "with repo scope (or set GH_TOKEN_VAR to the var that holds one)." >&2
+    exit 1
+fi
 # Must match build-lineage23.sh's RELEASE_TYPE choices exactly.
 BUILDTYPE_TAG=UNOFFICIAL
 if $GAPPS; then
@@ -87,7 +101,14 @@ ZIP="$MATCHES"
 echo "Using remote zip: $ZIP"
 
 # -tt: release.sh prompts for confirmation, which needs a real tty over ssh.
-ssh -tt "$TARGET" -- "cd '$REMOTE_ROOT' && ./scripts/release.sh $(printf '%q' "$ZIP")"
+# GH_TOKEN is forwarded so the remote gh authenticates against github.com (see
+# the GH_TOKEN_VAR note above). It's passed to the remote command's environment
+# rather than typed, so it's not written to the server's shell history; it is
+# briefly visible in the process list on both ends during the run — acceptable
+# for a single-user build server on the LAN. `export` (not a var prefix) so it
+# covers the whole `cd && release.sh` chain, and %q-quote it for safe transport.
+ssh -tt "$TARGET" -- \
+    "export GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh $(printf '%q' "$ZIP")"
 
 echo "==> Fetching regenerated OTA JSON from the server..."
 rsync "${RSYNC_COMMON[@]}" --include='*.json' --exclude='*' \
