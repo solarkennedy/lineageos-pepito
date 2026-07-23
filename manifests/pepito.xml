@@ -10,14 +10,14 @@
   was built from. Branch names are recorded in comments for anyone who wants to
   follow ongoing work instead.
 
-  ⚠️ TWO PROJECTS ARE PRIVATE (vendor/xiaomi, PepitoLauncher2). A `repo sync`
-  with this manifest will FAIL for anyone without access to them:
-    - vendor/xiaomi holds Xiaomi/Palm proprietary blobs. The reproducible public
-      path is to regenerate it with device/xiaomi/Mi8937/extract-files.py from a
-      documented stock/nightly source; the blob edits are scripted (the
-      DT_NEEDED libqmi_force_ipcr.so fixups), not hand-hacked.
-    - PepitoLauncher2 is the Palm-style launcher. Make it public, or drop the
-      project and TARGET_EXCLUDES it, for a fully public build.
+  ⚠️ ONE PROJECT IS PRIVATE: vendor/xiaomi. A `repo sync` with this manifest
+  will FAIL at that project for anyone without access. It holds Xiaomi/Palm
+  proprietary blobs, so this is deliberate — the reproducible public path is to
+  regenerate it with device/xiaomi/Mi8937/extract-files.py from a documented
+  stock/nightly source. That works because the blob edits are scripted (the
+  DT_NEEDED libqmi_force_ipcr.so fixups), not hand-hacked.
+
+  Everything else, including PepitoLauncher2, is public.
 -->
 <manifest>
   <remote name="pepito" fetch="https://github.com/solarkennedy/" revision="pepito-23.2-r1" />
@@ -67,7 +67,7 @@
   <remove-project name="LineageOS/android_vendor_lineage" />
   <project path="vendor/lineage" name="android_vendor_lineage" remote="pepito" revision="pepito-23.2-r1" />
 
-  <!-- ── Private projects (see the warning in the header) ──────────────────── -->
+  <!-- ── Private: blobs (see the warning in the header) ───────────────────── -->
   <!-- working branch: pepito-vendor -->
   <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="pepito" revision="pepito-23.2-r1" />
   <!-- working branch: master -->
