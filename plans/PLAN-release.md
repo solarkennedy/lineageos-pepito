@@ -314,13 +314,41 @@ Base audit: `PLAN-kernel.md`. **That audit predates the qmux WIN** — re-triage
   landing repo** (`~/Projects/lineageos-pepito/manifests/pepito.xml`) with commented-out
   fork/override stanzas for ALL worksheet repos (incl. the frameworks/recovery
   `<remove-project>` overrides) ready to activate — keep the two in sync.
-- [ ] **`vendor/xiaomi` blobs:** decide the release model — commit into a `proprietary_vendor`
-  git repo referenced by the manifest, or regenerate via `extract-files` from a documented stock/
-  nightly source. A release must be reproducible; a non-git blob dir is not.
-- [ ] **`diag-tools/`:** dev tooling — **must not ship in the image**. Confirm it's excluded from
-  `PRODUCT_PACKAGES`/`PRODUCT_COPY_FILES`; keep it in the source repo (or a separate tools repo) but
-  out of the flashable build. (`libqmi_force_ipcr` source now lives in the device tree under `qmux/`,
-  not `diag-tools/` — verify the shipping copy is the device-tree one.)
+- [~] **`vendor/xiaomi` blobs — model DECIDED, commit still pending.** It *is* a git repo (the old
+  "not a git repo" note was wrong): branch `pepito-vendor`, remote
+  `git@github.com:solarkennedy/proprietary_vendor_xiaomi.git`, confirmed **private**
+  (`gh api` → `"private":true`) and **nothing pushed yet** (`size: 0`) → Phase 7.
+  Reproducibility is satisfied: the binary blob edits are *scripted*, not hand-hacked —
+  `Mi8937/extract-files.py:36-40` applies `blob_fixup().add_needed('libqmi_force_ipcr.so')` to
+  qcrild/netmgrd/imsqmidaemon/imsdatadaemon/ims_rtp_daemon (verified in the working copies with
+  `readelf -d`). Since the blob repo is private, the public reproducibility path is
+  "extract-files.py from documented stock/nightly", not "clone our blob repo" — say so in the
+  release notes.
+  - **Pending:** 35 uncommitted entries — 8 modified (the 5 patchelf'd radio blobs, `pm-service`,
+    `Android.bp`, `Mi8937-vendor.mk`) + **107.7 MB untracked**.
+- [ ] ⚠️ **NEW FINDING 2026-07-22 — ~97 MB of *sibling* blobs ship in `vendor.img` and are never
+  mounted on pepito.** Of the 107.7 MB untracked, ~97 MB is per-variant overlayfs for
+  land/prada/santoni/ugg/ulysse/wt8937/wt8937-n-camera. Confirmed present in the **built image**
+  (`simg2img` + `debugfs -R "ls /lib/overlayfs"` on `out/.../vendor.img` → `land pepito santoni ugg
+  ulysse wt8937-n-camera`; `/etc/overlayfs` → `common land pepito prada santoni ugg ulysse wt8937`).
+  They ship because they're declared in the blob lists (864 refs in `proprietary-files-camera.txt`,
+  22 in `-device.txt`). **pepito never mounts them:** `Mi8937/rootdir/etc/init.xiaomi.device.rc:54-56`
+  mounts only `overlayfs/pepito/` (+ `overlayfs/common/data`) — the `land` block at :125-129 is under
+  a different device trigger. So this is pure dead weight in a 470 MB vendor partition.
+  **Recommend deferring the trim to r2** rather than blocking this release: it's the same job as the
+  `proprietary-files-qc-*.txt` trim below, and `wt8937-n-camera` holds camera daemons/libs
+  (`mm-qcamera-daemon`, `libflash_gpio`, `libflash_pmic`, …) — the mount evidence says pepito
+  doesn't use them, but this touches the subsystem with a known packaging-regression history
+  ([[camera-chromatix-packaging-regression]]) and needs a flash + camera validation to prove.
+- [x] **`diag-tools/` — ✅ VERIFIED EXCLUDED 2026-07-22.** No `Android.bp`/`Android.mk` anywhere
+  under `diag-tools/`, so Soong cannot pick it up; the only references from the device tree are two
+  source *comments*. Nothing in `PRODUCT_PACKAGES`/`PRODUCT_COPY_FILES` points at it.
+  `libqmi_force_ipcr` ships from the device tree
+  (`mithorium-common/libshim/qmi_force_ipcr.c` + `libshim/Android.bp` module `libqmi_force_ipcr`);
+  the `diag-tools/qmi-force-ipcr/` copy is the 42-line bench prototype (vs 74-line prop-gated
+  shipping version) plus a stale hand-built `.so`, referenced by nothing. Added
+  `diag-tools/qmi-force-ipcr/README.md` documenting the divergence so the wrong file doesn't get
+  edited later.
 - [x] Prune obsolete `PLAN-*.old*.md` / falsified-lane docs or clearly mark them archival — done
   2026-07-12: all 44 PLAN files moved into the landing repo `plans/` (kept verbatim for the
   record; `plans/README.md` marks `*.old*` archival), tree root keeps symlinks so in-tree
