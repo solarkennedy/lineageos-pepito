@@ -50,11 +50,21 @@ Remotes on all three repos = `github → LineageOS/...` (read-only for us). No u
 
 ## Gate 0 — Prerequisites (Kyle)
 
-- [ ] Create personal remotes (fork or fresh repos) — **worksheet lives in the landing repo
-  [README §Source repos](../README.md#source-repos)** (fill the "Fork" column as they're
-  created). Full-tree sweep 2026-07-11 found **13 repos carrying pepito work**, not 3: also
-  recovery, LineageParts, frameworks/base, lineage-sdk, hardware/interfaces, qcom-caf/bt,
-  system/core, vendor/lineage, PepitoLauncher2.
+- [x] **Create personal remotes — ✅ DONE 2026-07-15.** Worked through the full worksheet in the
+  landing repo [README §Source repos](../README.md#source-repos) one repo at a time; Fork column
+  now filled in. 13 forks created under `solarkennedy` (all repos below except two): kernel/msm8937,
+  device/Mi8937, mithorium-common, bootable/recovery, frameworks/base, lineage-sdk, LineageParts,
+  hardware/interfaces, qcom-caf/bt, system/core (kept for completeness though it's a 1-commit
+  candidate-to-drop), the landing repo itself (private), `proprietary_vendor_xiaomi` (private, blobs
+  — turned out `vendor/xiaomi` was already a git repo with 4 commits, not "not a git repo" as the
+  current-state snapshot below said). Two repos needed **no** new remote: `vendor/lineage`'s single
+  commit (static kernel-headers export) was reverted and build+flash validated against the stock
+  `generated_kernel_includes` genrule — tree is now byte-identical to upstream, so it's dropped from
+  the fork list entirely and the manifest will pin plain upstream instead; `PepitoLauncher2` already
+  had a working, pushed, current remote. `diag-tools/` deliberately stays local-only/unpushed (bench
+  diagnostics, excluded from the release build, and its `qdb.dec`/`captures/` content wasn't in scope
+  for the Phase 10 privacy review). All 13 new remotes are wired locally but **not yet pushed** —
+  push is still Phase 7, gated on working trees going clean.
 
 ### Repo → remote worksheet — MOVED
 
@@ -70,11 +80,10 @@ there. Bench-only notes that stay here rather than the public table:
   detached HEADs (repo sync could have eaten it) → committed; hardware/interfaces, qcom-caf/bt,
   system/core, vendor/lineage had commits on detached HEADs with no branch ref → `pepito` refs
   pinned.
-- [ ] Decide on **release signing keys**: generate a dedicated `.android-certs` keyset (releasekey,
-  platform, shared, media, networkstack) — no root `.android-certs` exists today (test-keys ship
-  by default and are unsafe for a real release; also required for a stable OTA update chain).
-- [ ] Confirm the flashable form factor: **EDL image set** (current workflow) and/or
-  **recovery-sideloadable ZIP** (`adb sideload`) — the latter is expected for a public "release."
+- [x] **Release signing keys — ✅ DONE 2026-07-15.** Full 5-key `.android-certs` keyset in place
+  (releasekey, platform, shared, media, networkstack) — no more test-keys default.
+- [x] **Flashable form factor — ✅ DONE 2026-07-15.** Both ready: EDL image set (bench workflow)
+  and a recovery-sideloadable ZIP (`adb sideload`).
 
 ---
 
@@ -110,7 +119,8 @@ device `4a2f66cc`, mithorium `95880fc`). The mechanism is proven (`libqmi_force_
 - [x] **Registration + data path — ✅ DONE 2026-07-09** (`PLAN-rmnet.md`): `CONFIG_RMNET_IPA=y`
   restored (IPA QMI reverted to msm-qmi, `b9d615148356`, + resp-EI offset fix `a7fe9caab692`);
   clean-boot validated — attach + CONNECTED + ping over Verizon LTE, fully autonomous. Slot2
-  manifest removal remains `[TEMP]` all-siblings → re-scope tracked in Phase 3.
+  manifest removal remains `[TEMP]` all-siblings → **closed as accepted in Phase 3 (2026-07-22)**;
+  it stays that way by choice, not oversight.
 - [x] **VoLTE productization** (2026-07-10, `PLAN-volte.md`): NV fix proven reboot-persistent
   (modem EFS; IMS re-registers autonomously); NAS `usage_preference=1` voice-centric restored
   and holds through a radiocycle (usage=2 workaround retired); **`ims_enabler` self-heal boot
@@ -133,28 +143,55 @@ device `4a2f66cc`, mithorium `95880fc`). The mechanism is proven (`libqmi_force_
 Base audit: `PLAN-kernel.md`. **That audit predates the qmux WIN** — re-triage each `[TEMP]` against
 "is this still load-bearing now that the modem is healthy on ipc_router?"
 
-- [ ] **Re-triage the live `[TEMP][pepito]` commits** (still in history):
-  - `subsystem_restart` survive-SSR — likely **still needed** (modem still SSRs ~14 s during the
-    flip); keep as a tracked `[TEMP]` unless a healthy cold boot no longer crashes.
-  - `disable RMNET_IPA` — **revert** as part of Phase 1 data-path retest.
-  - QRTR/SMSM replay + HELLO knobs, `smem` debugfs instrumentation (`206a5ff4`, `c3c02d85`,
-    `e2e78488`, `be41aede`, `1e2fe2db`, `587ec212`) — **diagnostic scaffolding from the
-    now-superseded AP-side lane; drop for release** (confirm none are load-bearing for the ipc_router
-    path first). Some already have paired `Revert` commits — squash/clean the revert pairs.
-- [ ] **Verify the qmux/legacy-IPC backport is committed and clean** (msm_ipc_router core + rpmsg
-  xprt + msm QMI + RFSA/memshare — the thing that fixed the modem fatal). This is the load-bearing
-  radio work; it must be real committed history, not scaffolding. See `qmux-backport-lane` memory.
-- [ ] **Drop pure diagnostics** that survived: clock-handoff `pr_info`, `dd.c` whitespace-only commit,
-  camera `cci_i2c` per-read logging, `iommu`/`initramfs` ramoops dumper (if no longer needed),
-  ftrace defconfig (`FUNCTION_TRACER`/`FUNCTION_GRAPH_TRACER`/`DYNAMIC_FTRACE` — perf cost).
-- [ ] **Confirm shared-file edits are sibling-safe or relocate to `pepito.dts`:** `pm8937.dtsi`
-  `pmic-wd-bark` IRQ, `msm8937.dtsi` `status="disabled"` node. (`cam_smmu`/`msm_vidc` label adds are
-  harmless.)
-- [ ] **Delete strays:** `mi8937_defconfig.bak` and any other `*.bak`.
+- [x] **Re-triage the live `[TEMP][pepito]` commits — ✅ DONE + FLASH-VALIDATED 2026-07-22 (via
+  reverts, no rebase).** ⚠️ **Key finding: most `[TEMP]`-labeled commits ARE the port, not
+  scaffolding.** Reverting three "diagnostic"-looking commits each bootlooped/killed-console — all
+  restored as explicit `keep …` commits: iommu `BUG_ON→WARN` softening (pepito SMMUs DTS-disabled →
+  NULL-domain panic), `clock_late_init` denylist (skip `gcc_blsp1_uart2_apps_clk` → TZ PS_HOLD;
+  the load-bearing logic was hidden in mislabeled `fixup!` commits), i2c-msm-v2 probe-end clk-disable
+  skip (keeps `BLSP1_AHB` console clock alive). QRTR/SMSM (`206a5ff4`, `1e2fe2db`) also KEPT — radio
+  port, not diagnostics (RPCINIT SMEM word + HELLO-replay for the rmts-buffer gap); a regression
+  there is a silent GATE failure. `subsystem_restart` survive-SSR kept as before. `disable RMNET_IPA`
+  was already a net-zero paired revert. See memory `phase2-loadbearing-disguised-commits`.
+- [x] **Verify the qmux/legacy-IPC backport is committed and clean — ✅** the `qmux/2a–2d` commits
+  (ipc_router core + rpmsg xprt + msm QMI + RFSA/memshare) are real committed history in the log.
+- [x] **Drop pure diagnostics — ✅ DONE 2026-07-22 (via reverts).** Net Phase-2 effect vs the
+  last-good baseline is ONLY instrumentation removal, zero functional delta: smem debugfs (160 lines),
+  `iommu`/`initramfs` ramoops dumper (117 lines), clock-handoff/i2c/prima-wlan `pr_info`, `dd.c`
+  whitespace, and the whole `ramboot` DDR-dump tool (+ its DT node, was `=y` in defconfig). ftrace
+  defconfig knobs were already unset. (camera `cci_i2c` per-read logging: not present / N/A.)
+- [x] **Shared-file edits — AUDITED 2026-07-22, ✅ CLOSED as document-and-accept (Kyle's call).**
+  Five files under `arch/arm64/boot/dts/vendor-legacy/qcom/` are touched.
+  **Inert for siblings (no action):** `msm8937-camera.dtsi` `cam_smmu:` and `msm8937-vidc.dtsi`
+  `msm_vidc:` label-only adds; `msm8937-pinctrl.dtsi` +30 lines of pinctrl states (inert unless a
+  node references them); the new `i2c_6` node + its alias in `msm8937.dtsi` (ships
+  `status="disabled"`, so no adapter registers); modem PIL `qcom,smem-id = <421>` (correct value for
+  all msm8937 — siblings scuba/bengal/khaje set the same — and only gates whether
+  `log_modem_sfr()` can print the crash reason).
+  **Two DO change sibling behavior, accepted as-is:**
+  1. `msm8937.dtsi` rmtfs `status = "disabled"` — kills the rmtfs sharedmem-uio region for every
+     msm8937. pepito needs it off because it runs the A8 `qmux_rmt_storage` path instead; a sibling
+     on stock rmtfs would lose its remote-FS region (modem-breaking for them).
+  2. `pm8937.dtsi` `pmic-wd-bark` IRQ (`<0x0 0x8 0x6 IRQ_TYPE_EDGE_RISING>` + name) added to the
+     shared `pon` node — arms the PMIC watchdog bark for every pm8937. `qpnp-power-on` tolerates it;
+     lower stakes than the rmtfs one.
+  **Rationale for accepting:** siblings (land/santoni/ugg) are not built from this fork and there is
+  no intent to reconcile with Xiaomi upstream — same call as the `manifest.xml` slot2 and screen-
+  density items. Zero risk to pepito, which is the only shipped target.
+  **If ever revisited:** neither node carries a DT label, so `&rmtfs`/`&pon` overrides don't exist.
+  The clean fix is the trick already used twice here — add a label in the shared file (inert, exactly
+  like `cam_smmu:`/`msm_vidc:`), then set `status`/`interrupts` from `pepito.dts`. Small for rmtfs;
+  for `pmic-wd-bark` the override must restate the whole 5-entry `interrupts` + `interrupt-names`
+  pair, which is more churn and risks fat-fingering a power-key IRQ. Either way it needs its own
+  validation flash. Known cost: these are SoC-shared files, so they are conflict surface on any
+  future kernel rebase — a rebase cost, not a release risk.
+- [x] **Delete strays:** no `*.bak` present (verified 2026-07-22).
 - [x] Gatekeeper/RPMB/FBE kernel diff **confirmed committed** (verified 2026-07-11): sdhci
   Auto-CMD12 fix `057578098068` + RPMB empty-slot fix `9d51b9a359b3` in history.
-- [ ] Rebase/curate history into a reviewable sequence: real port work → resolved fixes → any
-  remaining labelled `[TEMP]`.
+- [~] Rebase/curate history into a reviewable sequence — **DEFERRED by choice 2026-07-22: Kyle opted
+  for reverts, not rebase.** Cleanup landed as forward revert/keep commits; the functional
+  `[TEMP][pepito]` commits stay in history labeled-but-load-bearing (relabeling would need the rebase
+  that was declined). Acceptable for shipping.
 
 ---
 
@@ -171,33 +208,66 @@ Base audit: `PLAN-kernel.md`. **That audit predates the qmux WIN** — re-triage
   committed — mirror-less boot validated 2026-07-08).
 - [x] `PLAN-keymaster.md` + `configs/linker.config.json` deletions confirmed intentional
   (implemented plan; unreferenced camera-overlay remnant) and committed 2026-07-11.
-- [ ] **Revert the `[TEMP] Mi8937: disable camera HAL packages` commit** (`31ff588d`) — camera works
-  (2026-07-03); packages must be re-enabled for release.
-- [ ] Re-scope pepito-only bring-up debt (see below).
+- [x] **Camera `[TEMP]` — MOOT, no revert needed (verified 2026-07-22).** `31ff588d` only disabled
+  the *sibling* HALs (ulysse/wingtech/land), which need legacy headers 23.2 dropped and which
+  pepito never used. The build ships source-built `camera.pepito` (`device.mk`), added later by
+  `3f336b7f` — so the commented-out lines are now correct, not outstanding work. Comment
+  clarified + `camera.pepito` scoped behind `TARGET_DEVICE_PEPITO` in `b6e2b198`.
+- [x] Re-scope pepito-only bring-up debt — see below; `TARGET_DEVICE_PEPITO` is wired.
 
 ### `device/xiaomi/mithorium-common` (14 dirty)
 
 - [x] Review & commit — **✅ DONE 2026-07-11** (`4de80f5`..`1446eeb`: gatekeeper
   TARGET_DEVICE_PEPITO gate, camera HAL3 prop, single-SIM manifest + prop overrides, usb adb pin,
   ims file-caps drop, sepolicy dry-run grants, qrtr-tools, ril dep-closure/tftp_server).
-- [ ] Ensure `manifest.xml` radio slot2 removal + qcrild autostart gating are **re-scoped
-  pepito-only** (`on property:ro.vendor.xiaomi.device=pepito`), not applied to all siblings.
-  Slot2 removal is committed as a labelled `[TEMP]` (`3481ae1`) — still all-siblings.
+- [x] qcrild autostart gating — **done**, `init.target.rc:239` uses the property-first trigger form
+  `on property:ro.vendor.xiaomi.device=pepito && post-fs-data` (⚠ the `on post-fs && property:…`
+  form did NOT fire — see the in-file note).
+- [x] **`manifest.xml` slot2 removal — ✅ CLOSED as document-and-accept (Kyle's call 2026-07-22).**
+  Still all-siblings (`3481ae1`, labelled `[TEMP]`). Unlike the init.rc gating above this **cannot**
+  be fixed with a runtime property trigger — `manifest.xml` is a static VINTF file assembled at
+  build time, so scoping it would mean selecting a different manifest per device in `mithorium.mk`.
+  Accepted because only pepito is built from this fork with no intent to reconcile with Xiaomi
+  upstream, and a wrong-manifest mistake costs radio entirely. Revisit only if a DSDS sibling is
+  ever built.
 
 ### Cross-cutting re-scoping (both repos) — `PLAN.md` "bring-up debt"
 
-- [ ] **Wire `TARGET_DEVICE_PEPITO`** and gate the shallow bring-up edits behind it: Palm branding in
-  `lineage_Mi8937.mk`, static-partition layout in `BoardConfig.mk`/`device.mk`/`fstab.qcom`,
-  software-gatekeeper in `mithorium.mk`. Prevents sibling-build breakage / `repo sync` clobber.
-- [ ] **Move the gatekeeper `.software` `file_contexts` rule out of AOSP `system/sepolicy`** into
-  device sepolicy (Cuttlefish pattern) — AOSP edits get clobbered by `repo sync`.
-- [ ] **Remove bring-up ADB root hacks + baked-in keys (security).** Strip the early
-  auto-root/insecure-ADB shortcuts added during bring-up across **system and recovery**: any
-  committed `adb_keys`/`vendor/adb_keys`, `ro.adb.secure=0`, `ro.secure=0`/`ro.debuggable=1`
-  overrides, default-authorized-ADB or `persist.sys.usb.config` root shortcuts, and any
-  ADB-root-in-recovery patch. A release build must use normal ADB authorization (prompt on first
-  connect) and a signed keyset — no pre-trusted host keys, no auto-granted root.
-- [ ] `TARGET_OTA_ASSERT_DEVICE += pepito`; `TARGET_SCREEN_DENSITY = 320` override.
+- [x] **`TARGET_DEVICE_PEPITO` wired — ✅ DONE (verified 2026-07-22).** Set in
+  `lineage_Mi8937.mk:28`; gates in place across `lineage_Mi8937.mk` (×2) and `device.mk` (×6,
+  incl. `camera.pepito` as of `b6e2b198`), plus the software-gatekeeper gate in `mithorium.mk`.
+  No `TODO(layering)` markers remain.
+- [x] **Gatekeeper `file_contexts` — ✅ ALREADY MOVED (verified 2026-07-22).** Now at
+  `device/xiaomi/Mi8937/sepolicy/vendor/file_contexts:2`; AOSP `system/sepolicy` has **zero** local
+  commits and a clean tree, so nothing is exposed to `repo sync` clobber.
+- [x] **Security audit — ✅ DONE 2026-07-22, tree + live DUT (`c39a6acf`).** No bring-up root hacks
+  were ever committed. Verified clean: `ro.secure=1`, `ro.adb.secure=1`, **`ro.debuggable=0`**,
+  `adb root` refused (gated behind Developer options "Rooted debugging"), SELinux `Enforcing` with
+  no `androidboot.selinux=permissive` anywhere, no `su`/Magisk/superuser packages, **no committed
+  `adb_keys` or SSH keys**, no adbd/recovery insecurity patches, no staged debug daemons
+  (diagcap/strace/tcpdump never entered the tree), kernel `CONFIG_DEVMEM`/`PROC_KCORE`/`KGDB` all
+  unset, `release-keys` + certified Palm fingerprint, `verifiedbootstate=green`. `userdebug` with
+  `ro.debuggable=0` and gated `adb root` **is** the official LineageOS posture — not a gate.
+  - **Fixed (`ab431d1`):** `sysrq_always_enabled=1` and the live serial console + `ignore_loglevel`
+    handed anyone reaching the UART test point the full SysRq set (crash/reboot/task dumps) and the
+    kernel log. Both now behind `PEPITO_SERIAL_CONSOLE=true` — release builds ship quiet. (This also
+    closes the old mithorium `[TEMP]` bring-up-cmdline item; `e481fff` had already dropped
+    `initcall_debug`, `deferred_probe_timeout` and the watchdog-disable.)
+  - **`persist.sys.usb.config=adb` is NOT a root shortcut — challenged and cleared 2026-07-22.**
+    It only seeds the AOSP-side boot default so adbd starts on first boot; it does not pin the
+    gadget. File Transfer verified working on hardware (HAL binds `mtp,adb`, `18d1:4ee2`, "GADGET
+    pulled up"). The modem-wedge fix is the *separate* `persist.vendor.usb.config` in `vendor.prop`
+    — nothing in the vendor USB path reads the `sys` prop. A dead duplicate of the vendor prop in
+    `system.prop` was removed in `2984d0f`. ⚠ `sys.usb.config` is **not** a reliable read of the
+    live composition (the AIDL gadget HAL drives configfs directly and never writes it).
+  - Open, cheap: confirm first-boot composition for a user who never enables USB debugging
+    (expected: init briefly starts adbd from the seed, framework then corrects it — stock AOSP).
+    Needs only a fresh flash left alone. Kyle to validate on next flash.
+- [x] `TARGET_OTA_ASSERT_DEVICE` — **already correct** (`BoardConfig.mk:44`:
+  `land,santoni,ugg,pepito,Mi8937` under the `PRODUCT_HARDWARE=Mi8937` branch).
+- [x] `TARGET_SCREEN_DENSITY = 320` override — **✅ CLOSED as accepted (Kyle's call 2026-07-22)**,
+  same rationale as the manifest/shared-DTSI items: this is our fork, siblings are not built from it
+  and will not be reconciled with Xiaomi upstream.
 - [ ] Trim `proprietary-files-qc-*.txt` to blobs actually on disk; migrate off the legacy extractor
   (`PLAN-vendor-extract.md` §9).
 
@@ -293,6 +363,59 @@ Flash the **release build**, wipe userdata, first-boot setup wizard, then confir
 - [ ] Camera (rear + front, preview + JPEG; face-detect subst)
 - [ ] Audio (speaker playback, MBHC headset detect, in-call audio)
 - [ ] **Telephony (GATE): SIM = LOADED, registration, LTE data, SMS, a voice call**
+- [~] **Bluetooth hands-free calling (GATE): place + receive a call with audio routed over a paired
+  BT device (HFP); mic + speaker both directions, no echo** — ✅ **downlink VALIDATED in the car
+  2026-07-20**: paired fresh to myChevrolet, placed a call, heard **clear audio** over the car.
+  Instrumented capture (self-contained on-phone logger) shows SCO up with **mSBC/WBS**, **both
+  `INT_BT_SCO_RX` and `INT_BT_SCO_TX` DSP widgets ON** (two-way audio streaming), clean teardown,
+  no flap. The old "bt-sco paths are stubs" note was always false — the path just needed exercising.
+  Uplink is instrumentally confirmed (TX widget) but the **far-end-heard-me + no-echo** subjective
+  check is still open — mark fully done after one two-way call where the other party confirms clean
+  mic + no echo. (BT-SCO transport itself: DONE.)
+- [x] **Android Auto: USB projection + a call over the car head unit. ✅ RESOLVED 2026-07-18 —
+  wired projection confirmed working at a real head unit (Gold `81eed371`). Fix shipped: the
+  `config_systemAutomotiveProjection` override committed to the device tree (see FIX below); after
+  rebuild+reflash, `cmd role get-role-holders … SYSTEM_AUTOMOTIVE_PROJECTION` returns gearhead and
+  the `:car` CDM crash is gone. First-run note: the car shows "enable notification access / check
+  your phone" and gearhead fires a phone-side permission-consent notification — tap through it on
+  the phone (it can be slow / the on-car "Continue" appears to do nothing until the phone-side grant
+  completes); this is normal AOA first-run consent, not a bug.
+  **Voice commands — first-run gotcha (confirmed working 2026-07-18):** AA voice input failed at
+  first with the assistant reaching `audioSourceOpeningStatus: 102` / "Mic open logging failure"
+  and no `VOICE_RECOGNITION` record ever registering. Root cause was NOT audio routing/BT-SCO (that
+  was a red herring — car is `preferred mic for calls`, SCO flaps, and `PLAN-audio.md` bt-sco stubs
+  are real but unrelated here). It was a **missing `RECORD_AUDIO` runtime grant on the recognizer
+  app `com.google.android.googlequicksearchbox`** (the Google app, uid 10174 — distinct from
+  gearhead/GMS, which already had it). AA can't surface a runtime-permission prompt while
+  projecting, so it fails silently. **Fix / release note:** open the Google app once on the phone
+  (unplugged) and grant the microphone permission; then AA voice works (verified: `VOICE_RECOGNITION`
+  capture from uid 10174 succeeds, assistant responds). On a fresh install/wipe this must be done
+  once before wired AA voice will work. (Also set the ASSISTANT role holder to the Google app while
+  debugging — good hygiene, but it was NOT the fix; the mic grant was.) Separately, **BT-SCO
+  hands-free *calling* over the car remains its own open gate** (the "Bluetooth hands-free calling"
+  item above) — do not consider it closed by this AA voice result.
+  Root cause CORRECTED 2026-07-18 (live debug). NOT a USB-composition problem:
+  the earlier `persist.vendor.usb.config` / "accessory is not supported" theory is falsified —
+  that prop is empty, the kernel + configfs gadget fully support accessory mode
+  (`CONFIG_USB_F_ACC=y`, configfs `accessory.gs2` + `ffs.aoa`), and the phone DOES enter accessory
+  mode on every connect (`ACCESSORY=START → CONFIGURED → USB_ACCESSORY_HANDSHAKE` in `dumpsys usb`).
+  **The real blocker is one layer up:** gearhead's `:car` process crashes on every connect with
+  `IllegalStateException: Failed to register vehicle with CDM` ← `SecurityException: must hold
+  android.permission.REQUEST_COMPANION_PROFILE_AUTOMOTIVE_PROJECTION`. That permission is
+  `internal|role` — granted ONLY to the holder of role `android.app.role.SYSTEM_AUTOMOTIVE_PROJECTION`,
+  which has **no holder** on this build (`cmd role get-role-holders …` returns empty). gearhead is
+  already privileged (`UPDATED_SYSTEM_APP PRIVILEGED PRODUCT`) and NikGapps ships its privapp-permissions
+  allowlist (`/product/etc/permissions/com.google.android.projection.gearhead.xml`), but a role
+  permission is **not** granted by allowlist — the role holder is assigned solely from framework config
+  `config_systemAutomotiveProjection`, which AOSP/LineageOS leaves empty. Proof there's no runtime
+  workaround: `cmd role add-role-holder … gearhead` is rejected with `RoleControllerServiceImpl:
+  Package does not qualify for the role` — the config is the gate.
+  **FIX (one line, ROM side):** add a framework/RRO overlay setting
+  `config_systemAutomotiveProjection = com.google.android.projection.gearhead`. Then the role
+  auto-populates (gearhead qualifies), the `internal|role` permission auto-grants, the CDM vehicle
+  association succeeds, and wired projection can proceed. Rebuild/reflash (or push the overlay to
+  `/product/overlay`), then re-test wired projection + a call over the head unit. Still an open lane,
+  but now a targeted overlay fix, not a USB-composition conflict.**
 - [ ] **GPS (GATE): a real location fix (sky view)**
 - [ ] Crypto: FBE `/data` encrypted, pattern/PIN enroll via HW gatekeeper, TEE keygen sign/verify
 - [ ] SELinux Enforcing with no matrix-breaking denials
