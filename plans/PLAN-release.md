@@ -335,11 +335,24 @@ Base audit: `PLAN-kernel.md`. **That audit predates the qmux WIN** — re-triage
   22 in `-device.txt`). **pepito never mounts them:** `Mi8937/rootdir/etc/init.xiaomi.device.rc:54-56`
   mounts only `overlayfs/pepito/` (+ `overlayfs/common/data`) — the `land` block at :125-129 is under
   a different device trigger. So this is pure dead weight in a 470 MB vendor partition.
-  **Recommend deferring the trim to r2** rather than blocking this release: it's the same job as the
-  `proprietary-files-qc-*.txt` trim below, and `wt8937-n-camera` holds camera daemons/libs
-  (`mm-qcamera-daemon`, `libflash_gpio`, `libflash_pmic`, …) — the mount evidence says pepito
-  doesn't use them, but this touches the subsystem with a known packaging-regression history
-  ([[camera-chromatix-packaging-regression]]) and needs a flash + camera validation to prove.
+  ✅ **RUNTIME COST VERIFIED ZERO on the live DUT (2026-07-22) — NOT a release concern (Kyle's
+  framing: disk in a read-only vendor partition is unreclaimable by the user and doesn't matter;
+  only RAM/CPU would).** Three checks:
+  1. `/proc/mounts` — only `overlayfs/pepito/` (bin, lib, etc/camera) and `overlayfs/common/data`
+     are mounted. No sibling mount exists, and an unmounted `lowerdir` is never traversed: no
+     inode, dentry or page-cache reference is held for it.
+  2. `grep` for sibling overlayfs paths across **447 of 577** `/proc/*/maps` (all readable as
+     `shell`) — **zero** hits. Nothing maps them.
+  3. `readlink /proc/*/exe` over the same set — **zero** processes executing from an overlayfs path.
+  So e.g. `land`'s 326 `.so` files (other devices' actuator/flash camera drivers) are inert bytes on
+  read-only ext4: never `open()`ed, never page-cached, no VMA, no fd.
+  *Coverage caveat:* ~130 root-owned processes' maps aren't readable without root. Not a contrary
+  signal — the only things naming those paths are `init.xiaomi.device.rc` mount blocks gated to other
+  device triggers. `adb root` would close the gap if ever wanted.
+  **→ Trim deferred to r2 as pure housekeeping, not a blocker.** When done it's the same job as the
+  `proprietary-files-qc-*.txt` trim below, and it needs a flash + camera validation because
+  `wt8937-n-camera` holds camera daemons/libs (`mm-qcamera-daemon`, `libflash_gpio`, `libflash_pmic`)
+  and this subsystem has a packaging-regression history ([[camera-chromatix-packaging-regression]]).
 - [x] **`diag-tools/` — ✅ VERIFIED EXCLUDED 2026-07-22.** No `Android.bp`/`Android.mk` anywhere
   under `diag-tools/`, so Soong cannot pick it up; the only references from the device tree are two
   source *comments*. Nothing in `PRODUCT_PACKAGES`/`PRODUCT_COPY_FILES` points at it.
