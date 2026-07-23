@@ -110,9 +110,6 @@ $update_note
 - This release:      https://github.com/$REPO/releases/tag/$TAG
 - The full story:    https://kyle.cascade.family/posts/porting-android-16-to-a-palm-pvg100-pepito
 
-Not comfortable doing this yourself? I'll flash your PVG100 for you for \$100 —
-email kyle@cascade.family.
-
 ---
 
 ## What's in here
