@@ -15,10 +15,27 @@ for arg in "$@"; do
     case "$arg" in
         --boot-only|-b) BOOT_ONLY=1 ;;
         --recovery-only|-r) RECOVERY_ONLY=1 ;;
+        --gapps)
+            TARGET_PRODUCT="lineage_Mi8937_gapps"
+            # BoardConfig.mk only relaxes the system partition's reserved-size
+            # margin (800MB -> 40MB) when WITH_GMS=true; the baked-in GApps
+            # payload (~600MB) doesn't fit under the vanilla 800MB margin.
+            export WITH_GMS=true
+            # PRODUCT_DEVICE is "Mi8937" either way, so without this the
+            # vanilla and gapps zips would share the exact same filename
+            # (lineage-<ver>-<date>-UNOFFICIAL-Mi8937[-signed].zip) and a
+            # same-day build of one would silently overwrite the other's
+            # zip in out/. RELEASE_TYPE picks LINEAGE_BUILDTYPE, which is
+            # embedded in the filename and is release.sh's --romtype
+            # auto-parse source — this also keeps the two variants in
+            # separate OTA JSON channels instead of evicting each other.
+            export RELEASE_TYPE=SNAPSHOT
+            ;;
         -h|--help)
-            echo "Usage: $0 [--boot-only|-b] [--recovery-only|-r]"
+            echo "Usage: $0 [--boot-only|-b] [--recovery-only|-r] [--gapps]"
             echo "  --boot-only      Build only bootimage (skips system/vendor/recovery)"
             echo "  --recovery-only  Build only recoveryimage (skips system/vendor/boot)"
+            echo "  --gapps          Build the lineage_Mi8937_gapps target instead (bakes in GApps)"
             exit 0
             ;;
     esac
@@ -29,7 +46,13 @@ if [[ "$BOOT_ONLY" -eq 1 ]]; then
 elif [[ "$RECOVERY_ONLY" -eq 1 ]]; then
     BUILD_TARGETS="recoveryimage"
 else
-    BUILD_TARGETS="systemimage vendorimage bootimage recoveryimage"
+    # bacon (vendor/lineage/build/tasks/bacon.mk) is the standard LineageOS
+    # OTA-zip target: lineage-$(LINEAGE_VERSION).zip + .sha256sum in
+    # $(PRODUCT_OUT), which is what release.sh actually needs as input. It
+    # already depends on systemimage/vendorimage/bootimage/recoveryimage (via
+    # the default full build), so the old explicit target list here was a
+    # strict subset that never actually produced a releasable zip.
+    BUILD_TARGETS="bacon"
 fi
 
 echo "================================"
@@ -76,6 +99,24 @@ mkdir -p "$ROOT_STAGING"
 if [ -L "$ROOT_STAGING/persist" ] || [ ! -d "$ROOT_STAGING/persist" ]; then
     rm -f "$ROOT_STAGING/persist"
     mkdir "$ROOT_STAGING/persist"
+fi
+
+# Regenerate the metalava api/lint baselines before the main build.
+#
+# After a clean tree (rm out), the first build caches the api-stubs-docs
+# outputs; a later framework source edit only partially invalidates them, so
+# the incremental metalava run hits an inconsistent state and fails the whole
+# build with `ErrorWhenNew` lint on a pile of stock files (BroadcastReceiver,
+# Intent, TelephonyManager...) plus this tree's custom continuity/clipboard
+# APIs. `update-api` regenerates the api path consistently and clears it.
+# It's an out/-local fix (touches no source/api/baseline files), so it must be
+# re-run after every clean build -- hence doing it here unconditionally. On an
+# already-consistent tree it's a cheap near-no-op metalava rerun.
+# (Skipped for boot/recovery-only builds, which don't touch the framework.)
+if [[ "$BOOT_ONLY" -eq 0 && "$RECOVERY_ONLY" -eq 0 ]]; then
+    echo "[*] Regenerating api/lint baselines (update-api)..."
+    mka update-api
+    echo ""
 fi
 
 # Build

@@ -85,7 +85,6 @@ Header patches applied before signing:
 Companion: verify-boot-sig.py re-checks any signed image (it reads the embedded
 cert, so it needs no key and works on foreign/stock images too).
 
-
 USAGE  -- run from the android tree root
     # first run: makes the key, then signs
     /usr/bin/python3 scripts/boot-signing/scripts/sign-boot.py
@@ -195,6 +194,17 @@ def ensure_key(keys_dir: Path, name: str, cn: str, email: str, days: int, regen:
     print(f'key         = {pk8_path} (NEW — RSA-{KEY_SIZE}, PKCS#8 DER, mode 600)')
     print(f'              back this up; it is private, never commit it')
     return key, cert
+
+
+def inflate_outer_len(sig_block: bytes) -> bytes:
+    """force the outer SEQUENCE to declare 0xFFFF content bytes.
+
+    aboot's verifier rejects any declared length > 0x800 BEFORE parsing or
+    RSA, via an exit path that leaves the pre-verify GREEN state untouched
+    (see docstring). The inner content is untouched and still fully valid.
+    """
+    assert sig_block[0] == 0x30 and sig_block[1] == 0x82, 'expected long-form SEQUENCE'
+    return b'\x30\x82\xff\xff' + sig_block[4:]
 
 
 # --------------------------------------------------------------------- signing
@@ -339,6 +349,7 @@ def main():
     version    = b'\x02\x01\x01'
     sig_octet  = b'\x04\x82\x01\x00' + rsa_sig
     sig_block  = seq(version + cert_der + ALGO_ID + auth_attrs + sig_octet)
+    sig_block = inflate_outer_len(sig_block)
 
     sig_len    = len(sig_block)
     padding_sz = PARTITION_SIZE - img_size - sig_len
@@ -361,8 +372,6 @@ def main():
     print(f'fingerprint = {fp}')
     print(f'wrote {args.dest}')
     print()
-    print('That fingerprint is what aboot shows on the yellow warning screen.')
-    print('Record it off-device: it is how you spot a foreign boot image.')
 
 
 if __name__ == '__main__':
