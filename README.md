@@ -11,6 +11,9 @@ About-phone on the PVG100: LineageOS 23.2, Android 16, kernel 4.19.325 — on ha
 Grab the ROM and flashing instructions from the [releases page](https://github.com/solarkennedy/lineageos-pepito/releases) — pick the **vanilla** build, or the **GApps** build if you want Google apps baked in.
 Or read the full [bring-up write-up](https://kyle.cascade.family/posts/porting-android-16-to-a-palm-pvg100-pepito).
 
+**Questions, or something broken?**
+Discussion and support happen in the [XDA thread](https://xdaforums.com/t/rom-unofficial-a16-lineageos-23-2-for-the-palm-pvg100.4795985/); bugs can also go in [issues](https://github.com/solarkennedy/lineageos-pepito/issues).
+
 ## Hardware
 
 | | |
