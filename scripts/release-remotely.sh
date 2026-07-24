@@ -82,7 +82,11 @@ ssh "$TARGET" -- "mkdir -p '$LANDING_ROOT'"
 rsync "${RSYNC_COMMON[@]}" --exclude='/.git/' \
     "$LANDING_ROOT"/ "$TARGET:$LANDING_ROOT"/ | tail -20
 
-DATE_TAG=$(date +%Y%m%d)
+# UTC, not local: LineageOS stamps the zip with $(date -u +%Y%m%d)
+# (vendor/lineage/config/version.mk). Matching on local time silently fails to
+# find a just-built zip whenever local and UTC dates differ — i.e. every evening
+# west of UTC.
+DATE_TAG=$(date -u +%Y%m%d)
 ALL_ZIPS=$(ssh "$TARGET" -- "ls '$REMOTE_ROOT/$PRODUCT_OUT'"/lineage-*-"$DATE_TAG"-"$BUILDTYPE_TAG"-*.zip 2>/dev/null || true)
 
 # Both variants are UNOFFICIAL, so filter on the _gapps suffix: gapps zips end
