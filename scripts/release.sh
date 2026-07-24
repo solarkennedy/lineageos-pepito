@@ -252,7 +252,12 @@ if (( SIZE_BYTES >= LIMIT_BYTES )); then
     exit 1
 fi
 
-GH="/usr/local/bin/gh"
+# Full path, not the bare name: the other `gh` on this box is a GitHub Enterprise
+# fork that defaults to the internal host. gh.com is the real github.com CLI, but
+# ~/.bin isn't on PATH under a non-interactive ssh session, so hardcode it.
+# (release-remotely.sh also forwards GH_HOST=github.com — the server's gh config
+# defaults even this binary to the enterprise host otherwise.)
+GH="${GH:-/home/kyle/.bin/gh.com}"
 EDL_BUNDLE="lineage-${VERSION}-${TAG}-${ROMTYPE}-${DEVICE}${VARIANT_SUFFIX}-EDL"
 TAG_BUNDLE_NAME="$EDL_BUNDLE"   # used by write_edl_readme
 EDL_TAR_NAME="${EDL_BUNDLE}.tar.xz"

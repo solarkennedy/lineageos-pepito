@@ -68,8 +68,6 @@ BUILDTYPE_TAG=UNOFFICIAL
 
 RSYNC_COMMON=(-aP --human-readable)
 
-/home/kyle/.bin/wakeonlan-stellaris16
-
 # Same sleep-inhibit pattern as build-lineage23-remotely.sh: the xz pass over
 # the EDL bundle alone can run several minutes, and Stellaris16 idle-suspends
 # regardless of ssh/rsync traffic.
@@ -111,13 +109,19 @@ ZIP="$MATCHES"
 echo "Using remote zip: $ZIP"
 
 # -tt: release.sh prompts for confirmation, which needs a real tty over ssh.
-# GH_TOKEN is forwarded so the remote gh authenticates against github.com (see
-# the GH_TOKEN_VAR note above). It's passed to the remote command's environment
-# rather than typed, so it's not written to the server's shell history; it is
-# briefly visible in the process list on both ends during the run — acceptable
-# for a single-user build server on the LAN. `export` (not a var prefix) so it
-# covers the whole `cd && release.sh` chain, and %q-quote it for safe transport.
+#
+# Two env vars are forwarded to the remote gh:
+#   GH_TOKEN — auth for github.com (see the GH_TOKEN_VAR note above).
+#   GH_HOST=github.com — the build server's gh is a Netflix fork that DEFAULTS
+#     to git.netflix.net. release.sh's `gh release create --repo owner/name`
+#     passes no --hostname, so without this it resolves owner/name against the
+#     internal host and times out. GH_HOST forces github.com as the default.
+# Both go to the remote command's environment (not typed, so not in the server's
+# shell history); the token is briefly visible in the process list on both ends
+# — acceptable for a single-user LAN build server. `export` (not a var prefix)
+# so they cover the whole `cd && release.sh` chain; %q-quote the token for
+# safe transport.
 # --edl-only: r1 publishes the EDL bundle only — no OTA zip asset and no OTA
 # JSON, so there's nothing to fetch back or commit afterward.
 ssh -tt "$TARGET" -- \
-    "export GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $(printf '%q' "$ZIP")"
+    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $(printf '%q' "$ZIP")"
