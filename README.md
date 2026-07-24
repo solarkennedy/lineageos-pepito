@@ -8,7 +8,8 @@ About-phone on the PVG100: LineageOS 23.2, Android 16, kernel 4.19.325 — on ha
 </sup>
 
 **Want the download?**
-Grab the ROM and flashing instructions from the [release page](https://github.com/solarkennedy/lineageos-pepito/releases/tag/pepito-23.2-r1) *(coming at release)*, or read the full [bring-up write-up](https://kyle.cascade.family/posts/porting-android-16-to-a-palm-pvg100-pepito).
+Grab the ROM and flashing instructions from the [releases page](https://github.com/solarkennedy/lineageos-pepito/releases) — pick the **vanilla** build, or the **GApps** build if you want Google apps baked in.
+Or read the full [bring-up write-up](https://kyle.cascade.family/posts/porting-android-16-to-a-palm-pvg100-pepito).
 
 ## Hardware
 
@@ -76,7 +77,8 @@ DO NOT FLASH UNLESS YOU HAVE A BACKUP FIRST!!!
 
 ### Procedure
 
-1. Download the release artifact from the [release page](https://github.com/solarkennedy/lineageos-pepito/releases/tag/pepito-23.2-r1).
+1. Download the EDL package from the [releases page](https://github.com/solarkennedy/lineageos-pepito/releases) — **vanilla** or **GApps**, not both.
+   The `qdl` flasher is bundled inside the archive; follow the `README.md` it contains.
 1. Flash the EDL image set (bootloader, boot, recovery, system, vendor) with the phone in EDL mode.
    *(Detailed EDL loader + partition steps: see [BUILD.md](BUILD.md) §5 — TBD at release.)*
 1. **Boot to recovery** by holding **Power** through 3 boot cycles.
