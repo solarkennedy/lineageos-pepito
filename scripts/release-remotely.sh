@@ -39,11 +39,13 @@ set -euo pipefail
 
 GAPPS=false
 NOTES_FILE=""
+TAG_OVERRIDE=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --gapps) GAPPS=true; shift ;;
         --notes-file) NOTES_FILE="$2"; shift 2 ;;
-        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE)" >&2; exit 1 ;;
+        --tag) TAG_OVERRIDE="$2"; shift 2 ;;
+        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE, --tag TAG)" >&2; exit 1 ;;
     esac
 done
 
@@ -147,5 +149,12 @@ if [[ -n "$NOTES_FILE" ]]; then
     NOTES_ARG="--notes-file $(printf '%q' "$NOTES_FILE")"
 fi
 
+# --tag forces the GitHub release tag (default: release.sh derives it from the
+# zip's own UTC date). release-all.sh passes it so the release tag, the
+# changelog date, and the source-repo tags are all the same code even if the
+# build straddles UTC midnight.
+TAG_ARG=""
+[[ -n "$TAG_OVERRIDE" ]] && TAG_ARG="--tag $(printf '%q' "$TAG_OVERRIDE")"
+
 ssh -tt "$TARGET" -- \
-    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $NOTES_ARG $(printf '%q' "$ZIP")"
+    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"

@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # gen-changelog.sh — assemble a per-release changelog across every pepito repo.
 #
-# For each repo it lists the commits since that repo's previous pepito-23.2-r*
+# For each repo it lists the commits since that repo's previous pepito-23.2-*
 # tag (its own anchor — repos advance independently). Emits one markdown section
 # and, unless --stdout, prepends it to CHANGELOG.md in the landing repo and
 # writes the same section to a notes file for use as the GitHub release body.
 #
-#   scripts/gen-changelog.sh                 # auto version (last rN + 1), writes files
-#   scripts/gen-changelog.sh --version r2    # force the version label
-#   scripts/gen-changelog.sh --stdout        # print the section only, write nothing
+# Versions are date codes (UTC YYYYMMDD), matching the GitHub release tag.
+#
+#   scripts/gen-changelog.sh                    # version = today (UTC), writes files
+#   scripts/gen-changelog.sh --version 20260727 # force the date code
+#   scripts/gen-changelog.sh --stdout           # print the section only, write nothing
 #
 set -euo pipefail
 
@@ -51,29 +53,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# latest pepito-23.2-rN tag reachable from HEAD in a repo (empty if none)
+# latest pepito-23.2-* tag reachable from HEAD in a repo (empty if none). The
+# glob catches both the current date-coded tags (pepito-23.2-20260727) and the
+# legacy r1 tag, so the anchor keeps working across the r1 -> date transition.
 repo_last_tag() {
-    git -C "$1" describe --tags --abbrev=0 --match "${TAG_PREFIX}r*" 2>/dev/null || true
+    git -C "$1" describe --tags --abbrev=0 --match "${TAG_PREFIX}*" 2>/dev/null || true
 }
 
-# highest N across every repo's latest rN tag (0 if none tagged yet)
-max_rn() {
-    local max=0 n
-    for entry in "${REPOS[@]}"; do
-        local path="${entry%%$'\t'*}"
-        [[ -d "$path/.git" ]] || continue
-        local t; t="$(repo_last_tag "$path")"
-        [[ "$t" =~ ^${TAG_PREFIX}r([0-9]+)$ ]] || continue
-        n="${BASH_REMATCH[1]}"
-        (( n > max )) && max="$n"
-    done
-    echo "$max"
-}
-
+# Releases are date-coded (UTC), matching the GitHub release tag, which
+# release.sh derives from the LineageOS zip filename ($(date -u +%Y%m%d)).
 if [[ -z "$VERSION" ]]; then
-    VERSION="r$(( $(max_rn) + 1 ))"
+    VERSION="$(date -u +%Y%m%d)"
 fi
-[[ "$VERSION" =~ ^r[0-9]+$ ]] || { echo "gen-changelog.sh: --version must look like r2 (got '$VERSION')" >&2; exit 1; }
+[[ "$VERSION" =~ ^[0-9]{8}$ ]] || { echo "gen-changelog.sh: --version must be a YYYYMMDD date code (got '$VERSION')" >&2; exit 1; }
 
 DATE="$(date -u +%Y-%m-%d)"
 

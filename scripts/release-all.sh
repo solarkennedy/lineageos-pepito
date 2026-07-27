@@ -14,10 +14,14 @@
 # share out/target/product/Mi8937/ and each build's installclean wipes the
 # other's zip, so the release must happen while its zip still exists.
 #
-#   ./scripts/release-all.sh                 # auto version (last rN + 1)
-#   ./scripts/release-all.sh --version r2    # force the version label
-#   ./scripts/release-all.sh --dry-run       # changelog only; no build/release/tag
-#   ./scripts/release-all.sh --no-tag        # skip the repo-tagging step
+#   ./scripts/release-all.sh                    # version = today's UTC date code
+#   ./scripts/release-all.sh --version 20260727 # force the date code
+#   ./scripts/release-all.sh --dry-run          # changelog only; no build/release/tag
+#   ./scripts/release-all.sh --no-tag           # skip the repo-tagging step
+#
+# The date code (UTC YYYYMMDD) is the single release identity: the GitHub
+# release tag (forced via --tag), the CHANGELOG heading, and the source-repo
+# tags pepito-23.2-<date> all use it.
 #
 # Runs on the netbook (it drives the build server over ssh via the remote
 # helpers). Needs $GITHUB_TOKEN_PEPITO (or $GH_TOKEN_VAR) set — same as
@@ -79,7 +83,7 @@ VER_ARG=(); [[ -n "$VERSION" ]] && VER_ARG=(--version "$VERSION")
 # Preview via --stdout first: writes nothing, and lets us pin the version so the
 # write pass below can't derive a different one.
 SECTION="$("$SCRIPT_DIR/gen-changelog.sh" --stdout "${VER_ARG[@]}")"
-VERSION="$(sed -n 's/^## \(r[0-9][0-9]*\) .*/\1/p' <<<"$SECTION" | head -1)"
+VERSION="$(sed -n 's/^## \([0-9]\{8\}\) .*/\1/p' <<<"$SECTION" | head -1)"
 [[ -n "$VERSION" ]] || { echo "error: could not determine version from changelog output" >&2; exit 1; }
 TAG="${TAG_PREFIX}${VERSION}"
 say "Release version: $VERSION  (tag: $TAG)"
@@ -109,13 +113,13 @@ fi
 say "Building VANILLA remotely"
 "$SCRIPT_DIR/build-lineage23-remotely.sh"
 say "Releasing VANILLA"
-"$SCRIPT_DIR/release-remotely.sh" --notes-file "$NOTES_FILE"
+"$SCRIPT_DIR/release-remotely.sh" --notes-file "$NOTES_FILE" --tag "$VERSION"
 
 # --- 3. gapps: build then release -------------------------------------------
 say "Building GAPPS remotely"
 "$SCRIPT_DIR/build-lineage23-remotely.sh" --gapps
 say "Releasing GAPPS"
-"$SCRIPT_DIR/release-remotely.sh" --gapps --notes-file "$NOTES_FILE"
+"$SCRIPT_DIR/release-remotely.sh" --gapps --notes-file "$NOTES_FILE" --tag "$VERSION"
 
 # --- 4. tag every repo + push ----------------------------------------------
 if $DO_TAG; then
