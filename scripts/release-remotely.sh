@@ -27,6 +27,10 @@
 #
 #   ./scripts/release-remotely.sh
 #   ./scripts/release-remotely.sh --gapps
+#   ./scripts/release-remotely.sh --notes-file ~/Projects/lineageos-pepito/.release-notes.md
+#
+# --notes-file FILE sets the GitHub release body (must live under the landing
+# repo so it's rsynced to the server). Usually driven by release-all.sh.
 #
 set -euo pipefail
 # pipefail matters: the rsync calls below pipe through `tail` to keep output
@@ -34,14 +38,14 @@ set -euo pipefail
 # real rsync failure would hide behind tail's always-zero exit status.
 
 GAPPS=false
-if [[ "${1:-}" == "--gapps" ]]; then
-    GAPPS=true
-    shift
-fi
-if [[ $# -gt 0 ]]; then
-    echo "error: release-remotely.sh takes no arguments other than --gapps" >&2
-    exit 1
-fi
+NOTES_FILE=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --gapps) GAPPS=true; shift ;;
+        --notes-file) NOTES_FILE="$2"; shift 2 ;;
+        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE)" >&2; exit 1 ;;
+    esac
+done
 
 TARGET=${TARGET:-10.0.2.43}
 REMOTE_ROOT=${REMOTE_ROOT:-/home/kyle/android/lineage-23}
@@ -127,5 +131,21 @@ echo "Using remote zip: $ZIP"
 # safe transport.
 # --edl-only: r1 publishes the EDL bundle only — no OTA zip asset and no OTA
 # JSON, so there's nothing to fetch back or commit afterward.
+#
+# --notes-file: optional path to the release-body markdown. It must live under
+# LANDING_ROOT so the rsync above already copied it to the server at the same
+# absolute path (LANDING_ROOT is identical on both ends). release.sh only
+# applies the body when it CREATES a release, so on a same-day second variant
+# (uploaded into the existing release) it's a harmless no-op.
+NOTES_ARG=""
+if [[ -n "$NOTES_FILE" ]]; then
+    case "$NOTES_FILE" in
+        "$LANDING_ROOT"/*) : ;;
+        *) echo "error: --notes-file must be under $LANDING_ROOT (so it syncs to the server); got '$NOTES_FILE'" >&2; exit 1 ;;
+    esac
+    [[ -f "$NOTES_FILE" ]] || { echo "error: notes file not found: $NOTES_FILE" >&2; exit 1; }
+    NOTES_ARG="--notes-file $(printf '%q' "$NOTES_FILE")"
+fi
+
 ssh -tt "$TARGET" -- \
-    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $(printf '%q' "$ZIP")"
+    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $NOTES_ARG $(printf '%q' "$ZIP")"

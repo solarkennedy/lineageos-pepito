@@ -21,6 +21,8 @@
 #   ./scripts/release.sh <zip> --dry-run
 #   ./scripts/release.sh <zip> --skip-edl    # OTA zip + JSON only, no EDL bundle
 #   ./scripts/release.sh <zip> --edl-only    # EDL bundle only, no OTA zip or JSON
+#   ./scripts/release.sh <zip> --notes-file CHANGELOG_SECTION.md  # release body
+#     (note: the body is only set when the release is CREATED, not on re-upload)
 #
 # Device/version/romtype/date are parsed from a standard LineageOS filename
 # (lineage-<version>-<YYYYMMDD>-<romtype>-<device>[-signed].zip); override any
@@ -78,7 +80,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 GEN_JSON="$SCRIPT_DIR/gen-ota-json.py"
 
-usage() { grep '^#' "${BASH_SOURCE[0]}" | sed -n '2,27p' | cut -c3-; exit 1; }
+usage() { grep '^#' "${BASH_SOURCE[0]}" | sed -n '2,29p' | cut -c3-; exit 1; }
 
 write_edl_readme() {
     # $1 = output path
@@ -194,6 +196,7 @@ while [[ $# -gt 0 ]]; do
         --repo) REPO="$2"; shift 2 ;;
         --branch) BRANCH="$2"; shift 2 ;;
         --notes) NOTES="$2"; shift 2 ;;
+        --notes-file) NOTES="$(cat "$2")"; shift 2 ;;
         --keep) KEEP="$2"; shift 2 ;;
         --edl-dir) EDL_DIR="$2"; shift 2 ;;
         --skip-edl) SKIP_EDL=true; shift ;;

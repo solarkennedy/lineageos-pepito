@@ -19,3 +19,4 @@ vendor/
 # Editor/OS noise
 *.swp
 .DS_Store
+.release-notes.md
