@@ -28,8 +28,13 @@
 # release-remotely.sh — for the GitHub release.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LANDING_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Hardcoded (env-overridable), matching release-remotely.sh and gen-changelog.sh.
+# NOT derived from BASH_SOURCE: scripts/ is symlinked into the AOSP tree, so
+# invoking via that symlink (~/android/lineage-23/scripts/...) would resolve
+# LANDING_ROOT up to the tree root — which isn't a git repo — and misdirect the
+# notes file. Fixed paths make the script work from any cwd or symlink.
+LANDING_ROOT=${LANDING_ROOT:-/home/kyle/Projects/lineageos-pepito}
+SCRIPT_DIR="$LANDING_ROOT/scripts"
 TREE=${TREE:-/home/kyle/android/lineage-23}
 LAUNCHER=${LAUNCHER:-/home/kyle/Projects/PepitoLauncher2}
 TAG_PREFIX="pepito-23.2-"
