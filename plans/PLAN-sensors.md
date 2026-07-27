@@ -1,6 +1,149 @@
 # LineageOS 23.2 — Sensors Bring-up (pepito / PVG100)
 
-> ## 🔴 OPEN 2026-07-16 — BHy hub wedges after suspend/resume churn; recovery exists but is unreachable. Fix STAGED, UNFLASHED.
+> ## ✅ SOLVED 2026-07-23 — STEP COUNTER WORKS (was always 0). Fix = use the hub's NATIVE step handles, not the custom pedometer slot.
+>
+> **Fix validated on hardware the same day.** `std_step_handles=1` (new
+> `bhy_core.c` module param, **now default 1**) skips the custom-pedometer
+> indirection and lets the hub's own handle-18/19 frames through. Live result
+> on DUT1 with a real walk: step counter climbed **0 → 5 → 6 → 7 → 8 → 13 → 18
+> → … → 30**, monotonic, stopping when walking stopped; **zero**
+> `Param is not accepted`. Note the hub delivers in **bursts** (several `+5`
+> jumps), and `step_counter` is cumulative *since boot* — an app showing a
+> different running total (observed: app said 10 while the sensor said 30) is
+> doing its own baseline/daily accounting, not a sensor fault.
+>
+> **The patch (4 coordinated changes + 1 independent bug fix):**
+> 1. `std_step_handles` module param (`0644`, default 1) — runtime A/B, escape hatch.
+> 2. FIFO parser no longer drops native 18/19 frames (it dropped them so the
+>    synthesized pedometer frames couldn't duplicate; in native mode they ARE
+>    the source).
+> 3. `bhy_store_sensor_conf` skips `enable_pedometer()` for 18/19 — its
+>    `-EINVAL` used to `return` early, before `step_*_enabled` was ever set.
+> 4. `sync_sensor()` restores the native step sensors at their last requested
+>    rate after a hub reset (newly reachable now that the wedge recovery fires);
+>    new `step_det_delay`/`step_cnt_delay` in `bhy_core.h`.
+> 5. **Independent:** `enable_pedometer()` now rolls back its `static int count`
+>    on a failed enable. It was bumped *before* the hardware attempt and never
+>    rolled back, so after the first failure every later enable hit the
+>    `(int)enable != count` early return — a **fake success** that never touched
+>    the hub. That is why a later `sensor: 19, enable: 200` "succeeded" and
+>    reported `cnt = 0`, and why it could never re-arm for the rest of the boot.
+>
+> ⚠️ **No recursion:** `enable_sensor(18/19)` → `bhy_store_sensor_conf` is
+> guarded by `!std_step_handles`, so `enable_pedometer` is never re-entered.
+> The legacy path is unaffected (slot 60 is not intercepted). The `shealth`
+> sysfs path (~6852) still drives the custom slot **by design** — that is
+> Samsung's own feature, not the Android step sensors.
+>
+> ⭐ **The decisive evidence was already in the logs, before any patch:**
+> `bhy_store_sensor_conf` writes the hardware param *first* and only logs
+> `sensor: N, enable: M` *after* that write succeeds. `sensor: 19, enable: 1`
+> appears, and only the **nested** `CUSTOM_3_WU` write is refused. So the
+> firmware always accepted the standard handle — worth remembering as a
+> log-reading technique: know which line proves which step succeeded.
+>
+> Historical root-cause record follows.
+>
+> **Symptom (as originally reported):** `android.sensor.step_counter` (0x10) and `step_detector` (0x0f)
+> enumerate fine and a subscriber attaches with `result=OK`, but the count is
+> pinned at **0** forever — walking never moves it. Confirmed live on DUT1
+> with a real pedometer app (`com.kjm.stepcounter`) subscribed and a real walk
+> (Significant Motion fired `1.00` at the same time, so the hub *was* seeing
+> the motion). **This is NOT the suspend/resume wedge and NOT a release-bringup
+> regression — it has never worked on our build.**
+>
+> **Root cause (source-confirmed, `drivers/misc/bhy/bhy_core.c`):** Android's
+> step sensors are **not** native hub sensors here. The driver *synthesizes*
+> both from the hub's custom pedometer slot:
+> ```c
+> #define PEDOMETER_SENSOR  BHY_SENSOR_HANDLE_CUSTOM_3_WU   /* = 60 */
+> #define PEDOMETER_CYCLE   50 /* HZ */
+> ...
+> if (sensor_type == PEDOMETER_SENSOR)
+>         generate_step_data(client_data);   /* makes step det + step cnt */
+> ```
+> A HAL write of `sensor_sel = BHY_SENSOR_HANDLE_STEP_COUNTER (19)` or
+> `STEP_DETECTOR (18)` is intercepted in `bhy_store_sensor_conf` (~2659-2670)
+> and redirected to `enable_pedometer()` → `enable_sensor(CUSTOM_3_WU, …)` →
+> `bhy_write_parameter()`. **Palm's firmware answers that param write with
+> `ack == 0x80`** = "not accepted" → `-EINVAL`:
+> ```
+> [I]BHY<enable_pedometer><6690>enable pedometer 1
+> [E]3BHY<bhy_write_parameter><215>Param is not accepted
+> [E]3BHY<enable_pedometer><6695>enable pedometer error
+> ```
+> No pedometer frames ever arrive → `generate_step_data()` never runs → 0.
+>
+> ⭐ **Same bug class as `3ff1a97`** (the wake-channel INITIALIZED meta event):
+> this driver is **Samsung-derived** and assumes a custom-slot mapping that
+> Palm's BHI160B firmware does not share. Note `bhy_host_interface.h` *does*
+> define standard `STEP_DETECTOR = 18` / `STEP_COUNTER = 19` (and `_WU` 50/51)
+> — **leading hypothesis: Palm's firmware implements the standard handles
+> natively and the CUSTOM_3_WU indirection should be bypassed.**
+> ✅ **CONFIRMED on hardware 2026-07-23** — see the SOLVED banner above.
+>
+> 🐛 **Secondary bug — refcount leak makes the failure permanent.**
+> `enable_pedometer()` (~6675):
+> ```c
+> static int count;
+> if (enable) count++; else { if (count-- <= 0) count = 0; }
+> if ((int)enable != count) return 0;      /* short-circuit */
+> ```
+> `count` is incremented **before** the hardware attempt and **never rolled
+> back when it fails**. So attempt #1 fails leaving `count == 1`; every later
+> enable sees `count == 2 != 1` and returns **0 = fake success** without
+> touching hardware. Observed exactly: a later `sensor: 19, enable: 200`
+> "succeeded" and ran `report_last_step_counter_data` → `STEP: last step
+> cnt = 0`. **The step counter cannot be re-armed for the rest of the boot.**
+> Worth fixing regardless of the primary cause.
+>
+> **Ground truth still needed (two-device rule — do NOT guess from the
+> Samsung driver):** stock 8.1 has a *working* step detector + counter
+> (Silver `4373dd0f`, handles 0x11/0x12 of 22 h/w sensors). Silver is a **user
+> build with no root**, so `dmesg` and `/sys/class/bst/bhy/*` are both
+> permission-denied — the stock driver's slot choice could not be read out on
+> 2026-07-23. Options: (a) static-analyse stock `sensors.native.so` /
+> the stock BHy kernel driver from the A8 dump for its handle mapping;
+> (b) try enabling standard handle 18/19 directly on our build and watch for
+> `ack == 0x80`; (c) dump the RAM-patch firmware's advertised sensor list.
+>
+> **Related delta found the same day:** stock enumerates **22** h/w sensors vs
+> our **20**. BHy side is at parity (15/15); the two missing are both
+> `com.bb.sensor.rawprox` (type `33171025`, primary + non-wake secondary) on
+> the RPR0521/SSC side. Standard proximity/light are all present, so this is
+> believed inert for normal apps — logged as a known delta, not a blocker.
+
+> ## ✅ 2026-07-23 — BHy suspend/resume wedge fix FLASHED + VALIDATED (kernel `dcada22167b7`)
+>
+> The `int_debug()`-routing recovery fix described below was built and flashed
+> on 2026-07-23 and **works**. Before the flash a live wedge was caught on the
+> old kernel (storm of `Read bytes remain reg failed` / `Get firmware
+> timestamp failed` + `bhy_suspend: Read host ctrl reg failed` at 06:49:48,
+> **no** `Reset#`, all 16 BHy sensors frozen ~2 h while the SSC/RPR0521 path
+> stayed live — the clean discriminator). After the flash: hub alive, IRQ
+> servicing normally, RAM patch loaded, Significant Motion firing on real
+> motion, no wedge signature. ⭐ Diagnostic tell for "BHy dead vs SSC fine":
+> compare `Recent Sensor events` wall-clock per sensor in `dumpsys
+> sensorservice` — a 2-hour-stale accel next to a current prox is the wedge.
+> ⚠️ Do **not** read a stationary phone's flat accel (`-0.00,-0.00,10.00`) as
+> a wedge; sample *during* motion or cross-check Significant Motion.
+>
+> ⚠️ Separately staged 2026-07-23 (unflashed): **`/data/misc/sensor` was never
+> created** on our build (stock makes it in `init.target.rc`, "#add for
+> BHI160"), so the BST HAL fails every
+> `open file /data/misc/sensor/bhy_profile_calib_*` and calibration never
+> persists. Fix = `mkdir /data/misc/sensor 0770 system system` +
+> `bhy_data_file` type/label + `hal_sensors_default` rules. ⚠️ The HAL is a
+> **vendor** domain and the path is **core** `/data`, which `domain.te`'s
+> "vendor domains may only access files in /data/vendor" neverallow forbids
+> (permits no more than `{append getattr ioctl read write map}` — not even
+> `open`); the path is hardcoded inside the prebuilt `sensors.native.so` so it
+> cannot move to `/data/vendor`. Worked around with the public
+> `data_between_core_and_vendor_violators` typeattribute. **NOT verified with
+> checkpolicy** (no local build artifacts) — expect a possible late
+> `sepolicy_neverallows` failure on the remote builder.
+
+> ## 🔴 OPEN 2026-07-16 — BHy hub wedges after suspend/resume churn; recovery exists but is unreachable. Fix STAGED, UNFLASHED. (SUPERSEDED — see the 2026-07-23 banners above; the fix is now flashed and validated.)
 >
 > This is the real content of the long-running "i2c-2 bus wedge → sensors-HAL
 > binder starvation → ~143s system-wide ANR" story. **The central claim was
