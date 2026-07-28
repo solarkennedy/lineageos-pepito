@@ -41,6 +41,17 @@ for arg in "$@"; do
     esac
 done
 
+# Stamp a real build incremental. With BUILD_NUMBER unset, AOSP falls back to
+# eng.$USER, which lands verbatim in ro.build.version.incremental and the build
+# fingerprint (e.g. .../BP4A.251205.006/eng.kyle:userdebug/release-keys) — an
+# eng-build smell we don't want in a release image. Use the UTC date so the
+# fingerprint's incremental matches the zip's date tag and the GitHub release
+# tag (both keyed on `date -u +%Y%m%d` in release-remotely.sh / version.mk).
+# Exported before envsetup/lunch/mka so the build system picks it up; the
+# ${BUILD_NUMBER:-...} guard lets a caller (e.g. release-all.sh straddling UTC
+# midnight) pin an explicit value.
+export BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d)}"
+
 if [[ "$BOOT_ONLY" -eq 1 ]]; then
     BUILD_TARGETS="bootimage"
 elif [[ "$RECOVERY_ONLY" -eq 1 ]]; then
@@ -61,6 +72,7 @@ echo "================================"
 echo "Product:  $TARGET_PRODUCT"
 echo "Release:  $TARGET_RELEASE"
 echo "Variant:  $TARGET_VARIANT"
+echo "Build #:  $BUILD_NUMBER (-> fingerprint incremental)"
 echo ""
 
 # Change to Lineage root
