@@ -14,6 +14,13 @@
 # share out/target/product/Mi8937/ and each build's installclean wipes the
 # other's zip, so the release must happen while its zip still exists.
 #
+# IDEMPOTENT — safe to just re-run after an intermittent failure. Each step is
+# either a no-op or skipped when already done: the changelog replaces (not
+# duplicates) its dated section; a variant whose EDL bundle is already on the
+# GitHub release is skipped (build + upload); release upload uses --clobber; and
+# tagging skips tags that already exist. Runs unattended — no confirmation
+# prompt (release.sh is invoked with --yes).
+#
 #   ./scripts/release-all.sh                    # version = today's UTC date code
 #   ./scripts/release-all.sh --version 20260727 # force the date code
 #   ./scripts/release-all.sh --dry-run          # changelog only; no build/release/tag
@@ -80,6 +87,26 @@ if [[ -z "${!GH_TOKEN_VAR:-}" ]]; then
     echo "error: \$$GH_TOKEN_VAR is not set — release-remotely.sh needs it for the GitHub release." >&2
     exit 1
 fi
+TOKEN="${!GH_TOKEN_VAR}"
+TARGET=${TARGET:-10.0.2.43}                       # build server (queried for skip checks)
+REPO=${REPO:-solarkennedy/lineageos-pepito}
+GH_REMOTE_BIN=${GH_REMOTE_BIN:-/home/kyle/.bin/gh.com}
+
+# variant_released REGEX — 0 if the release tagged $VERSION already carries an
+# asset whose name matches REGEX. Queried on the build server (that's where the
+# github.com-capable gh + token live). FAIL-OPEN: any ssh/gh error returns 1, so
+# we fall through and (re)build — release.sh's `gh --clobber` makes a redundant
+# re-release harmless. This is the idempotency shortcut: on a re-run after an
+# intermittent failure, an already-published variant is skipped instead of
+# rebuilt+reuploaded.
+variant_released() {
+    local names
+    names="$(ssh "$TARGET" -- \
+        "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$TOKEN"); \
+         $GH_REMOTE_BIN release view $(printf '%q' "$VERSION") --repo $(printf '%q' "$REPO") \
+         --json assets --jq '.assets[].name' 2>/dev/null" 2>/dev/null)" || return 1
+    grep -qE "$1" <<<"$names"
+}
 
 # --- 1. changelog -----------------------------------------------------------
 say "Generating changelog"
@@ -115,16 +142,24 @@ else
 fi
 
 # --- 2. vanilla: build then release -----------------------------------------
-say "Building VANILLA remotely"
-"$SCRIPT_DIR/build-lineage23-remotely.sh"
-say "Releasing VANILLA"
-"$SCRIPT_DIR/release-remotely.sh" --notes-file "$NOTES_FILE" --tag "$VERSION"
+if variant_released 'pepito-EDL\.tar\.xz$'; then
+    say "Vanilla EDL already on release $VERSION — skipping build + release"
+else
+    say "Building VANILLA remotely"
+    "$SCRIPT_DIR/build-lineage23-remotely.sh"
+    say "Releasing VANILLA"
+    "$SCRIPT_DIR/release-remotely.sh" --notes-file "$NOTES_FILE" --tag "$VERSION"
+fi
 
 # --- 3. gapps: build then release -------------------------------------------
-say "Building GAPPS remotely"
-"$SCRIPT_DIR/build-lineage23-remotely.sh" --gapps
-say "Releasing GAPPS"
-"$SCRIPT_DIR/release-remotely.sh" --gapps --notes-file "$NOTES_FILE" --tag "$VERSION"
+if variant_released 'pepito-gapps-EDL\.tar\.xz$'; then
+    say "GApps EDL already on release $VERSION — skipping build + release"
+else
+    say "Building GAPPS remotely"
+    "$SCRIPT_DIR/build-lineage23-remotely.sh" --gapps
+    say "Releasing GAPPS"
+    "$SCRIPT_DIR/release-remotely.sh" --gapps --notes-file "$NOTES_FILE" --tag "$VERSION"
+fi
 
 # --- 4. tag every repo + push ----------------------------------------------
 if $DO_TAG; then

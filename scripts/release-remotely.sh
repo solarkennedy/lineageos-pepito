@@ -118,7 +118,9 @@ fi
 ZIP="$MATCHES"
 echo "Using remote zip: $ZIP"
 
-# -tt: release.sh prompts for confirmation, which needs a real tty over ssh.
+# --yes: this is unattended automation (usually driven by release-all.sh), so
+# skip release.sh's interactive confirmation. No prompt means no tty is needed,
+# so we drop the old `ssh -tt` too (plain ssh still streams remote output back).
 #
 # Two env vars are forwarded to the remote gh:
 #   GH_TOKEN — auth for github.com (see the GH_TOKEN_VAR note above).
@@ -156,5 +158,5 @@ fi
 TAG_ARG=""
 [[ -n "$TAG_OVERRIDE" ]] && TAG_ARG="--tag $(printf '%q' "$TAG_OVERRIDE")"
 
-ssh -tt "$TARGET" -- \
-    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"
+ssh "$TARGET" -- \
+    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only --yes $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"

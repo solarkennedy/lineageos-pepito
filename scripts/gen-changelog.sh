@@ -119,10 +119,18 @@ fi
 # notes file (release body) — just this section
 printf '%s\n' "$SECTION" > "$NOTES_FILE"
 
-# CHANGELOG.md — prepend the section under a stable title, newest first
+# CHANGELOG.md — prepend the section under a stable title, newest first.
+# Idempotent: if a section for this exact version already exists (a re-run after
+# an intermittent failure), drop it first so we replace rather than duplicate.
 TITLE="# Changelog — LineageOS 23.2 for pepito (Palm PVG100)"
 if [[ -f "$CHANGELOG" ]]; then
     BODY="$(tail -n +2 "$CHANGELOG" | sed '1{/^$/d}')"   # drop old title + one blank
+    BODY="$(awk -v ver="$VERSION" '
+        $0 ~ ("^## " ver "( |$)") { skip=1; next }   # start of the old same-version block
+        skip && /^## / { skip=0 }                    # next section ends the skip
+        !skip { print }
+    ' <<<"$BODY")"
+    BODY="$(sed '/./,$!d' <<<"$BODY")"               # trim any leading blank lines
 else
     BODY=""
 fi
