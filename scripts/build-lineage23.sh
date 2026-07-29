@@ -21,15 +21,16 @@ for arg in "$@"; do
             # margin (800MB -> 40MB) when WITH_GMS=true; the baked-in GApps
             # payload (~600MB) doesn't fit under the vanilla 800MB margin.
             export WITH_GMS=true
-            # Both variants build as UNOFFICIAL. PRODUCT_DEVICE is "Mi8937"
-            # either way, but LINEAGE_BUILD (the last filename field) comes from
-            # TARGET_PRODUCT minus the lineage_ prefix — so the zips are already
-            # distinct: lineage-<ver>-<date>-UNOFFICIAL-Mi8937.zip (vanilla) vs
-            # -Mi8937_gapps.zip (this). No same-day collision in out/, and
-            # release-remotely.sh disambiguates on the _gapps suffix.
-            # (A SNAPSHOT releasetype override used to live here to separate the
-            # two OTA-JSON channels; dropped along with the OTA/Updater feed —
-            # r1 ships EDL bundles only, so releasetype no longer matters.)
+            # SNAPSHOT releasetype: this is the OTA channel separator. The
+            # LineageOS Updater only offers a build whose romtype exactly equals
+            # the device's ro.lineage.releasetype (Updater Utils.isCompatible),
+            # and both variants share one pepito.json OTA feed — so tagging gapps
+            # SNAPSHOT (vanilla stays UNOFFICIAL) is what stops a vanilla phone
+            # being offered the gapps build and vice versa. It also lands in the
+            # zip filename (LINEAGE_BUILDTYPE), which release-remotely.sh ignores
+            # (it selects the variant on the _gapps suffix). The date stays the
+            # version identity; releasetype is just the channel.
+            export RELEASE_TYPE=SNAPSHOT
             ;;
         -h|--help)
             echo "Usage: $0 [--boot-only|-b] [--recovery-only|-r] [--gapps]"

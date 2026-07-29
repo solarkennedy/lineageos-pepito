@@ -25,8 +25,9 @@
 # they don't collide — --gapps just picks which one to release when both are
 # present.
 #
-#   ./scripts/release-remotely.sh
-#   ./scripts/release-remotely.sh --gapps
+#   ./scripts/release-remotely.sh                # full: OTA zip + JSON + EDL bundle
+#   ./scripts/release-remotely.sh --gapps        # the gapps variant
+#   ./scripts/release-remotely.sh --edl-only     # EDL bundle only (no OTA)
 #   ./scripts/release-remotely.sh --notes-file ~/Projects/lineageos-pepito/.release-notes.md
 #
 # --notes-file FILE sets the GitHub release body (must live under the landing
@@ -40,12 +41,14 @@ set -euo pipefail
 GAPPS=false
 NOTES_FILE=""
 TAG_OVERRIDE=""
+EDL_ONLY=false          # default: full release (OTA zip + JSON feed + EDL bundle)
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --gapps) GAPPS=true; shift ;;
         --notes-file) NOTES_FILE="$2"; shift 2 ;;
         --tag) TAG_OVERRIDE="$2"; shift 2 ;;
-        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE, --tag TAG)" >&2; exit 1 ;;
+        --edl-only) EDL_ONLY=true; shift ;;
+        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE, --tag TAG, --edl-only)" >&2; exit 1 ;;
     esac
 done
 
@@ -67,10 +70,13 @@ if [[ -z "$REMOTE_GH_TOKEN" ]]; then
     echo "with repo scope (or set GH_TOKEN_VAR to the var that holds one)." >&2
     exit 1
 fi
-# Both variants build as UNOFFICIAL now; they're told apart by the LINEAGE_BUILD
-# suffix in the filename (Mi8937 vs Mi8937_gapps), not the releasetype — see the
-# zip-selection filter below.
+# Vanilla is UNOFFICIAL, gapps is SNAPSHOT (the OTA channel separator — see
+# build-lineage23.sh). The releasetype is in the zip filename, so it already
+# isolates the variant's zip; the _gapps filter below is belt-and-suspenders.
 BUILDTYPE_TAG=UNOFFICIAL
+if $GAPPS; then
+    BUILDTYPE_TAG=SNAPSHOT
+fi
 
 RSYNC_COMMON=(-aP --human-readable)
 
@@ -133,8 +139,10 @@ echo "Using remote zip: $ZIP"
 # — acceptable for a single-user LAN build server. `export` (not a var prefix)
 # so they cover the whole `cd && release.sh` chain; %q-quote the token for
 # safe transport.
-# --edl-only: r1 publishes the EDL bundle only — no OTA zip asset and no OTA
-# JSON, so there's nothing to fetch back or commit afterward.
+# Mode: by default this is a FULL release — release.sh publishes the OTA zip,
+# the pepito.json OTA feed, and the EDL bundle. --edl-only drops the OTA zip and
+# JSON (EDL bundle only). In full mode release.sh writes pepito.json on the
+# server (which has no .git), so we fetch it back and commit it here afterward.
 #
 # --notes-file: optional path to the release-body markdown. It must live under
 # LANDING_ROOT so the rsync above already copied it to the server at the same
@@ -158,5 +166,25 @@ fi
 TAG_ARG=""
 [[ -n "$TAG_OVERRIDE" ]] && TAG_ARG="--tag $(printf '%q' "$TAG_OVERRIDE")"
 
+EDL_ONLY_ARG=""
+$EDL_ONLY && EDL_ONLY_ARG="--edl-only"
+
 ssh "$TARGET" -- \
-    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh --edl-only --yes $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"
+    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh $EDL_ONLY_ARG --yes $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"
+
+# In full mode release.sh regenerated pepito.json on the server, where the
+# landing mirror has no .git. Fetch it back and commit it from here, where the
+# real clone lives, so the Updater feed the device polls is actually updated.
+if ! $EDL_ONLY; then
+    echo "==> Fetching regenerated OTA JSON from the server..."
+    rsync "${RSYNC_COMMON[@]}" --include='*.json' --exclude='*' \
+        "$TARGET:$LANDING_ROOT"/ "$LANDING_ROOT"/ | tail -20
+
+    if [[ -n "$(git -C "$LANDING_ROOT" status --porcelain -- '*.json')" ]]; then
+        git -C "$LANDING_ROOT" add -- '*.json'
+        git -C "$LANDING_ROOT" commit -m "ota: ${TAG_OVERRIDE:-release} $($GAPPS && echo gapps || echo vanilla)"
+        git -C "$LANDING_ROOT" push origin HEAD
+    else
+        echo "no OTA JSON change to commit"
+    fi
+fi

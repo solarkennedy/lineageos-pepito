@@ -4,9 +4,11 @@
 #   1. generate the changelog across every pepito repo (scripts/gen-changelog.sh),
 #      commit + push CHANGELOG.md to the landing repo, and stage it as the
 #      release body (.release-notes.md);
-#   2. build the VANILLA variant remotely, then release it (EDL bundle) with that
-#      changelog as the release body;
+#   2. build the VANILLA variant remotely, then release it (OTA zip + pepito.json
+#      Updater feed + EDL bundle) with that changelog as the release body;
 #   3. build the GAPPS variant remotely, then release it the same way;
+#      (vanilla is UNOFFICIAL, gapps is SNAPSHOT — the two OTA channels in the
+#       shared pepito.json; the Updater offers each phone only its own channel)
 #   4. tag every pepito repo pepito-23.2-<version> and push the tags, so the next
 #      run's changelog anchors here.
 #
