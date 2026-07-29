@@ -1,5 +1,18 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260729 (2026-07-29)
+
+### kernel (msm8937) (since pepito-23.2-20260728)
+- msm: mdss: add sunlight readability enhancement (SRE) via DSPP hist-LUT
+
+### device/Mi8937 (since pepito-23.2-20260728)
+- Mi8937: add pepito power_profile so battery attribution works
+- Mi8937: camera: recover the torch flash node when the backend lies
+- Mi8937: enable LiveDisplay Sunlight Enhancement on the kernel sre node
+
+### landing (docs/scripts) (since pepito-23.2-20260728)
+- release: bring back OTA upgrades (Updater feed) alongside EDL
+- plans: sunlight readability lane — implemented + flash-validated
 ## 20260728 (2026-07-28)
 
 ### device/Mi8937 (since pepito-23.2-r1)
