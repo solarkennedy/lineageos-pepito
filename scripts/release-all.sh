@@ -10,7 +10,12 @@
 #      (vanilla is UNOFFICIAL, gapps is SNAPSHOT — the two OTA channels in the
 #       shared pepito.json; the Updater offers each phone only its own channel)
 #   4. tag every pepito repo pepito-23.2-<version> and push the tags, so the next
-#      run's changelog anchors here.
+#      run's changelog anchors here;
+#   5. (best-effort) shell out to `claude` to turn the raw commit changelog into a
+#      friendly end-user BBCode bullet list (with a link to the releases page) for
+#      the XDA update post — printed at the end, saved to .release-xda-post.txt,
+#      followed by the XDA thread URL to paste it into. Skipped if claude is
+#      absent; never fails the release.
 #
 # Vanilla is built+released BEFORE gapps is built, on purpose: the two variants
 # share out/target/product/Mi8937/ and each build's installclean wipes the
@@ -181,6 +186,54 @@ if $DO_TAG; then
         git -C "$path" push "$remote" "$TAG"
         echo "  tagged + pushed: $path -> $remote"
     done
+fi
+
+# --- 5. XDA forum post (best-effort; the release is already done) ------------
+# Turn the raw per-repo commit changelog into a friendly, end-user BBCode bullet
+# list to paste into the XDA update thread. Never fatal: if claude is missing or
+# errors, we just skip it — the release itself has already succeeded.
+XDA_POST="$LANDING_ROOT/.release-xda-post.txt"
+RELEASES_URL="https://github.com/solarkennedy/lineageos-pepito/releases"
+XDA_THREAD_URL="https://xdaforums.com/t/rom-unofficial-a16-lineageos-23-2-for-the-palm-pvg100.4795985/#"
+if command -v claude >/dev/null 2>&1; then
+    say "Generating XDA changelog post (Claude)"
+    read -r -d '' XDA_PROMPT <<PROMPT || true
+You are writing a short "release update" post for the XDA-Developers thread for
+LineageOS 23.2 (Android 16) on the Palm PVG100 ("pepito"), an obscure tiny phone.
+The reader is an end user, not a developer.
+
+Below (on stdin) is the raw changelog for release $VERSION — git commit subjects
+grouped by source repo. Rewrite it as a friendly, plain-language summary that a
+normal person can understand.
+
+Output ONLY XDA BBCode, nothing else (no preamble, no code fences):
+- A one-line bold heading with the version, e.g. [B]Update $VERSION[/B]
+- Then a [LIST] ... [/LIST] of [*] bullets.
+- Then a final line linking to the releases page (NOT a specific file or release
+  — there are vanilla and gapps variants), exactly:
+  [URL=$RELEASES_URL]Download the latest build[/URL]
+Rules:
+- Translate technical commits into the user-facing benefit ("fixes intermittent
+  silent calls", "step counter now works", "sunlight-readable screen mode").
+- Merge related commits into one bullet; group by theme, not by repo.
+- OMIT pure-internal noise: build/release scripts, refactors, plan docs,
+  changelog/CI, revert-of-experiment commits. If nothing user-facing remains in
+  a group, drop it.
+- Keep it concise — aim for 4-10 bullets. Friendly, not marketing-y.
+PROMPT
+    if printf '%s\n' "$SECTION" | claude -p "$XDA_PROMPT" > "$XDA_POST" 2>/dev/null && [[ -s "$XDA_POST" ]]; then
+        echo
+        echo "===== XDA post (BBCode) — also saved to $XDA_POST ====="
+        cat "$XDA_POST"
+        echo "======================================================="
+        echo "Paste it into the XDA thread:"
+        echo "  $XDA_THREAD_URL"
+    else
+        echo "note: Claude did not produce an XDA post — skipping (release is unaffected)." >&2
+        rm -f "$XDA_POST"
+    fi
+else
+    echo "note: 'claude' not on PATH — skipping XDA post generation." >&2
 fi
 
 say "Done: $VERSION released (vanilla + gapps). Releases: https://github.com/solarkennedy/lineageos-pepito/releases"

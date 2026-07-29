@@ -20,3 +20,4 @@ vendor/
 *.swp
 .DS_Store
 .release-notes.md
+.release-xda-post.txt
