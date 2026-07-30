@@ -77,7 +77,12 @@ fi
 # --------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# NOT $SCRIPT_DIR/..: scripts/ is symlinked into the AOSP tree, so when release.sh
+# is invoked through that symlink (release-remotely.sh does `cd $REMOTE_ROOT &&
+# ./scripts/release.sh`) $SCRIPT_DIR/.. resolves to the AOSP tree root — not a git
+# repo — and pepito.json gets written there and never committed. Hardcode the
+# landing repo (env-overridable), matching release-all.sh / release-remotely.sh.
+REPO_ROOT="${REPO_ROOT:-/home/kyle/Projects/lineageos-pepito}"
 GEN_JSON="$SCRIPT_DIR/gen-ota-json.py"
 
 usage() { grep '^#' "${BASH_SOURCE[0]}" | sed -n '2,29p' | cut -c3-; exit 1; }
