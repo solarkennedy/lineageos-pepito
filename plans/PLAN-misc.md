@@ -473,3 +473,63 @@ gated on `ro.vendor.xiaomi.device=pepito`:
   ```
 
 Register `xiaomi_pepito_overlay_systemui` in `device.mk`.
+
+## 7. Torch quick-settings tile — ✅ FIXED, FLASH-VALIDATED + COMMITTED 2026-07-29 (`d9dab112`)
+
+**Symptom:** flashlight QS tile vibrates but never lights the LED. Capture flash
+(camera app Flash mode) works fine, so the hardware and the daemon-side flash
+driver path were never in question.
+
+**Root cause chain (captured live on DUT1):**
+1. SystemUI `FlashlightController` → `CameraManager.setTorchMode` →
+   provider HAL `QCameraFlash::initFlash`.
+2. `initFlash` reads the flash device node from
+   `cam_capability_t.flash_dev_name` (filled by the mm-qcamera-daemon backend) —
+   on pepito it comes back **empty**, so the HAL tries `open("/dev/")` →
+   `QCamera <MCI><ERROR> initFlash: 178: Unable to open node '/dev/'` →
+   returns `-EBUSY` → CameraService reports the misleading
+   `setTorchMode: Camera "0" is in use` → tile aborts (haptic only).
+3. Why empty: capability-struct layout drift between our LOS-era
+   `cam_intf.h` and Palm's A8-vintage sensor-modules backend.
+   `flash_dev_name` sits deep in the struct, right after the
+   `analysis_info` region — the same neighborhood as the known
+   0x0-analysis-resolution backend quirk. Early fields (`flash_available`)
+   read fine; this late field reads zeros.
+
+**Fix (committed `d9dab112`):**
+`device/xiaomi/Mi8937/camera/mi8937/camera/QCamera2/util/QCameraFlash.cpp` —
+if `hasFlash && flash_dev_name` is empty, self-discover the node by
+enumerating `/dev/media*` for the `MSM_CAMERA_SUBDEV_FLASH` (=16) entity,
+exactly mirroring the sensor-count probe in `mm_camera_interface.c` that
+already works in the same process/domain. Kernel side verified:
+`msm.c` sets `entity.name` to the devnode name (`v4l-subdev8` on DUT),
+4.19 media core backport copies `group_id` in `MEDIA_IOC_ENUM_ENTITIES`,
+and unknown-function v4l2 subdevs are mapped to `MEDIA_ENT_T_V4L2_SUBDEV`.
+Inert on sibling variants (their backend fills the field). SELinux: both
+`/dev/media*` and the flash subdev are `video_device`, which the provider
+domain already opens under Enforcing at boot — no sepolicy change needed.
+
+**Round 2 (2026-07-29, after first flash still failed):** the v1 guard only
+triggered on an *empty* `flash_dev_name` — but the field actually contains
+**garbage, not zeros**: hexdumping the logcat line showed the HAL opening
+`"/dev/\x0c"` (byte 0x0c, invisible in the log, so it *looked* like
+`'/dev/'`). Guard hardened: fall back whenever the name is empty OR
+`access("/dev/<name>", F_OK)` fails.
+
+**Downstream chain PROVEN live before rebuild:** 32-bit `flashtest` probe
+(diag scratch; built with the nas-probe recipe on Stellaris16) ran the
+HAL's exact ioctl sequence on `/dev/v4l-subdev8` as the provider will:
+`CFG_FLASH_INIT` ok → `CFG_FLASH_LOW` → **LED physically lit**
+(`led:torch_0` brightness=120 mid-burn) → `CFG_FLASH_OFF`/`RELEASE` clean.
+Also verified via a media-enum probe that the entity is discoverable with
+exactly the fallback's match: media0 model `msm_config`, entity id=11
+name `v4l-subdev8` type 0x20000 group_id 0x10, contiguous ids.
+
+**Validate after flash:** tap torch tile → LED on/off, no vibrate-only;
+`logcat -s QCamera` should show `discovered flash node 'v4l-subdev8'`;
+regression-check capture flash + camera open/close while torch on
+(expect framework to arbitrate: torch drops while camera holds the unit).
+
+⭐ Debug technique: an apparently-empty string in a logcat message can be
+unprintable garbage — hexdump the log line (`logcat -d | grep -a … | xxd`)
+before trusting `''`.
