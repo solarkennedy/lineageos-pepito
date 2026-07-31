@@ -421,10 +421,15 @@ done
 
 # --- regenerate the OTA JSON (OTA zip only; skipped in --edl-only) ----------
 if ! $EDL_ONLY; then
-    DATETIME_ARGS=()
-    if [[ -n "$FN_DATE" ]]; then
-        DATETIME_ARGS=(--datetime "$(date -u -d "$FN_DATE" +%s)")
-    fi
+    # Feed datetime = the build's real timestamp (ro.build.date.utc), taken from
+    # the OTA metadata's post-timestamp — NOT midnight of the date code. The
+    # Updater skips any candidate whose datetime <= the installed
+    # ro.build.date.utc, so a midnight stamp makes a same-day rebuild invisible
+    # to a phone already on an earlier same-day build (exactly the graft-fix
+    # re-release case). post-timestamp is what the device actually compares to.
+    POST_TS="$(unzip -p "$ZIP" META-INF/com/android/metadata 2>/dev/null | sed -n 's/^post-timestamp=//p' | head -1)"
+    [[ -n "$POST_TS" ]] || POST_TS="$(stat -c %Y "$ZIP")"   # fallback: zip mtime
+    DATETIME_ARGS=(--datetime "$POST_TS")
 
     python3 "$GEN_JSON" "$ZIP" \
         --device "$DEVICE" \
