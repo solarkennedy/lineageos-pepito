@@ -16,6 +16,7 @@
 - boot: graft the fail-open signature onto boot.img + recovery.img at build time
 
 ### landing (docs/scripts) (since pepito-23.2-20260729)
+- changelog: 20260731
 - ota: 20260731 vanilla
 - changelog: 20260731
 - ota: empty pepito.json — 20260729/20260731 OTAs shipped unsigned boot
