@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
 # Prepare flash-staging/ with images ready for qdl:
 #   - Converts sparse system/vendor images to raw
-#   - Builds boot/recovery via the fail-open graft (boot-signing/scripts/sign-boot-graft.py):
-#     no key involved, stock cert+sig grafted verbatim + inflated sig length so aboot's
-#     verifier exits early and boots GREEN. The resulting boot-key/Root-of-Trust is fixed
-#     (hardcoded, not per-build), so it does NOT change between flashes. NB: switching an
-#     EXISTING key-signed install onto this graft changes the ROT once → one /data wipe.
+#   - Re-grafts boot/recovery via the fail-open graft
+#     (device/xiaomi/mithorium-common/boot-signing/sign-boot-graft.py): no key
+#     involved, stock cert+sig grafted verbatim + inflated sig length so aboot's
+#     verifier exits early and boots GREEN, with a fixed (hardcoded, not per-build)
+#     Root-of-Trust. NB: the BUILD now grafts boot.img/recovery.img too (see
+#     custom_bootimg.mk) so the OTA is bootable; re-grafting the already-grafted
+#     image here is idempotent. Switching an EXISTING key-signed install onto this
+#     graft changes the ROT once → one /data wipe.
 #   - Writes a ZEROED config.bin (clears a stale FRP token — see below)
 #
 # We deliberately do NOT touch userdata here: the release must not wipe a user's
@@ -20,7 +23,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 LINEAGE_ROOT="/home/kyle/android/lineage-23"
 FLASH_DIR="/home/kyle/Personal-Projects/lineage-23/flash-staging"
-SIGN_BOOT="$SCRIPT_DIR/boot-signing/scripts/sign-boot-graft.py"
+# Canonical grafter now lives in the device tree (so the build can reach it too);
+# this is the single copy. Re-grafting the build's already-grafted boot.img here
+# is idempotent, so EDL staging is unchanged.
+SIGN_BOOT="$LINEAGE_ROOT/device/xiaomi/mithorium-common/boot-signing/sign-boot-graft.py"
 SIMG2IMG="$LINEAGE_ROOT/out/host/linux-x86/bin/simg2img"
 PRODUCT_OUT="$LINEAGE_ROOT/out/target/product/Mi8937"
 
