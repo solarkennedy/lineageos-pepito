@@ -127,7 +127,13 @@ rsync "${RSYNC_COMMON[@]}" "${SOURCE_DELETE[@]}" "${SOURCE_EXCLUDES[@]}" \
 BUILD_LOG="/tmp/pepito-build-$$.log"
 BUILD_EXITCODE="/tmp/pepito-build-$$.exitcode"
 BUILD_START=$SECONDS
-ssh "$TARGET" -- "cd '$REMOTE_ROOT' && rm -f '$BUILD_LOG' '$BUILD_EXITCODE' && setsid nohup bash -c 'TARGET_PEPITO_KEYMASTER_DHSECAPP_DIAGNOSTIC=true TARGET_PEPITO_HARDWARE_KEYMASTER_DIAGNOSTIC=true ./scripts/build-lineage23.sh $REMOTE_BUILD_ARGS_STR; echo \$? > $BUILD_EXITCODE' > '$BUILD_LOG' 2>&1 < /dev/null &"
+# Forward PEPITO_SERIAL_CONSOLE to the remote build when set locally, so
+#   PEPITO_SERIAL_CONSOLE=true ./scripts/build-lineage23-remotely.sh
+# bakes console=ttyMSM0 + SysRq into boot.img (BoardConfigCommon.mk) for a
+# serial-console debug build. Empty/unset by default = normal quiet release.
+REMOTE_ENV="TARGET_PEPITO_KEYMASTER_DHSECAPP_DIAGNOSTIC=true TARGET_PEPITO_HARDWARE_KEYMASTER_DIAGNOSTIC=true"
+[[ -n "${PEPITO_SERIAL_CONSOLE:-}" ]] && REMOTE_ENV="$REMOTE_ENV PEPITO_SERIAL_CONSOLE=$(printf '%q' "$PEPITO_SERIAL_CONSOLE")"
+ssh "$TARGET" -- "cd '$REMOTE_ROOT' && rm -f '$BUILD_LOG' '$BUILD_EXITCODE' && setsid nohup bash -c '$REMOTE_ENV ./scripts/build-lineage23.sh $REMOTE_BUILD_ARGS_STR; echo \$? > $BUILD_EXITCODE' > '$BUILD_LOG' 2>&1 < /dev/null &"
 
 echo "==> Build launched detached on $TARGET (remote log: $BUILD_LOG). Polling..."
 while ! ssh "$TARGET" -- "test -f '$BUILD_EXITCODE'" 2>/dev/null; do
