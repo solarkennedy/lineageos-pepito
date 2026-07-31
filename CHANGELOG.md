@@ -1,5 +1,16 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260731 (2026-07-31)
+
+### device/Mi8937 (since pepito-23.2-20260729)
+- Mi8937: ship OpenEUICC on pepito for the removable eUICC card
+- Mi8937: measure pepito radio idle and scanning power
+
+### landing (docs/scripts) (since pepito-23.2-20260729)
+- plans: add eSIM-LPA, IPv6-DNS, and MCFG lanes; update index + misc
+- release.sh: hardcode REPO_ROOT to the landing repo (symlink bug)
+- ota: populate pepito.json with the real 20260729 feed (both channels)
+- ota: seed empty pepito.json so the Updater feed resolves
 ## 20260729 (2026-07-29)
 
 ### kernel (msm8937) (since pepito-23.2-20260728)
