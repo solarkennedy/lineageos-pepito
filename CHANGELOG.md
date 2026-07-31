@@ -16,6 +16,8 @@
 - boot: graft the fail-open signature onto boot.img + recovery.img at build time
 
 ### landing (docs/scripts) (since pepito-23.2-20260729)
+- release: retry per-asset uploads (survive 'tls: bad record MAC')
+- changelog: 20260731
 - changelog: 20260731
 - ota: 20260731 vanilla
 - changelog: 20260731
