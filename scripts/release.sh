@@ -389,17 +389,35 @@ if ! $SKIP_EDL; then
     ASSETS+=("$EDL_TAR" "$EDL_SHA_FILE")
 fi
 
-# --- GitHub release: create, or upload into an existing one ----------------
-if $GH release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    echo "release $TAG already exists on $REPO — uploading assets (--clobber)"
-    $GH release upload "$TAG" "${ASSETS[@]}" --repo "$REPO" --clobber
-else
+# --- GitHub release: create, then upload each asset with retry -------------
+# The assets are large (~1 GB EDL/OTA) and the build server's network path
+# intermittently corrupts a TLS record mid-transfer ("tls: bad record MAC"),
+# which gh does not retry. Create the release first (empty), then upload each
+# asset on its own with a retry loop; --clobber makes each upload idempotent, so
+# a retry re-sends only the failed asset rather than restarting the whole set.
+retry() {
+    local n=0 max="${RETRY_MAX:-5}" delay="${RETRY_DELAY:-15}"
+    until "$@"; do
+        n=$((n + 1))
+        if (( n >= max )); then
+            echo "  retry: giving up after $max attempts: $*" >&2
+            return 1
+        fi
+        echo "  retry $n/$max in ${delay}s (last attempt failed): $*" >&2
+        sleep "$delay"
+    done
+}
+
+if ! $GH release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
     TITLE="LineageOS $VERSION $ROMTYPE $TAG ($DEVICE)"
-    $GH release create "$TAG" "${ASSETS[@]}" \
-        --repo "$REPO" \
-        --title "$TITLE" \
-        --notes "${NOTES:-$TITLE}"
+    retry $GH release create "$TAG" --repo "$REPO" --title "$TITLE" --notes "${NOTES:-$TITLE}"
+else
+    echo "release $TAG already exists on $REPO — uploading assets (--clobber)"
 fi
+for asset in "${ASSETS[@]}"; do
+    echo "uploading $(basename "$asset") ..."
+    retry $GH release upload "$TAG" "$asset" --repo "$REPO" --clobber
+done
 
 # --- regenerate the OTA JSON (OTA zip only; skipped in --edl-only) ----------
 if ! $EDL_ONLY; then
