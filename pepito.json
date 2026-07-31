@@ -1,3 +1,14 @@
 {
-  "response": []
+  "response": [
+    {
+      "datetime": 1785456000,
+      "filename": "lineage-23.2-20260731-UNOFFICIAL-Mi8937.zip",
+      "id": "033a480d579e137db932c973db1e71b04240f98c8bdb2fd5cff0e7021651b26f",
+      "sha256": "033a480d579e137db932c973db1e71b04240f98c8bdb2fd5cff0e7021651b26f",
+      "romtype": "UNOFFICIAL",
+      "size": 1150008738,
+      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260731/lineage-23.2-20260731-UNOFFICIAL-Mi8937.zip",
+      "version": "23.2"
+    }
+  ]
 }
