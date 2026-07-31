@@ -9,12 +9,15 @@
 - Mi8937: measure pepito radio idle and scanning power
 
 ### device/mithorium-common (since pepito-23.2-20260729)
+- custom_bootimg: re-add the boot->kernel dependency dropped by the hook
 - BoardConfigCommon: correct the stale BOARD_ROOT_EXTRA_SYMLINKS comment
 - boot-signing: drop the cryptography dependency (stdlib only)
 - Make sign-boot-graft.py use fully python path
 - boot: graft the fail-open signature onto boot.img + recovery.img at build time
 
 ### landing (docs/scripts) (since pepito-23.2-20260729)
+- ota: 20260731 vanilla
+- changelog: 20260731
 - ota: empty pepito.json — 20260729/20260731 OTAs shipped unsigned boot
 - changelog: 20260731
 - plans: sensors — /persist image regression root-caused, BoardConfig fix
