@@ -968,3 +968,40 @@ pepito-specific delta should be the **DSP firmware/registry** from step 2.
 - [x] Debug-log cleanup: `86112ac` reverted in-tree (`1405423`) — lands with the next kernel build (flashed kernel still has the READY-window dmesg spam until then; harmless post-fix since READY is now transient)
 - [x] **Tree cleanup DONE (2026-07-05):** dropped `vendor.sensors.qti` (service in `init.target.rc`, `start` in `init.qcom.sensors.sh`, config.fs caps block — mithorium-common `4a83a0d`), `/persist` bind-mount hack (same commit; registry-dir setup kept — SSC HAL reseeds `sns.reg` there), `sensors.qcom`→`sensors.qti` extraction line (Mi8937 `b7e9e6f`), and the vendor staging (Android.bp module + mk line + binary; vendor tree, not git). **Verified live before removal**: daemon stopped + HAL restart → 20 sensors re-enumerate with data. `sensors.native.so` kept (it's the BHy HAL, required). Sanity-check next clean flash: sensors still enumerate at boot (init script edits ride vendor.img).
 ```
+
+---
+
+## 2026-07-31 — /persist dropped from the image AGAIN (auto-brightness dead); durable BoardConfig fix staged
+
+**Symptom:** DUT1 (07-30 19:20 build, fresh A16 reflash after the ipv6 lane): only the
+16 BHy sensors enumerate — zero SSC sensors → no RPR0521 ALS → auto-brightness
+(fully configured + enabled framework-side, `mAutoBrightnessAvailable=true`) has no
+input and never engages. Same failure chain as the 07-10 regression: no `/persist`
+entry in the rootfs at all → the init.target.rc bind mount has no mountpoint →
+`sensors.qti` registry init fails (`sns_fsa_la: realpath failed`) → no SNS_REG2
+(0x10f/0x118) on the AP → ADSP SMGR aborts → no SNS services on QRTR node 5.
+
+**Root cause of the recurrence:** the `$OUT/root/persist` fixup in
+`scripts/build-lineage23.sh` runs *pre-build*; the 07-30 23:16 build **regenerated the
+whole root staging mid-build** (all entries re-timestamped) which dropped the dir, and
+the image builder packaged that root. The 07-11 validation build only survived because
+its staging wasn't regenerated. The script mechanism is inherently racy.
+
+**Durable fix (staged):** `BOARD_ROOT_EXTRA_FOLDERS += persist` under
+`ifeq ($(TARGET_DEVICE_PEPITO),true)` in `Mi8937/BoardConfig.mk` (after the
+`:= metadata` assignment — include order matters, common is included at line 32 and
+the `:=` would clobber a `+=` from common). Contrary to the 07-10 finding,
+`system/core/rootdir/create_root_structure.mk` **does** consume both
+`BOARD_ROOT_EXTRA_FOLDERS` (line 29, proven by `metadata` shipping) and
+`BOARD_ROOT_EXTRA_SYMLINKS` (line 137, proven by the `dsp`/`firmware` symlinks in the
+image) via `LOCAL_POST_INSTALL_CMD` — i.e. during the build, immune to staging
+regeneration. Stale "no consumer" comment in `BoardConfigCommon.mk` corrected.
+The script fixup is now redundant; remove it once a clean build confirms the
+BoardConfig path (check: `debugfs -R "ls /" <raw system.img>` shows `persist`).
+
+**Live heal on DUT1 (this boot, all validated):** remount / rw + `mkdir /persist`
+(persists on the system partition → the committed rc bind mount will fire on every
+future boot of this image), bind mount, restart `sensors.qti` (SNS_REG2 up), ADSP
+restart (SMGR + SNS family up on node 5), HAL restart (side effect: system_server
+restarted) → 20/20 sensors, ALS live, `mBrightnessReason=automatic`, lux tracking
+(117→113 lx) driving `mScreenAutoBrightness`. Auto-brightness WORKS.
