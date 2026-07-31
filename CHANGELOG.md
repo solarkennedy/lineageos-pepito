@@ -2,19 +2,19 @@
 
 ## 20260731 (2026-07-31)
 
-### device/Mi8937 (since pepito-23.2-20260729)
-- Mi8937: bake the Google app into the gapps build as default assistant
-- Mi8937: ship OpenEUICC on pepito for the removable eUICC card
-- Mi8937: measure pepito radio idle and scanning power
+### device/Mi8937 (since pepito-23.2-20260731)
+- Mi8937: ship pepito's real /persist dir via BOARD_ROOT_EXTRA_FOLDERS
 
-### landing (docs/scripts) (since pepito-23.2-20260729)
-- changelog: 20260731
-- changelog: 20260731
-- changelog: 20260731
-- plans: add eSIM-LPA, IPv6-DNS, and MCFG lanes; update index + misc
-- release.sh: hardcode REPO_ROOT to the landing repo (symlink bug)
-- ota: populate pepito.json with the real 20260729 feed (both channels)
-- ota: seed empty pepito.json so the Updater feed resolves
+### device/mithorium-common (since pepito-23.2-20260731)
+- BoardConfigCommon: correct the stale BOARD_ROOT_EXTRA_SYMLINKS comment
+- boot-signing: drop the cryptography dependency (stdlib only)
+- Make sign-boot-graft.py use fully python path
+- boot: graft the fail-open signature onto boot.img + recovery.img at build time
+
+### landing (docs/scripts) (since pepito-23.2-20260731)
+- plans: sensors — /persist image regression root-caused, BoardConfig fix
+- boot-signing: move the graft signer in-tree; prepare-flash uses it
+- build-remotely: forward PEPITO_SERIAL_CONSOLE for serial debug builds
 ## 20260729 (2026-07-29)
 
 ### kernel (msm8937) (since pepito-23.2-20260728)
