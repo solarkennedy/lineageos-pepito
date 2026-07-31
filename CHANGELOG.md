@@ -10,6 +10,7 @@
 ### landing (docs/scripts) (since pepito-23.2-20260729)
 - changelog: 20260731
 - changelog: 20260731
+- changelog: 20260731
 - plans: add eSIM-LPA, IPv6-DNS, and MCFG lanes; update index + misc
 - release.sh: hardcode REPO_ROOT to the landing repo (symlink bug)
 - ota: populate pepito.json with the real 20260729 feed (both channels)
