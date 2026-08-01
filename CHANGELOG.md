@@ -17,6 +17,7 @@
 - boot: graft the fail-open signature onto boot.img + recovery.img at build time
 
 ### landing (docs/scripts) (since pepito-23.2-20260729)
+- changelog: 20260801
 - ota: drop bad 20260731 feed entries (unsigned-boot brick)
 - ota: stamp the feed with the build's real timestamp, not midnight
 - ota: 20260731 gapps
