@@ -1,5 +1,46 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260801 (2026-08-01)
+
+### device/Mi8937 (since pepito-23.2-20260729)
+- Mi8937: ship pepito's real /persist dir via BOARD_ROOT_EXTRA_FOLDERS
+- Mi8937: bake the Google app into the gapps build as default assistant
+- Mi8937: ship OpenEUICC on pepito for the removable eUICC card
+- Mi8937: measure pepito radio idle and scanning power
+
+### device/mithorium-common (since pepito-23.2-20260729)
+- boot: set BOARD_CUSTOM_BOOTIMG so the OTA uses the grafted prebuilt
+- custom_bootimg: re-add the boot->kernel dependency dropped by the hook
+- BoardConfigCommon: correct the stale BOARD_ROOT_EXTRA_SYMLINKS comment
+- boot-signing: drop the cryptography dependency (stdlib only)
+- Make sign-boot-graft.py use fully python path
+- boot: graft the fail-open signature onto boot.img + recovery.img at build time
+
+### landing (docs/scripts) (since pepito-23.2-20260729)
+- ota: drop bad 20260731 feed entries (unsigned-boot brick)
+- ota: stamp the feed with the build's real timestamp, not midnight
+- ota: 20260731 gapps
+- changelog: 20260731
+- release: retry per-asset uploads (survive 'tls: bad record MAC')
+- changelog: 20260731
+- changelog: 20260731
+- ota: 20260731 vanilla
+- changelog: 20260731
+- ota: empty pepito.json — 20260729/20260731 OTAs shipped unsigned boot
+- changelog: 20260731
+- plans: sensors — /persist image regression root-caused, BoardConfig fix
+- boot-signing: move the graft signer in-tree; prepare-flash uses it
+- build-remotely: forward PEPITO_SERIAL_CONSOLE for serial debug builds
+- ota: 20260731 gapps
+- ota: 20260731 vanilla
+- changelog: 20260731
+- changelog: 20260731
+- changelog: 20260731
+- changelog: 20260731
+- plans: add eSIM-LPA, IPv6-DNS, and MCFG lanes; update index + misc
+- release.sh: hardcode REPO_ROOT to the landing repo (symlink bug)
+- ota: populate pepito.json with the real 20260729 feed (both channels)
+- ota: seed empty pepito.json so the Updater feed resolves
 ## 20260731 (2026-07-31)
 
 ### device/Mi8937 (since pepito-23.2-20260729)
