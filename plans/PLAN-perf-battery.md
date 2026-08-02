@@ -51,6 +51,100 @@ not app-level battery (Doze/App Standby are stock AOSP and out of scope here).
 
 ---
 
+## ⭐⭐ Responsiveness lane (2026-08-02) — interaction/launch boost was COMPLETELY DEAD; fixed + live-validated, staged
+
+Kyle opened a "make the phone feel more responsive" push (agreed order: ① boost
+diagnostic/fix → ② zram-zstd default + 0.5× animation defaults → ③ CT-3 A/B of the
+960 MHz big-cluster min-freq floor + core_ctl min_cpus, i.e. finally item 4 with data).
+
+**Finding: every framework interaction/launch boost has failed since bring-up.** The
+framework sends `setBoost INTERACTION` on every touch; QTI PowerHAL logged
+`Failed process_boost for boost_handle` on each. THREE stacked causes, all proven live
+on DUT1 (`c39a6acf`) by fixing each in turn:
+
+1. **`vendor.qti.hardware.perf@2.2-service` never packaged** — listed in
+   `proprietary-files-qc-vndr.txt` (+rc) but blobs never extracted into
+   `vendor/xiaomi` (same class as libacdbloader/libsdm-color). mp-ctl lives in this
+   HAL; without it no boost can execute. Deps also missing: `libqti-perfd.so`,
+   `libperfconfig`, `libperfgluelayer`, `libperfioctl`, `libqti-util`,
+   `libthermalclient` (closure verified complete against nightly).
+2. **No 64-bit `libqti-perfd-client.so` anywhere** — only the 2 KB 32-bit pepito
+   camera stub. The 64-bit PowerHAL dlopens this client at runtime (not DT_NEEDED) →
+   every boost died client-side. Real 64-bit client from nightly fixes it; 32-bit
+   stub kept for camera (different dir, no conflict).
+3. **`perfboostsconfig.xml` scroll boosts gated `Kernel="3.18"`/`"4.9"`** — we run
+   4.19, so 0x1080 v/h-scroll entries never matched even with the HAL alive. Fixed by
+   duplicating the msm8937 4.9 entries as `Kernel="4.19"` (launch boost 0x1081 Type 1
+   is unqualified and worked as soon as the HAL ran).
+
+**Validated live:** swipe → policy0 `scaling_min_freq` 960000 → **1344000** for ~1 s
+(0x514 = 1.3 GHz → nearest step), boost errors gone, launch boost clean (Settings
+cold start 1.28 s). Battery cost ~nil (boost only during interaction).
+
+**Staged (uncommitted), Mi8937 layer (all siblings run our 4.19 kernel and had the
+same dead boosts):** blobs under `vendor/xiaomi/Mi8937/proprietary/vendor/`
+(bin/hw + etc/init + lib64×7), `Android.bp` (7 new prebuilt modules;
+`libqti-perfd-client` now multilib-both: 32=stub, 64=real), `Mi8937-vendor.mk`
+(PRODUCT_PACKAGES + rc copy), patched `etc/perf/perfboostsconfig.xml`.
+
+**✅ Init-started-under-Enforcing leg VALIDATED same day (Kyle authorized the DUT1
+reboot):** binary+rc live-pushed to /vendor → clean reboot → HAL runs as
+`u:r:hal_perf_default:s0` via init, **zero AVC denials, zero boost failures since
+boot, swipe → min_freq 960000→1344000**. No sepolicy work needed; the fix is fully
+proven end-to-end. Gotchas hit along the way: chcon type is `vendor_file` not
+`vendor_file_t` (use restorecon — an unlabeled lib fails dlopen under Enforcing);
+mpctl init logs benign `KPM nodes`/`Invalid cluster id 2` errors; `pkill -f`
+self-match strikes again.
+
+**Step ② also staged 2026-08-02:**
+- **zram-zstd now DEFAULT-ON** (Kyle: "worked with zram for a while, perfectly
+  stable — second the decision"). Two synced edits: `post_boot.sh`
+  `configure_zram_parameters()` treats unset as on (`!= "0"` check) +
+  `GoTweaksSettings.java` toggle default `true`. Toggle still opts out (writes "0").
+- **0.5× animation scales default (pepito-gated):** empirically established that
+  window/transition scales seed into Settings.Global from SettingsProvider's
+  `def_window_animation_scale`/`def_window_transition_scale` fractions at
+  settings-DB creation (verified live: global rows exist = 1.0, animator = null →
+  never seeded). Staged: 2-line frameworks/base patch (new
+  `def_animator_duration_scale` fraction + `loadDefaultAnimationSettings()` seeds
+  `ANIMATOR_DURATION_SCALE`; 100% upstream default = no behavior change for
+  siblings) + `Mi8937/overlay-pepito/` SettingsProvider overlay setting all three
+  to 50%, wired under the `TARGET_DEVICE_PEPITO` gate in `device.mk`. Applies at
+  DB creation only — fine for releases (flash always zeroes userdata); dirty
+  flashes keep old values. DUT1 set to 0.5× live for feel-preview.
+
+**Step ②b — camera/audio perf locks ✅ VALIDATED + STAGED same day (real 32-bit
+client replaces the stub).** History: the Palm "jinghuang" patch inside the
+proprietary mm-camera blobs dlopens `ro.vendor.extension_library`
+(=libqti-perfd-client.so) at camera_open and **SIGSEGVs on a null dlopen handle at
+mm_camera_intf_close** — the whole reason the 2 KB no-op stub existed (stock A8
+client couldn't load: perf@1.0 dep). The nightly 32-bit client's deps all resolve
+now (32-bit `vendor.qti.hardware.perf@2.2.so` already ships; rest is VNDK), so the
+crash precondition is gone. Live-swapped on DUT1 (stub backed up at
+`/vendor/lib/libqti-perfd-client.so.stub` + `/data/local/tmp/perfd-stub-backup.so`)
+and ran the brittleness gauntlet: **5× open/close cycles (the crash site), rear
+photo, front-camera flip, front video w/ audio, zero tombstones/crashes.**
+⭐ Smoking-gun trace: `perf_lock_acq: client_pid=<camera-provider>, list=0x101
+0x2FE 0x1FFE → output handle=1` — camera's LEGACY opcodes are accepted by mp-ctl.
+Audio HAL is the OTHER 32-bit consumer (dlopens it lazily on first stream) —
+restarted it, real client maps, playback fine. Camera cold-launch parity-or-better
+(999/1004/979 ms vs 1356/1038/987 baseline); real win = in-session locks (open,
+snapshot, preview). Staged: real 32-bit client replaces the stub artifact at
+`vendor/xiaomi/Mi8937/proprietary/vendor/lib/`; stub source+binary kept in
+`pepito-perfd-stub/` as fallback; Android.bp comment updated. Debug technique:
+`vendor.debug.trace.perf=1` + restart perf HAL → per-request `ANDR-PERF-MPCTL`
+acq/rel logs with client pid + opcode list (prop resets on reboot).
+
+Remaining in the lane (step ③, needs the flashed build): CT-3 A/B of lowering the
+permanent 960 MHz big-cluster floor (post_boot.sh) — safer now that scroll boost
+supplies interaction-time freq — and core_ctl min_cpus. Post-flash validation
+checklist: perf HAL domain/denials/boost (as above), `zram0/comp_algorithm` shows
+`[zstd]`, `settings get global animator_duration_scale` = 0.5 on a clean flash,
+Pepito Tweaks zstd toggle shows ON, camera open/close + photo + audio playback
+clean (jinghuang path now exercises the real client).
+
+---
+
 ## Baseline survey (2026-07-10)
 
 Grounded in `mi8937_defconfig`, `device/xiaomi/mithorium-common/rootdir/bin/init.qcom.post_boot.sh`,
