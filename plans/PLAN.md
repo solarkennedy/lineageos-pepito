@@ -80,7 +80,7 @@ Boot, display, touch, hardware keymaster, and the full UI have been solid since 
 - [`PLAN-audio.md`](PLAN-audio.md) — speaker ✅; ACDB ✅ 2026-07-11 (loader was missing, not a format issue; staged, uncommitted).
 - [`PLAN-camera.md`](PLAN-camera.md) — ✅ works; finish-line: face-detect subst validation. Archive: `PLAN-cameras.old.md`.
 - [`PLAN-kernel.md`](PLAN-kernel.md) — kernel-tree change audit: what to commit, revert (incl. the now-safe SSR-panic downgrade), or relocate.
-- [`PLAN-misc.md`](PLAN-misc.md) — papercuts (SIM-slot UI, nav buttons, ramoops, scrcpy, volume tile).
+- [`PLAN-misc.md`](PLAN-misc.md) — papercuts (SIM-slot UI, nav buttons, ramoops, scrcpy, volume tile, removable-storage filesystems).
 - [`PLAN-pvg100isms.md`](PLAN-pvg100isms.md) — feature wishlist (Life Mode, face unlock, launcher, volume slider); [`PLAN-lifemode.md`](PLAN-lifemode.md) — Life Mode QS tile; [`PLAN-face-unlock.md`](PLAN-face-unlock.md) — ✅ 2026-07-12 working on DUT (Paranoid Sense/Megvii); remaining: commit sweep + release-notes caveats.
 
 **Solved lanes (kept as evidence — the telephony endgame reads in this order):**

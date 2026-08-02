@@ -533,3 +533,391 @@ regression-check capture flash + camera open/close while torch on
 ⭐ Debug technique: an apparently-empty string in a logcat message can be
 unprintable garbage — hexdump the log line (`logcat -d | grep -a … | xxd`)
 before trusting `''`.
+
+---
+
+## 8. Removable-storage filesystems — exFAT (+UDF/ISO9660) — STAGED 2026-08-01
+
+**Status:** STAGED, unflashed. User report: exFAT-formatted media does not mount.
+
+**Problem:** pepito mounts removable media (USB OTG on pepito, SD on the siblings)
+through vold's PublicVolume, which supports vfat, exfat, ntfs, ext4, f2fs and
+iso9660/udf. Only vfat/ext4/f2fs actually worked: exFAT was missing on **both**
+halves of the stack, and the ISO9660/UDF kernel drivers were off.
+
+**Root cause (two independent gaps):**
+
+1. **Kernel.** `CONFIG_EXFAT_FS` was `not set` in `mi8937_defconfig`. The driver
+   source is already in the tree — `fs/exfat/` is the `linux-exfat-oot` backport
+   merged in from `android13-4.19-kona` (Kconfig/Makefile already wired at
+   `fs/Kconfig:146`, `fs/Makefile:84`) — it had simply never been enabled.
+2. **Userspace.** vold's `Exfat::IsSupported()` requires `/system/bin/mkfs.exfat`
+   **and** `/system/bin/fsck.exfat` to be `X_OK` *in addition to* `exfat` appearing
+   in `/proc/filesystems`. `external/exfatprogs/` is in the tree, but unlike
+   ntfs-3g (shipped by `vendor/lineage/config/common.mk`) Lineage leaves exfatprogs
+   to the device tree, and Mi8937 never added it. Kernel driver alone = still no mount.
+
+**Fix (staged):**
+
+- `kernel/…/arch/arm64/configs/mi8937_defconfig`:
+  - `CONFIG_EXFAT_FS=y`, `CONFIG_EXFAT_DEFAULT_IOCHARSET="utf8"`
+  - `CONFIG_ISO9660_FS=y` + `CONFIG_JOLIET=y` (ZISOFS left off), `CONFIG_UDF_FS=y`
+    — vold's `Iso9660.cpp` already tries `iso9660` then `udf` read-only for
+    OTG optical/UDF-formatted media; both were dead ends without the drivers.
+  - `CONFIG_NLS_UTF8=y` — needed for Joliet/explicit `iocharset=utf8` mounts.
+    (exFAT itself does **not** need it: `super.c` special-cases the literal
+    `"utf8"` iocharset and skips `load_nls()`.)
+- `device/xiaomi/Mi8937/device.mk`: `PRODUCT_PACKAGES += fsck.exfat mkfs.exfat`
+  (+ matching `PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST` entries, mirroring
+  Lineage's ntfs pattern). Family-wide on purpose — every Mi8937/Mi8917 sibling
+  has removable storage.
+
+**Deliberately NOT changed:**
+
+- **NTFS already works** and needs nothing: Lineage ships `mount.ntfs`/`mkfs.ntfs`/
+  `fsck.ntfs` (ntfs-3g over FUSE, `CONFIG_FUSE_FS=y` is on) and vold hardcodes
+  `fuse\tntfs` into its supported list. The in-kernel `CONFIG_NTFS_FS` stays off:
+  it is the legacy read-only driver and would only shadow the rw ntfs-3g path.
+- `CONFIG_MSDOS_FS` stays off — `vfat` already covers FAT12/16/32.
+
+**No sepolicy work needed** (verified): `fsck.exfat` is already labelled
+`fsck_exec` in `system/sepolicy/private/file_contexts:258` and vold has
+`domain_trans(vold, fsck_exec, fsck)`; `mkfs.exfat` runs in vold's own domain
+under the existing `allow vold system_file:file x_file_perms`. The `exfat`
+fs type is already declared `sdcard_type` in `public/file.te:171`.
+
+**Pre-build validation done on the netbook** (no full build needed):
+`make ARCH=arm64 LLVM=1 O=… mi8937_defconfig` resolves all five symbols with no
+unmet deps, and `make … fs/exfat/ fs/udf/ fs/isofs/ fs/nls/` compiles the
+out-of-tree exFAT backport clean against 4.19 with the AOSP clang — the driver is
+version-guarded down to 4.1 (`match_table_t` path for pre-5.6 instead of
+`fs_context`/`fsparam_*`).
+
+**Validate after flash:**
+- `grep exfat /proc/filesystems`; `ls -l /system/bin/{mkfs,fsck}.exfat`
+- `adb logcat -s vold` on insert of an exFAT USB stick via OTG → mounts rw,
+  files readable/writable, unmount clean.
+- Settings → Storage → format a stick as exFAT (exercises `mkfs.exfat`).
+- Regression: a vfat stick still mounts; internal storage unaffected.
+
+---
+
+## 9. Capture flash out of sync with the shutter — ROOT-CAUSED, STAGED 2026-08-01
+
+**Status:** STAGED, unflashed. User report: the LED fires, but not at the moment
+the picture is actually taken. Kyle can reproduce on demand.
+
+**Not an app problem.** Aperture (CameraX `LifecycleCameraController`) has no flash
+timing surface at all: its `res/values/config.xml` overlay knobs are aux-camera /
+video-mode / zoom-ratio only, and the CameraX prebuilt AAR builds `ImageCapture`
+internally, so even `ImageCapture.Builder.setFlashType(FLASH_TYPE_USE_TORCH_AS_FLASH)`
+— which *does* exist in the shipped `camera-core-1.7.0-alpha01.aar` and is CameraX's
+standard escape hatch for devices with broken flash/capture sync — is not reachable
+without patching CameraX itself. Keep it in the back pocket as a fallback only.
+
+**Root cause: `pepito/camera.dtsi` deleted `qcom,switch-source` from `led_flash0`.**
+
+`qcom,switch-source` is the *only* source of msm_flash's `switch_trigger`
+(`msm_flash.c:910`). With it deleted:
+
+1. `msm_flash_prepare()` (`msm_flash.c:582-592`) returns **-EINVAL** unconditionally
+   for a `FLASH_DRIVER_PMIC` flash whose `switch_trigger` is NULL (`platform_flash_init`
+   is only set for the GPIO/platform flash type, not ours).
+2. `msm_flash_config()` calls `msm_flash_prepare()` at its tail and **returns that
+   error** (`msm_flash.c:798-803`). So **every** `VIDIOC_MSM_FLASH_CFG` —
+   INIT / LOW / HIGH / OFF / RELEASE — reports failure to the mm-camera daemon,
+   *after* the LED side effects for that op have already been applied earlier in the
+   same function. That is why the LED visibly lights while the daemon cannot
+   sequence it: it never gets a success it can advance its flash state machine on.
+3. `msm_flash_query_current()` (`msm_flash.c:697-710`) also short-circuits, leaving
+   `max_avail_curr` at -EINVAL, so AEC cannot size the flash pulse either.
+4. In `leds-qpnp-flash.c` the per-LED strobe-enable bits (0x80/0x40) are accumulated
+   **only onto the switch node** (`:1346`); the switch is the node that actually
+   strobes. Nothing drives it when msm_flash has no `switch_trigger`.
+
+This also explains the "CFG_FLASH_INIT ok" reading in the [[torch-tile-flash-dev-name]]
+probe — the LED lit, but the ioctl return was not the success it looked like.
+
+**Evidence this is wrong, not deliberate** (the file's old comment claimed pepito's
+single-LED wiring justified dropping the switch — the switch is not a second LED):
+
+- **Stock Palm 8.1 keeps it**: `dts-3.19-pepito/pepito.dts:11269`
+  `qcom,switch-source = <0x18f>` → `qcom,switch` / `led:switch`.
+- **santoni**, the other single-source PMI8950 variant in this tree, narrows
+  `qcom,flash-source` to `pmi8950_flash0` and leaves the switch alone
+  (`xiaomi-msm8937/wingtech/msm8937/santoni/camera.dtsi:15`).
+- Our `pmi8950_switch` node is already **byte-identical** to stock's `qcom,switch`
+  (max-current 1000, duration 1280, id 2, current 625, `reg0` = `pon_spare_reg`).
+- pepito is the only variant in the entire tree that deletes the property.
+
+**Second divergence found in the same node — flash-LED hardware enable never asserted.**
+Stock sets `pinctrl-names = "flash_led_enable","flash_led_disable"` +
+`pinctrl-0/1` → TLMM **gpio33** (`rear_flash_led_enable/_disable`), and
+`qcom,follow-otst2-rb-disabled` (`pepito.dts:8532`). Our tree *defines* those pinctrl
+states (inherited from `msm8937-pinctrl.dtsi`) but nothing referenced them — they had
+no phandle in the built DTB — so `leds-qpnp-flash.c` saw `led->pinctrl == NULL` and
+never ran its `pinctrl_select_state(gpio_state_active)` (`:1459`); gpio33 sat wherever
+the bootloader left it. Same property set as the QCT reference wiring in
+`vendor-legacy/qcom/msm8917-cdp-mirror-lake-touch.dtsi:88`.
+
+**Fix (staged)** — `kernel/…/dts/xiaomi-msm8937/pepito/camera.dtsi`:
+
+- drop the `/delete-property/ qcom,switch-source;` line (keep the single-source
+  `qcom,flash-source`/`qcom,torch-source` narrowing, exactly like santoni);
+- add `&flash_led { pinctrl-names/-0/-1 = rear_flash_led_enable/_disable;
+  qcom,follow-otst2-rb-disabled; }`.
+
+Verified by compiling `xiaomi-msm8937/pepito.dtb` and decompiling it: the
+`qcom,camera-flash` node now resolves to `led:flash_0` / `led:torch_0` / `led:switch`
+like stock, and `qcom,leds@d300` now carries the pinctrl refs. A full property diff of
+the flash block against the stock DTB leaves only: phandle numbering, our extra
+`io-channels`/`die-temp` (newer driver's thermal-derate path), and item ⚠ below.
+
+**Flash operating current — APPLIED in this same round** (Kyle's call, 2026-08-01).
+`qcom,flash_0`'s `qcom,current` was **625 mA** here vs **1000 mA** on stock
+(`pepito.dts:8544`). 625 is the upstream *dual*-LED default (625 + 625 across two
+LEDs); pepito has one LED and stock drives it at the full 1000 mA. This is the
+fallback `flash_op_current` msm_flash clamps to — and with `max_avail_curr` broken
+(above), that clamp path is what was in use. Staged as an override in
+`pepito/camera.dtsi`:
+
+```dts
+&pmi8950_flash0 {
+	qcom,current = <1000>;   /* stock; upstream 625 is the dual-LED default */
+};
+```
+
+⚠ Attribution caveat: because this ships with the timing fix, a brightness change
+after flashing cannot be attributed to one or the other without backing this out.
+`qcom,max-current` was already 1000 in both trees — only the operating value differed.
+
+After this, the whole `qcom,leds@d300` block is at stock parity; the only residual
+DTB differences are phandle numbering and our extra `io-channels`/`die-temp` (the
+4.19 driver's IIO thermal-derate path, absent from the 3.18 driver).
+
+**Reported symptom, refined (Kyle, 2026-08-01):** the flash fires **slightly before**
+the shutter — visible as a flash reflection in a reflective subject. Consistent with
+the diagnosis: the LED pulse is not sequenced against the snapshot frame, so it
+completes just ahead of the exposure the daemon actually captures.
+
+**Pre-flash evidence to capture on the CURRENT build** (proves the -EINVAL before the
+fix lands, ~30 s on the DUT):
+
+```bash
+adb shell dmesg -w | grep -iE "msm_flash|qpnp.*flash" &   # then take a flash photo
+# expect: "Enable/Disable Regulator failed ret = -22" from msm_flash_config
+adb shell ls /sys/class/leds/            # led:flash_0 / led:torch_0 / led:switch present?
+adb shell cat /sys/kernel/debug/pinctrl/*/pinmux-pins 2>/dev/null | grep -w 33
+```
+
+**Validate after flash:**
+- Take a flash photo in Aperture: LED pulse coincides with the capture; subject lit.
+- `dmesg` free of the `ret = -22` line during capture.
+- **Regressions to re-check** (both go through the same msm_flash LOW path):
+  torch QS tile still lights (`d9dab112`), and torch-while-camera-open arbitration.
+- Compare exposure against stock Silver if the pulse now looks over/under-bright,
+  before touching the current value above.
+
+### §9 addendum — the reflection photo (2026-08-01)
+
+Kyle shot a glossy panel outdoors to catch the LED in-frame. Two readings:
+
+1. **The LED reflection IS in the captured frame** → the LED was lit *during* the
+   exposure. So "fires entirely before the shutter" is wrong; whatever the
+   sequencing problem is, light and exposure overlap. Revise the symptom to
+   "flash fires around the capture but far weaker than expected."
+2. **It is a modest specular dot, not a blowout** — and Kyle expected "all white".
+   That is what the missing-switch failure mode predicts: the LED is being driven
+   at **torch** current, not flash current. `led:torch_0` is `qcom,current = <120>`
+   mA; `led:flash_0` is 625 (now 1000) — a ~8x gap. If `msm_flash_high()`'s strobe
+   never takes effect (the enable bits accumulate only onto the switch node,
+   `leds-qpnp-flash.c:1346`) while `msm_flash_low()` lights the torch trigger
+   directly, then **every "flash" photo is really lit by the AEC preflash alone**.
+   Weak, and phase-locked to metering rather than to the snapshot frame.
+
+⚠ Confound in that particular frame: it is a **daylight** scene (grass/trees/pavement
+visible in the reflection), so AEC exposes for ambient and even a correct 1000 mA
+strobe would read as a small bright dot, not a white-out. Judge flash strength in a
+**dark room, matte subject ~1 m away**, not against ambient.
+
+**Decisive test, no rebuild needed** — `diag-tools/flash-probe/flash-sample.sh`
+polls every flash-block LED classdev and prints edges:
+
+```bash
+adb push diag-tools/flash-probe/flash-sample.sh /data/local/tmp/
+adb shell sh /data/local/tmp/flash-sample.sh     # then take a flash photo
+```
+
+- only `led:torch_0` ever goes non-zero → **confirmed**: no main flash, preflash-only
+  capture; the staged switch-source restore is exactly the fix.
+- `led:flash_0` (+ `led:switch`) pulses → main flash does strobe, and the complaint is
+  a current/AEC question rather than a sequencing one.
+- `led:flash_0` pulses well before the shutter → genuine timing desync, keep digging.
+
+Run it **before** flashing the fix (baseline) and again after.
+
+### §9 addendum 2 — preflash-only hypothesis FALSIFIED (Kyle, 2026-08-01)
+
+Kyle confirms on the bench: **there is a preflash, and it is the main strobe that
+lands in the picture.** So `msm_flash_high()` does produce a real high-current
+strobe and it does overlap the snapshot exposure.
+
+Consequences for the record:
+
+- **Addendum 1's "every flash photo is preflash-only" reading is WRONG — struck.**
+  The strobe fires. My static read of the qpnp strobe-bit bookkeeping
+  (`leds-qpnp-flash.c:1346`, enable bits accumulating only onto the switch node)
+  was therefore incomplete; it was flagged as unverified and it did not hold. Do
+  not re-derive that claim from source without a live check.
+- **There may be no sequencing bug at all.** preflash → metering → main strobe at
+  capture *is* the normal QCT AEC sequence. The original "out of sync with the
+  shutter" perception is well explained by the preflash being visible as a separate
+  event before the shutter. Treat the timing lane as closed unless the probe shows
+  `led:flash_0` firing clearly outside the exposure.
+- **The surviving complaint is power, and it has a clean mechanism.**
+  `msm_flash_query_current()` returns -EINVAL with no `switch_trigger`, so
+  `max_avail_curr` never reaches the daemon; AEC cannot size the pulse, and
+  msm_flash falls back to `flash_op_current` — the 625 mA *dual*-LED default —
+  instead of driving toward the 1000 mA the single LED is rated for. Both staged
+  changes hit exactly that path: the switch-source restore unbreaks the query, and
+  the `qcom,current = <1000>` override fixes the fallback.
+
+**Expectation setting:** 1000/625 is 1.6x ≈ **two thirds of a stop**. Real and
+visible on a matte subject in a dark room; it will not turn a single 2018 budget
+LED into a white-out. Stock is the ceiling here — `qcom,max-current` was already
+1000 in both trees, and headroom / clamp-curr / thermal-derate / vph-droop all
+already match stock, so there is nothing further to squeeze without exceeding what
+Palm shipped.
+
+---
+
+## 10. Variable torch brightness (flashlight slider) — IMPLEMENTED, unbuilt 2026-08-01
+
+**Status:** STAGED across 4 repos, never compiled. Feature request: Kyle's Pixel has a
+brightness slider on the QS flashlight tile; can pepito do the same?
+
+**Yes — the hardware and kernel already support it; only three userspace gaps existed.**
+
+| Layer | Before | Work |
+|---|---|---|
+| PMI8950 `led:torch_0` | current-driven, `qcom,max-current = <200>` mA | none |
+| kernel `msm_flash_low()` | already takes a per-source current in `flash_current[]` | none |
+| `QCameraFlash` (our HAL) | hardcoded one current | levels added |
+| legacy `camera_module_t` | `set_torch_mode(id, bool)` — no strength in the ABI | vendor bridge |
+| Lineage AIDL `CameraDevice` | `turnOnTorchWithStrengthLevel`/`getTorchStrengthLevel` → `OPERATION_NOT_SUPPORTED` stubs | implemented |
+| HAL static metadata | no `ANDROID_FLASH_INFO_STRENGTH_*` | 2 tags added |
+| `CameraManager` / CameraService | fully supports it | none |
+| SystemUI | `FlashlightTileWithLevel.kt` **already exists upstream** behind aconfig `com.android.systemui/flashlight_strength` | flag enabled |
+
+**⭐ Bug found on the way: the torch has been running at 120 mA, not 200.**
+`QCAMERA_TORCH_CURRENT_VALUE` was 200, but `msm_flash_low()` honours a requested
+current only when `req >= 0 && req < max_current` — **strictly** less than. With
+`qcom,max-current = <200>`, `200 < 200` is false, so every torch-on silently fell back
+to `qcom,current` = 120 mA. That matches the `brightness=120` reading recorded in
+[[torch-tile-flash-dev-name]]. The new top level asks for **199**, so max torch is now
+~66% brighter than any build we have ever shipped.
+
+**Level map** (`QCameraFlash.cpp`, `kTorchCurrentMa`): 1→40, 2→80, **3→120 (default)**,
+4→160, 5→199 mA. Level 3 reproduces the historical current exactly, so an untouched
+slider behaves like the old build.
+
+**Changes:**
+
+1. `device/xiaomi/Mi8937/camera/…/util/QCameraFlash.{h,cpp}` — per-camera level state,
+   `setTorchLevel()`/`getTorchLevel()`, and a shared `applyFlashState()` that issues
+   `CFG_FLASH_LOW` at the level's current. Setting a level while the torch is lit
+   re-issues immediately, so a slider drag tracks live. The mA table lives in the .cpp,
+   not the header — the header is pulled into 4 TUs, 2 of which build `-Werror`.
+2. `…/QCamera2Factory.{h,cpp}` — `setTorchStrength()`/`getTorchStrength()` mirroring
+   `setTorchMode()` (incl. the `torch_mode_status_change` callback and the `-EALREADY`
+   → success mapping a slider drag depends on), plus a shared `parseCameraId()` helper,
+   plus the two `extern "C"` bridge symbols.
+3. `…/HAL3/QCamera3HWI.cpp` — publish `ANDROID_FLASH_INFO_STRENGTH_MAXIMUM_LEVEL` and
+   `_DEFAULT_LEVEL`, gated on `flashAvailable`. This is what makes the framework expose
+   `turnOnTorchWithStrengthLevel()` at all.
+4. `hardware/lineage/interfaces/camera/aidl/device/CameraDevice.cpp` — implement the two
+   stubs. ⭐ **The bridge:** the legacy module ABI has no strength entry point, so the
+   wrapper `dlsym()`s `qcamera_torch_set_strength` / `qcamera_torch_get_strength` out of
+   the already-loaded HAL via `CameraModule::getDso()` (`mModule->common.dso`). A HAL
+   that doesn't export them behaves exactly as before — dlsym returns null,
+   `OPERATION_NOT_SUPPORTED`. **Nothing in this file is pepito-specific, so it is
+   upstreamable to LineageOS** and helps any legacy-HAL device.
+5. `vendor/lineage/release/aconfig/bp4a/com.android.systemui/flashlight_strength_flag_values.textproto`
+   — `ENABLED`. The sibling `Android.bp` globs `*_flag_values.textproto`, so no bp edit.
+
+**Not yet compiled** — no soong on the netbook. Expect the usual first-build friction.
+
+**Validate after flash:**
+- QS flashlight tile long-press / dialog → slider present, 5 steps.
+- Slider drag changes output live (compare against a wall at fixed distance).
+- `adb shell dumpsys media.camera | grep -i strength`, or
+  `adb logcat -s CAM_FLASH` → `flash 0 -> 1 at level N (X mA)`.
+- Level 5 should be visibly brighter than any previous build (120 → 199 mA).
+- **Regressions:** plain tile tap on/off still works (`d9dab112` path); torch during
+  camera open still arbitrates; capture flash unaffected (that is `CFG_FLASH_HIGH`,
+  a different current entirely).
+
+### §10 addendum — slider showed but did nothing: ROOT-CAUSED 2026-08-01, fix staged
+
+First flash validated most of the chain and falsified my implementation of one step.
+
+**What worked on-device:** HAL publishes `strengthMaximumLevel = 5` / `defaultLevel = 3`;
+SystemUI shows the slider; `CameraService: turnOnTorchWithStrengthLevel: Torch strength
+for camera id 0 changed to 1..5` logged success for every level; both bridge symbols
+exported (`llvm-nm -D` → `T qcamera_torch_set_strength`) and present in
+`camera.device-impl.lineage.so`; strace confirmed the `VIDIOC_MSM_FLASH_CFG` ioctl
+reaching `/dev/v4l-subdev8` and **returning 0**. So dlsym, the AIDL wrapper, the factory
+and the ioctl all worked.
+
+**What didn't:** the LED never moved (`/sys/class/leds/led:torch_0/brightness` = 0).
+
+**⭐ Root cause — `CFG_FLASH_LOW` is only legal from `MSM_CAMERA_FLASH_OFF` or `_INIT`**
+(`msm_flash.c:767`). Changing strength means re-issuing LOW while the torch is already
+lit, i.e. from state LOW — which lands in the else branch and is **dropped**. My
+`setTorchLevel()` did exactly that, so the level could never change once lit. Matches
+Kyle's report verbatim: "turns on after a minimum threshold and doesn't get brighter or
+dimmer" — the *first* LOW (from INIT) lit at whatever level was current, and every
+subsequent one was discarded.
+
+**⭐⭐ Why it took so long: the rejection is invisible.** That branch is `CDBG`-only and
+`msm_flash_config()` leaves `rc` at 0, so the ioctl "succeeds" all the way back up to
+CameraService, which logs a successful strength change. Nothing in logcat, dmesg or
+strace showed a failure. It only became visible with:
+
+```bash
+mount -t debugfs none /sys/kernel/debug        # if not mounted
+echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control
+dmesg -c >/dev/null; # take a torch action
+dmesg | grep -i flash                          # -> "Invalid state : 2"
+```
+
+`2 == MSM_CAMERA_FLASH_LOW` (`msm_flash.h:30`: INIT, OFF, LOW, HIGH, RELEASE).
+
+**Secondary damage:** the silent drop desyncs HAL from driver — `m_flashOn` gets set
+while `flash_state` stays LOW — and the torch then stays dark, because
+`setFlashMode(false)` short-circuits on `-EALREADY` and never sends the `CFG_FLASH_OFF`
+that would clear it. Recovery without a reboot: kill the camera provider; the fresh HAL
+has `m_flashFds = -1`, so the next torch action re-issues `CFG_FLASH_INIT`, which resets
+`flash_state` to INIT.
+
+**Fix (staged):** `applyFlashState()` now issues `CFG_FLASH_OFF` before `CFG_FLASH_LOW`
+whenever turning on. From LOW that is a real transition; from OFF/RELEASE it is a
+harmless no-op leaving the state where LOW needs it. Idempotent, and it re-syncs the
+driver whenever `m_flashOn` has drifted. Also promoted the level log from LOGD to LOGI
+so the requested level is visible without debug props.
+
+⚠️ **Self-inflicted detour:** I drove `/sys/class/leds/led:torch_*/brightness` directly
+to characterise the PMIC. That bypasses msm_flash's state machine and desynced it,
+which is what killed the torch mid-session and sent me chasing a latched `open_fault`
+that was never latched. **Drive the torch through the HAL, or expect to desync the
+driver.** Direct LED writes are fine only for reading `reg_dump`.
+
+**Confirmed good along the way** (keep, these are real):
+- kernel scales torch current correctly: 40 mA → `REG_0xd342 = 0x03`, 199 mA → `0x0e`
+  (`val = mA * 15 / 200`, `FLASH_TORCH_MAX_LEVEL = 0x0F`, 4-bit register).
+- the torch current register is written **only** by the switch node's work item
+  (`leds-qpnp-flash.c:1373`, `flash_node->id == FLASH_LED_SWITCH`) — so without the
+  §9 `qcom,switch-source` restore, variable torch brightness could never have worked
+  at all, whatever the HAL sent.
+- USB drops on this bench every time the LED switches — read-only polling is stable,
+  LED writes are not. Related: [[usb-adb-auth-prompt-storm]].
