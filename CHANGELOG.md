@@ -1,5 +1,36 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260802 (2026-08-02)
+
+### kernel (msm8937) (since pepito-23.2-20260801)
+- arm64: dts: pepito: restore the camera flash switch source and enable pin
+- arm64: configs: mi8937: enable exFAT, UDF and ISO9660
+- power: qpnp-smbcharger: support qcom,hvdcp-not-supported; disable HVDCP on pepito
+- i2c-msm-v2, clk: keep console clock votes on serial-debug boots
+- clk: msm: defer the TZ uart handoff-vote drop to first suspend
+- i2c-msm-v2: restore probe-end clock disable
+
+### device/Mi8937 (since pepito-23.2-20260801)
+- Mi8937: camera: add torch strength for the flashlight slider
+- Mi8937: ship exfatprogs so vold can mount exFAT media
+
+### frameworks/base (since pepito-23.2-20260801)
+- BatteryService: report FULL when the charging limit holds the charge
+
+### frameworks/native
+- (first tagged in 20260802 — no prior anchor)
+
+### system/bpfprogs
+- (first tagged in 20260802 — no prior anchor)
+
+### vendor/lineage (since pepito-23.2-20260801)
+- aconfig: bp4a: enable the SystemUI flashlight strength slider
+
+### landing (docs/scripts) (since pepito-23.2-20260801)
+- release: PVG100E variant support — per-variant firehose loaders + rawprogram XMLs
+- manifest: pin frameworks/native + system/bpfprogs forks (timeInState fix)
+- plans: exFAT, camera flash sync, torch brightness slider
+- release: add frameworks/native + system/bpfprogs forks (timeInState fix)
 ## 20260801 (2026-08-01)
 
 ### device/Mi8937 (since pepito-23.2-20260729)
