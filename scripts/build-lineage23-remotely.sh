@@ -64,8 +64,9 @@ SOURCE_EXCLUDES=(
 )
 
 # The four images prepare-flash.sh produces per build (desparsified system/
-# vendor, signed boot/recovery). pepito_firehose.elf and rawprogram0.xml are
-# device-constant, already present locally, and not re-fetched.
+# vendor, signed boot/recovery). The firehose loaders and rawprogram XMLs
+# (pvg100_/pvg100e_-prefixed) are device-constant, already present locally,
+# and not re-fetched.
 STAGE_FILTERS=(
     --include='boot.bin'
     --include='recovery.bin'

@@ -94,6 +94,19 @@ ssh "$TARGET" -- "mkdir -p '$LANDING_ROOT'"
 rsync "${RSYNC_COMMON[@]}" --exclude='/.git/' \
     "$LANDING_ROOT"/ "$TARGET:$LANDING_ROOT"/ | tail -20
 
+# Device-constant EDL inputs (firehose loaders + per-variant rawprogram XMLs).
+# prepare-flash.sh does not produce these and the build sync excludes
+# /flash-staging/ entirely, so push the current local copies — release.sh
+# requires both rawprogram XMLs since PVG100E support (2026-08-02).
+LOCAL_FLASH_DIR=${LOCAL_FLASH_DIR:-/home/kyle/android/lineage-23/flash-staging}
+EDL_CONSTANTS=()
+for f in pvg100_firehose.elf pvg100e_firehose.elf rawprogram0.pvg100.xml rawprogram0.pvg100e.xml; do
+    [[ -f "$LOCAL_FLASH_DIR/$f" ]] && EDL_CONSTANTS+=("$LOCAL_FLASH_DIR/$f")
+done
+ssh "$TARGET" -- "mkdir -p '$REMOTE_ROOT/flash-staging'"
+rsync "${RSYNC_COMMON[@]}" "${EDL_CONSTANTS[@]}" \
+    "$TARGET:$REMOTE_ROOT/flash-staging"/ | tail -5
+
 # UTC, not local: LineageOS stamps the zip with $(date -u +%Y%m%d)
 # (vendor/lineage/config/version.mk). Matching on local time silently fails to
 # find a just-built zip whenever local and UTC dates differ — i.e. every evening

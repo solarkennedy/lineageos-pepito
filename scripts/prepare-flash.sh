@@ -106,7 +106,8 @@ if [[ "$BOOT_ONLY" -eq 0 ]]; then
     cp "$PRODUCT_OUT/recovery.img" "$FLASH_DIR/recovery_unsigned.img"
     /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/recovery_unsigned.img" "$FLASH_DIR/recovery.bin" /recovery
 
-    # Zero the config partition (64 sectors × 512 B = 32 KB per rawprogram0.xml).
+    # Zero the config partition (64 sectors × 512 B = 32 KB — same size in
+    # both variants' rawprogram XMLs).
     # The stock/last-owner FRP token lives here. On A15+ a /data wipe deletes
     # /data/system/frp_secret while this token survives, so FRP can never
     # auto-deactivate → FrpWarningActivity ("factory reset" prompt) greets every

@@ -37,7 +37,10 @@ clear_ramoops() {
     echo "WARNING: Could not clear ramoops; continuing with EDL reboot." >&2
 }
 
-for f in "$BOOT_IMG" "$FLASH_DIR/pepito_firehose.elf" "$FLASH_DIR/rawprogram0.xml"; do
+# PVG100 names hardcoded: the bench DUTs are all US-variant hardware. The
+# PVG100E (pvg100e_firehose.elf + rawprogram0.pvg100e.xml) ships in the
+# release bundle only — see release.sh.
+for f in "$BOOT_IMG" "$FLASH_DIR/pvg100_firehose.elf" "$FLASH_DIR/rawprogram0.pvg100.xml"; do
     [[ -f "$f" ]] || die "$f not found — run scripts/prepare-flash.sh first"
 done
 command -v qdl >/dev/null || die "'qdl' not found in PATH"
@@ -60,9 +63,9 @@ for i in $(seq 1 30); do
 done
 echo -e "\nEDL device detected."
 
-# Run from FLASH_DIR so qdl resolves rawprogram0.xml's filenames relative to it.
+# Run from FLASH_DIR so qdl resolves the rawprogram XML's filenames relative to it.
 FLASH_START=$SECONDS
-(cd "$FLASH_DIR" && systemd-inhibit qdl --storage emmc pepito_firehose.elf rawprogram0.xml)
+(cd "$FLASH_DIR" && systemd-inhibit qdl --storage emmc pvg100_firehose.elf rawprogram0.pvg100.xml)
 
 notify "Flash complete — pepito" \
 "qdl finished in $(( (SECONDS - FLASH_START) / 60 ))m

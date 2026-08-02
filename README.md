@@ -78,6 +78,12 @@ PepitoLauncher2: the interlocking three-column drawer with the lens-zoom effect 
 
 DO NOT FLASH UNLESS YOU HAVE A BACKUP FIRST!!!
 
+**Both hardware variants are supported** — the US **PVG100** and the international
+**PVG100E** (same images, different partition layout). The EDL package contains a
+partition XML for each; check the model number on the back of your phone and use
+the matching one. **Flashing with the other variant's XML writes over the wrong
+partitions, including stock firmware** — the bundle's `README.md` spells this out.
+
 ### Procedure
 
 1. Download the EDL package from the [releases page](https://github.com/solarkennedy/lineageos-pepito/releases) — **vanilla** or **GApps**, not both.

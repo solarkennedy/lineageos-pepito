@@ -5,8 +5,9 @@
 #
 # Given the signed zip you built and flash-tested yourself, this:
 #   1. sanity-checks it (exists, under GitHub's 2 GiB release-asset limit)
-#   2. builds an EDL bundle from flash-staging/ (firehose loader,
-#      rawprogram0.xml, raw boot/recovery/system/vendor, README) and
+#   2. builds an EDL bundle from flash-staging/ (per-variant firehose loaders
+#      + rawprogram XMLs for both PVG100 and PVG100E, raw
+#      boot/recovery/system/vendor, README) and
 #      compresses the whole thing as one .tar.xz
 #   3. creates (or reuses) a GitHub Release and uploads the zip, the EDL
 #      tar, and .sha256sum sidecars for both
@@ -105,11 +106,18 @@ the OTA zip instead (\`adb sideload\` in recovery, or the built-in Updater)."
     fi
 
     cat > "$1" <<EOF
-# LineageOS $VERSION for the Palm PVG100 ("pepito") — EDL flash package
+# LineageOS $VERSION for the Palm PVG100 / PVG100E ("pepito") — EDL flash package
 
 $ROMTYPE build \`$TAG\` ($DEVICE). This is the low-level **Qualcomm EDL (9008)**
 image set: raw boot / recovery / system / vendor partitions you write with the
 bundled \`qdl\` when the phone won't boot or you're coming from stock Android 8.1.
+
+Supports both hardware variants — the US **PVG100** and the international
+**PVG100E**. The OS images are identical; what differs is the Firehose loader
+and the partition-table XML you pass to \`qdl\`. See "Which variant do I
+have?" below — **using the wrong XML writes over the wrong partitions**,
+including stock firmware this package otherwise never touches (recoverable
+only from a full EDL backup).
 
 $update_note
 
@@ -121,9 +129,14 @@ $update_note
 
 ## What's in here
 
-- \`pepito_firehose.elf\` — signed Firehose loader for this SoC (MSM8940)
-- \`rawprogram0.xml\` — partition table; only the boot/recovery/system/vendor/
-  config entries are used here (the rest are skipped with \`--allow-missing\`)
+- \`pvg100_firehose.elf\` — signed Firehose loader for the **PVG100**
+- \`pvg100e_firehose.elf\` — signed Firehose loader for the **PVG100E**
+  (each variant has its own signing cert — use the one matching your phone)
+- \`rawprogram0.pvg100.xml\` — **PVG100** partition table
+- \`rawprogram0.pvg100e.xml\` — **PVG100E** partition table (same disk, but the
+  partitions live at different offsets — the two are NOT interchangeable)
+- In either XML only the boot/recovery/system/vendor/config entries are used
+  here; the rest are skipped with \`--allow-missing\`.
 - \`boot.bin\`, \`recovery.bin\`, \`system.bin\`, \`vendor.bin\` — the raw images
 - \`config.bin\` — a 32 KB zero-fill flashed over the \`config\` partition to
   clear any stale factory-reset-protection (FRP) token, so you don't get a
@@ -137,6 +150,24 @@ $update_note
 This package does **not** touch modem, bootloader, TrustZone, RPM, or other
 firmware partitions — those are stock, device-specific, and already on your
 phone. Only boot / recovery / system / vendor are written.
+
+## Which variant do I have?
+
+Check the model number — it's printed on the regulatory label on the back of
+the phone, on the box, and shown in stock Android under Settings → System →
+About phone → Model:
+
+- **PVG100** — the US / Verizon model
+  → \`pvg100_firehose.elf\` + \`rawprogram0.pvg100.xml\`
+- **PVG100E** — the international (Vodafone) model
+  → \`pvg100e_firehose.elf\` + \`rawprogram0.pvg100e.xml\`
+
+⚠️ **This matters.** The two variants place their partitions at completely
+different offsets on the same-size eMMC. Flashing with the other variant's
+XML writes these images over the wrong partitions — including the stock
+bootloader chain and firmware regions this package otherwise never touches —
+leaving the phone unbootable at best, and restorable only from a full EDL
+backup. If you're not 100% sure, check the label.
 
 ## Before you start
 
@@ -162,12 +193,19 @@ phone. Only boot / recovery / system / vendor are written.
    The screen stays black in EDL — that's expected. Confirm the phone is in EDL
    with \`lsusb\`: a \`Qualcomm ... 9008\` device should appear.
 
-3. Flash (the bundled \`./qdl\` — root or a 9008 udev rule is needed for USB):
+3. Flash (the bundled \`./qdl\` — root or a 9008 udev rule is needed for USB).
+   **Use the loader and XML that match your variant** (see above):
 
-       sudo ./qdl --storage emmc --allow-missing pepito_firehose.elf rawprogram0.xml
+   PVG100:
 
-   \`--allow-missing\` is required: \`rawprogram0.xml\` lists the full stock
-   partition table and only boot/recovery/system/vendor/config are included here.
+       sudo ./qdl --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml
+
+   PVG100E:
+
+       sudo ./qdl --storage emmc --allow-missing pvg100e_firehose.elf rawprogram0.pvg100e.xml
+
+   \`--allow-missing\` is required: each XML lists the full stock partition
+   table and only boot/recovery/system/vendor/config are included here.
 
 4. When \`qdl\` finishes, let the phone reboot on its own. **The first boot takes
    a few minutes** while it formats \`/data\`. If it instead reboots into recovery
@@ -269,12 +307,23 @@ GH="${GH:-/home/kyle/.bin/gh.com}"
 EDL_BUNDLE="lineage-${VERSION}-${TAG}-${ROMTYPE}-${DEVICE}${VARIANT_SUFFIX}-EDL"
 TAG_BUNDLE_NAME="$EDL_BUNDLE"   # used by write_edl_readme
 EDL_TAR_NAME="${EDL_BUNDLE}.tar.xz"
-EDL_FIREHOSE="$EDL_DIR/pepito_firehose.elf"
-EDL_RAWPROGRAM="$EDL_DIR/rawprogram0.xml"
+# Every loader/XML carries its model number explicitly so a user can never
+# grab a "default" that happens to be the wrong variant — they must pick.
+# PVG100E (international/Vodafone variant): same eMMC + same images, but a
+# completely reshuffled GPT (its own rawprogram is mandatory — wrong XML
+# writes over the wrong partitions) AND its own variant-signed loader
+# ("PepitoVDF Attestation Cert1" vs the PVG100's "Pepito Attestation Cert1";
+# sourced from programmer-collection/alcatel Pepito_VDF_NPRG.bin). All four
+# are required inputs; E-flash confirmed working by a community E-unit
+# 2026-08-02.
+EDL_FIREHOSE="$EDL_DIR/pvg100_firehose.elf"
+EDL_RAWPROGRAM="$EDL_DIR/rawprogram0.pvg100.xml"
+EDL_FIREHOSE_E="$EDL_DIR/pvg100e_firehose.elf"
+EDL_RAWPROGRAM_E="$EDL_DIR/rawprogram0.pvg100e.xml"
 
 if ! $SKIP_EDL; then
     MISSING=()
-    for f in "$EDL_FIREHOSE" "$EDL_RAWPROGRAM"; do
+    for f in "$EDL_FIREHOSE" "$EDL_FIREHOSE_E" "$EDL_RAWPROGRAM" "$EDL_RAWPROGRAM_E"; do
         [[ -f "$f" ]] || MISSING+=("$f")
     done
     for img in "${EDL_IMAGES[@]}"; do
@@ -366,7 +415,9 @@ if ! $SKIP_EDL; then
     mkdir -p "$PKG_DIR"
 
     cp "$EDL_FIREHOSE" "$PKG_DIR/"
+    cp "$EDL_FIREHOSE_E" "$PKG_DIR/"
     cp "$EDL_RAWPROGRAM" "$PKG_DIR/"
+    cp "$EDL_RAWPROGRAM_E" "$PKG_DIR/"
 
     for img in "${EDL_IMAGES[@]}"; do
         cp "$EDL_DIR/$img" "$PKG_DIR/$img"
