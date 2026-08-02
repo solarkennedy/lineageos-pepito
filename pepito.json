@@ -1,6 +1,16 @@
 {
   "response": [
     {
+      "datetime": 1785705467,
+      "filename": "lineage-23.2-20260802-SNAPSHOT-Mi8937_gapps.zip",
+      "id": "ee6df9eaafca093de095124f19c3313a7a02f7a2651f9ac3e4c8e7a1f33f391c",
+      "sha256": "ee6df9eaafca093de095124f19c3313a7a02f7a2651f9ac3e4c8e7a1f33f391c",
+      "romtype": "SNAPSHOT",
+      "size": 1553424190,
+      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260802/lineage-23.2-20260802-SNAPSHOT-Mi8937_gapps.zip",
+      "version": "23.2"
+    },
+    {
       "datetime": 1785703530,
       "filename": "lineage-23.2-20260802-UNOFFICIAL-Mi8937.zip",
       "id": "bee276011f2383ea9fc5a9ba30ac5e7cb5d22725a44559c7ba5d18d9b714d9e6",
