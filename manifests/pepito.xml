@@ -40,6 +40,14 @@
   <remove-project name="LineageOS/android_frameworks_base" />
   <project path="frameworks/base" name="android_frameworks_base" remote="pepito" revision="pepito-23.2-r1" />
 
+  <!-- working branch: pepito-timeinstate — 1 commit: revert libtimeinstate
+       raw-tracepoint attach for sched_process_free. Half of the zero-CPU-
+       attribution fix on the 4.19 kernel (other half: system/bpfprogs below).
+       NOTE: branch-pinned — no pepito-23.2-r1 tag on this fork yet; the next
+       release will tag it and the manifest regen re-pins to that tag. -->
+  <remove-project name="LineageOS/android_frameworks_native" />
+  <project path="frameworks/native" name="android_frameworks_native" remote="pepito" revision="pepito-timeinstate" />
+
   <!-- working branch: pepito-qs-volume-slider -->
   <remove-project name="LineageOS/android_lineage-sdk" />
   <project path="lineage-sdk" name="android_lineage-sdk" remote="pepito" revision="pepito-23.2-r1" />
@@ -60,6 +68,15 @@
   <!-- working branch: pepito — single commit (f2fs recovery log silencing). -->
   <remove-project name="LineageOS/android_system_core" />
   <project path="system/core" name="android_system_core" remote="pepito" revision="pepito-23.2-r1" />
+
+  <!-- working branch: pepito-timeinstate — 2 commits: revert CO-RE/BTF
+       tracepoint-defs support + build timeInState with -mcpu=v2 for the
+       pre-5.1 kernel BPF verifier. Other half of the zero-CPU-attribution fix.
+       ⚠️ Stock entry comes from the AOSP remote as name="platform/system/bpfprogs"
+       (NOT LineageOS/…), so the remove-project below MUST use that name.
+       Branch-pinned for the same reason as frameworks/native above. -->
+  <remove-project name="platform/system/bpfprogs" />
+  <project path="system/bpfprogs" name="android_system_bpfprogs" remote="pepito" revision="pepito-timeinstate" />
 
   <!-- working branch: pepito — aconfig flag disabling enable_taskbar_on_phones
        for bp4a. Load-bearing: without it 3-button nav mis-insets over app
