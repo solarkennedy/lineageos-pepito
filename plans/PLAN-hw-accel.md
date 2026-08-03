@@ -33,7 +33,7 @@ Companion lanes: `PLAN-perf-battery.md` (perf HAL / boosts — DONE there),
 | 15 | MDSS rotator | Rotated video scanout | part of Lane A |
 | 16 | Hexagon FastRPC (adsprpcd) | App DSP compute | ✅ ships; app-driven, nothing to do |
 | 17 | Vulkan | — | ✅ **ALREADY WORKING — probed 2026-08-03, nothing to do.** The "not in hw/" premise was wrong: the loader uses the sphal namespace, whose search path includes `/vendor/lib64` root, so `vulkan.adreno.so` loads fine where it sits. `cmd gpu vkjson` on DUT1 → full caps dump, deviceName "Adreno (TM) 505", device apiVersion 1.1.128, and the build already advertises `android.hardware.vulkan.version=1.1` + compute + deqp-level features (`pm list features`). Caveat: enumeration/vkjson-proven, no sustained app-render stress test — if a Vulkan app misbehaves someday, that's new information, not a packaging gap |
-| 19 | OpenCL (GPU compute) | App GPGPU (photo apps, RS replacement) | ✅ **SOLVED 2026-08-03, live-validated on DUT1, staged/uncommitted** — freestanding probe (`clprobe.c`: -nostdlib + raw syscalls, linked straight against the blob, no NDK needed) reports **OpenCL 2.0 / Adreno 505 (1 CU, 1401 MiB)** and a vadd kernel compiles+dispatches+reads back correctly → full libCB/llvm/KGSL path proven. Staged in mithorium-common: lib+lib64 `libOpenCL.so` + trimmed `/vendor/etc/public.libraries.txt` (perfd-client, adsprpc `64`-tagged — no 32-bit copy in our build, OpenCL). sepolicy already covers it (`legacy-um file_contexts:698` → same_process_hal_file). Closure clean: dlopens only libCB/libgsl (shipped); nightly's top-level `libq3dtools_adreno.so` is just a symlink into egl/ (we ship the real one). Residual tick: app-level visibility (e.g. OpenCL-Z) after next flash |
+| 19 | OpenCL (GPU compute) | App GPGPU (photo apps, RS replacement) | ✅ **SOLVED+FLASH-VALIDATED 2026-08-03** (committed `fc47e08`; baked build re-proves compute + same_process_hal_file labels under Enforcing) — freestanding probe (`clprobe.c`: -nostdlib + raw syscalls, linked straight against the blob, no NDK needed) reports **OpenCL 2.0 / Adreno 505 (1 CU, 1401 MiB)** and a vadd kernel compiles+dispatches+reads back correctly → full libCB/llvm/KGSL path proven. Staged in mithorium-common: lib+lib64 `libOpenCL.so` + trimmed `/vendor/etc/public.libraries.txt` (perfd-client, adsprpc `64`-tagged — no 32-bit copy in our build, OpenCL). sepolicy already covers it (`legacy-um file_contexts:698` → same_process_hal_file). Closure clean: dlopens only libCB/libgsl (shipped); nightly's top-level `libq3dtools_adreno.so` is just a symlink into egl/ (we ship the real one). Residual tick: app-level visibility (e.g. OpenCL-Z) after next flash |
 | 18 | A2DP offload / storage ICE / VPP | — | ⛔ not present on this SoC generation |
 
 ---
@@ -266,7 +266,7 @@ libacdbloader / libsdm-color.
 
 ---
 
-## Lane C — ADSP compressed audio offload ✅ RETESTED GREEN 2026-08-03, enable staged/uncommitted
+## Lane C — ADSP compressed audio offload ✅ RETESTED GREEN + FLASH-VALIDATED 2026-08-03 (committed `3a3841eb`; baked build: prop unset by default, compress-offload-playback opens + decodes under Enforcing, 0 denials)
 
 **Retest result (the "one cheap setprop flip" — item 1 below — executed):**
 `setprop audio.offload.disable 0` + audioserver restart on DUT1, then a direct
