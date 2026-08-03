@@ -28,12 +28,12 @@ Companion lanes: `PLAN-perf-battery.md` (perf HAL / boosts — DONE there),
 | 10 | ARMv8 CE | FBE/crypto | ✅ (CPU crypto instructions — this IS the hw path; no ICE on this SoC) |
 | 11 | **MDP5 overlay composition** | Display composition w/o GPU | ✅ **VALIDATED+COMMITTED `13be436` 2026-08-02** — Lane A below |
 | 12 | **Widevine (TEE DRM)** | Protected streaming | ✅ **L1! VALIDATED+COMMITTED `4d6f3e6` 2026-08-02** — Lane B below |
-| 13 | ADSP compress-offload | Music decode off-CPU | 🟡 deferred — Lane C |
+| 13 | ADSP compress-offload | Music decode off-CPU | ✅ **WORKS 2026-08-03 — the old EFAILED no longer reproduces; enable staged** — Lane C |
 | 14 | IPA tethering offload | Hotspot NAT off-CPU | 🟡 parked — Lane D |
 | 15 | MDSS rotator | Rotated video scanout | part of Lane A |
 | 16 | Hexagon FastRPC (adsprpcd) | App DSP compute | ✅ ships; app-driven, nothing to do |
-| 17 | Vulkan | — | ⛔ likely impossible — but 2026-08-02: we DO ship `lib64/vulkan.adreno.so` (mithorium-common-vendor.mk), just not in `lib64/hw/` where the loader looks. Probably nonfunctional on A505 blobs (why the nightly leaves it unloaded too); cheap probe someday: symlink into hw/ + `vkjson`/cts-tradefed probe |
-| 19 | OpenCL (GPU compute) | App GPGPU (photo apps, RS replacement) | 🔴 found 2026-08-02 in nightly-diff sweep: nightly ships `libOpenCL.so` (both bitness) + `/etc/public.libraries.txt`; we ship neither → apps see no CL. Cheap: same packaging recipe (needs public.libraries.txt for app visibility) |
+| 17 | Vulkan | — | ✅ **ALREADY WORKING — probed 2026-08-03, nothing to do.** The "not in hw/" premise was wrong: the loader uses the sphal namespace, whose search path includes `/vendor/lib64` root, so `vulkan.adreno.so` loads fine where it sits. `cmd gpu vkjson` on DUT1 → full caps dump, deviceName "Adreno (TM) 505", device apiVersion 1.1.128, and the build already advertises `android.hardware.vulkan.version=1.1` + compute + deqp-level features (`pm list features`). Caveat: enumeration/vkjson-proven, no sustained app-render stress test — if a Vulkan app misbehaves someday, that's new information, not a packaging gap |
+| 19 | OpenCL (GPU compute) | App GPGPU (photo apps, RS replacement) | ✅ **SOLVED 2026-08-03, live-validated on DUT1, staged/uncommitted** — freestanding probe (`clprobe.c`: -nostdlib + raw syscalls, linked straight against the blob, no NDK needed) reports **OpenCL 2.0 / Adreno 505 (1 CU, 1401 MiB)** and a vadd kernel compiles+dispatches+reads back correctly → full libCB/llvm/KGSL path proven. Staged in mithorium-common: lib+lib64 `libOpenCL.so` + trimmed `/vendor/etc/public.libraries.txt` (perfd-client, adsprpc `64`-tagged — no 32-bit copy in our build, OpenCL). sepolicy already covers it (`legacy-um file_contexts:698` → same_process_hal_file). Closure clean: dlopens only libCB/libgsl (shipped); nightly's top-level `libq3dtools_adreno.so` is just a symlink into egl/ (we ship the real one). Residual tick: app-level visibility (e.g. OpenCL-Z) after next flash |
 | 18 | A2DP offload / storage ICE / VPP | — | ⛔ not present on this SoC generation |
 
 ---
@@ -104,8 +104,20 @@ SDM_EventThread; ⚠️ every "storm quiet" reading with the display asleep is a
 artifact — the loop only runs while the screen is on.
 
 **Remaining follow-ups:**
-- [ ] Active-content A/B (where MDP should win): scroll loop + local video
-      playback, CT-3; confirm video layer rides the VIG pipe (DEVICE).
+- [x] Video-to-VIG functional check ✅ 2026-08-03: bear-1280x720.mp4 via
+      Glimpse (⚠️ needs a `content://media/...` URI — Glimpse rejects
+      `file://` with "Cannot get media type"; index via MEDIA_SCANNER_SCAN_FILE
+      broadcast + `content query --projection _id:_display_name`). Venus HW
+      decode (`OMX.qcom.video.decoder.avc`), video SurfaceView DEVICE at z=0
+      with a 1280→720 downscale (QSEED ⇒ VIG pipe by construction — RGB/DMA
+      can't scale), usesClientComposition=false, 0 underruns in
+      /sys/kernel/debug/mdp/stat. ⚠️ VIG0 play-count activity alone proves
+      NOTHING (VIG pipes carry RGB UI layers too — first attempt false-positive).
+- [ ] Active-content CT-3 power A/B (where MDP should win): scroll loop +
+      video-loop legs, MDP vs GPU (rename-libsdmextension toggle), Full-battery
+      protocol. Needs a long clip: loop-extend a bear clip with ffmpeg
+      (`-stream_loop`) or install VLC (apk was NOT in ~/Downloads — only the
+      bear clips landed).
 - [x] Rebuild + flash — ✅ FLASH-VALIDATED 2026-08-03 (both lanes re-verified
       on the built images: Enforcing, widevine registered + L1 probe green,
       0 SDM errors, DEVICE composition). Build gotcha folded into the
@@ -254,7 +266,33 @@ libacdbloader / libsdm-color.
 
 ---
 
-## Lane C — ADSP compressed audio offload (deferred 2026-07-06) 🟡
+## Lane C — ADSP compressed audio offload ✅ RETESTED GREEN 2026-08-03, enable staged/uncommitted
+
+**Retest result (the "one cheap setprop flip" — item 1 below — executed):**
+`setprop audio.offload.disable 0` + audioserver restart on DUT1, then a direct
+**offloaded AudioTrack** fed raw MP3 (probe `scratchpad AOff.java`, app_process
+dex — MediaPlayer from app_process fails prepare with 0x80000000, attribution
+issue, don't bother; AudioTrack.Builder.setOffloadedPlayback needs no Context
+and `AudioManager.isOffloadedPlaybackSupported` is static):
+- Policy reports mp3/44.1k offload supported (mono+stereo) once the prop flips.
+- HAL opens `compress-offload-playback`, routes to speaker (acdb 14),
+  `offload_visualizer` attaches, playback head advances ~16 s of decoded audio.
+- **Zero ADSP_EFAILED, no ADSP SSR** (dmesg: adsp untouched since boot).
+
+The 2026-07-06 "stock A8.1 ADSP image lacks the topology" conclusion is
+FALSIFIED in the current build era — most plausibly the ACDB fix (real cal now
+engages, 2026-07-11) changed what the ASM open sends. Staged: the
+`audio.offload.disable=1` block REMOVED from Mi8937/device.mk (comment
+documents history + revert path). DUT1 left with offload live-enabled
+(setprop, reverts on reboot) for music smoke-testing.
+
+**Remaining validation (post-flash, non-blocking):**
+- [ ] Real music app (Twelve — it defaults enableOffload=true) — play, pause,
+      seek, track-switch, A2DP routing mid-stream.
+- [ ] The lane's original success metric: CT-3/coulomb screen-off music mA,
+      offload vs PCM (and vs stock if a witness ever returns to the bench).
+
+### Original deferral analysis (kept for context — deferred 2026-07-06) 🟡
 
 Background (`PLAN-audio-offload.md`): compress offload crashed DSP-side —
 `ASM_STREAM_CMD_OPEN_WRITE_V3 → ADSP_EFAILED`; conclusion was the stock A8.1
