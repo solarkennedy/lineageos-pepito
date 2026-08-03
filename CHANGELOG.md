@@ -1,5 +1,40 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260803 (2026-08-03)
+
+### device/Mi8937 (since pepito-23.2-20260802)
+- Mi8937: pepito — ship Blocker, running as a system-UID app (no root, no Shizuku)
+- Mi8937: pepito — re-enable compressed audio offload; the ADSP EFAILED is gone
+- Mi8937: pepito — full-AOT (speed) dexpreopt for Aperture + PepitoLauncher2
+- Mi8937: pepito defaults all three animation scales to 0.5x
+
+### device/mithorium-common (since pepito-23.2-20260802)
+- usb: uvc: advertise only what the webcam pipeline delivers
+- mithorium: Neuter SDM MDP-idle fallback timer — its refresh loop taxed screen-on ~45 mW and the fallback never worked
+- mithorium-common: default zram to zstd
+
+### vendor/xiaomi (blobs) (since pepito-23.2-20260802)
+- mithorium-common: Ship libOpenCL + public.libraries.txt — apps saw no GPU compute
+- mithorium-common: Ship libsdmextension + libscalar + libhdr_tm — MDP overlay composition was dead, every frame GPU-composited
+- Mi8937: Ship Widevine DRM (L1!) — was never packaged, only clearkey shipped
+- Mi8937: Ship the QTI perf HAL — interaction/launch/camera boosts were all dead
+
+### frameworks/base (since pepito-23.2-20260802)
+- SettingsProvider: seed animator_duration_scale like the other two scales
+
+### LineageParts (since pepito-23.2-20260802)
+- GoTweaksSettings: zram-zstd toggle defaults ON
+
+### landing (docs/scripts) (since pepito-23.2-20260802)
+- PLAN-hw-accel: OpenCL app-namespace tick done; Lane E webcam-MJPEG notes
+- PLAN-blocker: new lane — Blocker as a system-UID app, flash-validated
+- PLAN-hw-accel: OpenCL + offload flash-validated on baked images
+- PLAN-hw-accel: 08-03 sweep — OpenCL solved+staged, Vulkan already worked, Lane C offload EFAILED gone (enable staged), video-to-VIG functional check done
+- PLAN-hw-accel: Lanes A+B solved/validated/committed; idle-storm root cause + fix; CT-3 A/B results; nightly-diff sweep artifact
+- plans: perf-battery — dexpreopt audit result + post-flash check
+- plans: perf-battery — queue schedtune top-app boost A/B (stune all-zero finding)
+- plans: new PLAN-hw-accel lane — full accel-block inventory + 4 sub-lanes
+- plans: perf-battery — responsiveness lane (perf HAL bring-up, zstd/animation defaults)
 ## 20260802 (2026-08-02)
 
 ### kernel (msm8937) (since pepito-23.2-20260801)
