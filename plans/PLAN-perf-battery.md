@@ -137,7 +137,12 @@ acq/rel logs with client pid + opcode list (prop resets on reboot).
 
 Remaining in the lane (step ③, needs the flashed build): CT-3 A/B of lowering the
 permanent 960 MHz big-cluster floor (post_boot.sh) — safer now that scroll boost
-supplies interaction-time freq — and core_ctl min_cpus. Post-flash validation
+supplies interaction-time freq — and core_ctl min_cpus. Also queued (found
+2026-08-02 while explaining EAS/uclamp to Kyle): **schedtune is all-zero** —
+`/dev/stune/top-app` boost=0 prefer_idle=0 (A16 task_profiles likely no longer
+drives stune on this 4.19/CONFIG_SCHED_TUNE kernel; uclamp doesn't exist pre-5.3).
+Candidate lever: top-app boost=5-10 + prefer_idle=1 via init → tap-latency A/B,
+small power cost; two sysfs writes, live-testable. Post-flash validation
 checklist: perf HAL domain/denials/boost (as above), `zram0/comp_algorithm` shows
 `[zstd]`, `settings get global animator_duration_scale` = 0.5 on a clean flash,
 Pepito Tweaks zstd toggle shows ON, camera open/close + photo + audio playback
