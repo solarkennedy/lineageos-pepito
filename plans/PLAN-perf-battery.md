@@ -146,7 +146,12 @@ small power cost; two sysfs writes, live-testable. Post-flash validation
 checklist: perf HAL domain/denials/boost (as above), `zram0/comp_algorithm` shows
 `[zstd]`, `settings get global animator_duration_scale` = 0.5 on a clean flash,
 Pepito Tweaks zstd toggle shows ON, camera open/close + photo + audio playback
-clean (jinghuang path now exercises the real client).
+clean (jinghuang path now exercises the real client), and `dumpsys package
+dexopt` shows Aperture + PepitoLauncher2 at `[status=speed] [reason=prebuilt]`
+(dexpreopt audit 2026-08-02, commit f1c08972: they sat at verify = pure-JIT
+cold starts; SystemUI/Trebuchet were already covered by AOSP's speed list;
+blanket speed rejected — ~170 MB free on /system + bg-dexopt's profile-guided
+upgrades beat it for the long tail).
 
 ---
 
