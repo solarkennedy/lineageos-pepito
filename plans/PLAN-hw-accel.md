@@ -33,8 +33,9 @@ Companion lanes: `PLAN-perf-battery.md` (perf HAL / boosts — DONE there),
 | 15 | MDSS rotator | Rotated video scanout | part of Lane A |
 | 16 | Hexagon FastRPC (adsprpcd) | App DSP compute | ✅ ships; app-driven, nothing to do |
 | 17 | Vulkan | — | ✅ **ALREADY WORKING — probed 2026-08-03, nothing to do.** The "not in hw/" premise was wrong: the loader uses the sphal namespace, whose search path includes `/vendor/lib64` root, so `vulkan.adreno.so` loads fine where it sits. `cmd gpu vkjson` on DUT1 → full caps dump, deviceName "Adreno (TM) 505", device apiVersion 1.1.128, and the build already advertises `android.hardware.vulkan.version=1.1` + compute + deqp-level features (`pm list features`). Caveat: enumeration/vkjson-proven, no sustained app-render stress test — if a Vulkan app misbehaves someday, that's new information, not a packaging gap |
-| 19 | OpenCL (GPU compute) | App GPGPU (photo apps, RS replacement) | ✅ **SOLVED+FLASH-VALIDATED 2026-08-03** (committed `fc47e08`; baked build re-proves compute + same_process_hal_file labels under Enforcing) — freestanding probe (`clprobe.c`: -nostdlib + raw syscalls, linked straight against the blob, no NDK needed) reports **OpenCL 2.0 / Adreno 505 (1 CU, 1401 MiB)** and a vadd kernel compiles+dispatches+reads back correctly → full libCB/llvm/KGSL path proven. Staged in mithorium-common: lib+lib64 `libOpenCL.so` + trimmed `/vendor/etc/public.libraries.txt` (perfd-client, adsprpc `64`-tagged — no 32-bit copy in our build, OpenCL). sepolicy already covers it (`legacy-um file_contexts:698` → same_process_hal_file). Closure clean: dlopens only libCB/libgsl (shipped); nightly's top-level `libq3dtools_adreno.so` is just a symlink into egl/ (we ship the real one). Residual tick: app-level visibility (e.g. OpenCL-Z) after next flash |
+| 19 | OpenCL (GPU compute) | App GPGPU (photo apps, RS replacement) | ✅ **SOLVED+FLASH-VALIDATED 2026-08-03** (committed `fc47e08`; baked build re-proves compute + same_process_hal_file labels under Enforcing) — freestanding probe (`clprobe.c`: -nostdlib + raw syscalls, linked straight against the blob, no NDK needed) reports **OpenCL 2.0 / Adreno 505 (1 CU, 1401 MiB)** and a vadd kernel compiles+dispatches+reads back correctly → full libCB/llvm/KGSL path proven. Staged in mithorium-common: lib+lib64 `libOpenCL.so` + trimmed `/vendor/etc/public.libraries.txt` (perfd-client, adsprpc `64`-tagged — no 32-bit copy in our build, OpenCL). sepolicy already covers it (`legacy-um file_contexts:698` → same_process_hal_file). Closure clean: dlopens only libCB/libgsl (shipped); nightly's top-level `libq3dtools_adreno.so` is just a symlink into egl/ (we ship the real one). App-level visibility ✅ 2026-08-03: purpose-built probe APK (targetSdk 34, untrusted_app) loads libOpenCL from the app namespace — ⭐ apps targeting SDK 31+ MUST declare `<uses-native-library android:name="libOpenCL.so">` or dlopen fails "not found" (that is per-app manifest opt-in, not a ROM gap). Probe source: scratchpad clapp/ (aapt2+d8+debug-keystore recipe, no SDK project needed) |
 | 18 | A2DP offload / storage ICE / VPP | — | ⛔ not present on this SoC generation |
+| 20 | HW JPEG for USB Webcam mode (MJPEG) | UVC gadget frame encode | 🟡 parked someday-note — Lane E below. Webcam mode itself ✅ works (VLC-validated 2026-08-03, memory `usb-webcam-mode-works`); encode is **software** |
 
 ---
 
@@ -329,6 +330,54 @@ validate: hotspot on, iperf through the phone, confirm offload stats in
 `ITetheringOffload` HAL question (config_tether offload flags). Effort: 1-2
 sessions. Priority: lowest of the four unless Kyle starts using hotspot in the
 car.
+
+---
+
+## Lane E — HW JPEG for USB Webcam mode (parked someday-note) 🟡
+
+**Context (2026-08-03):** USB "Webcam" mode works end-to-end out of the box —
+kernel `f_uvc` gadget (`uvc,adb` composition, 18d1:4eee), `DeviceAsWebcam`
+priv-app services the gadget V4L2 node, host negotiated 1920×1080 MJPEG @60,
+VLC-validated on DUT1. Lane closed with no ROM work (memory
+`usb-webcam-mode-works`; cheese failing is a host-side GStreamer issue).
+
+**The acceleration gap:** DeviceAsWebcam encodes every frame in software —
+libyuv YUV→I420 + libjpeg-turbo, in its private JNI lib
+(`packages/services/DeviceAsWebcam/interface/jni/Encoder.cpp`). AOSP provides
+no HAL hook for JPEG here. Meanwhile block #5, the msm_jpeg HW core
+(`/dev/jpeg0`), sits proven-working on the very same frames' sibling path
+(camera snapshot via mm-jpeg blobs). Real delivered fps at 1080p on the A53s
+will be well under the advertised 60.
+
+**Steps 1+2 DONE 2026-08-03 — lane effectively CLOSED unless 60 fps is ever wanted:**
+1. [x] **Measured:** SW encode KEEPS UP — host-side ffmpeg counts a real
+   29–30 fps at **1080p30** (300 frames/10 s at 720p and 360p too). Only the
+   60 fps claim was fiction; no HW encode needed for 30 fps operation.
+2. [x] **Formats trimmed** — staged in the existing mithorium-common
+   `init.xiaomi.rc` uvc hook (which already ran at sys.boot_completed and
+   already dropped YUYV — note it used to rmdir the 720p frame, now restored):
+   MJPEG 360p/720p/1080p at 30/15/10/2 fps (166666 removed),
+   `bDefaultFrameIndex 2` → 720p30 default. Live-validated on DUT1 (lsusb
+   descriptor dump + ffmpeg captures). The 1440p/4K + h264 groups in
+   `init.qcom.usb.rc` ride only the SS header — never enumerated on this
+   HS-only UDC (`msm_hsusb`), left alone.
+   ⭐ Live-edit recipe (attrs are EBUSY otherwise): unbind UDC (`echo "" >
+   g1/UDC`) → rm configs/b.1/function0 + class/{fs,hs}/h1 + header/h1/m1
+   links → edit frames → relink → rebind. A stale `function0 → uvc.0` config
+   link SURVIVES leaving webcam mode and pins everything. `svc usb
+   setFunctions uvc` is rejected — webcam mode only enters via Settings UI.
+   ⚠️ Linux clients (ffmpeg/uvcvideo) ignore bDefaultFrameIndex and take the
+   FIRST frame (360p); Windows honors it. Apps requesting sizes get them.
+3. **Actual HW encode** (only if 60 fps ever matters) — patch the JNI lib (or a small vendor-side helper) to
+   drive `/dev/jpeg0` via `libmmjpeg_interface`/mm-still. Crosses the Treble
+   boundary (system app → vendor blob API), needs sepolicy + hand-rolled
+   integration against an undocumented API. A few sessions; only worth it if
+   step 1 measures badly AND webcam mode sees real use.
+
+**Debug note that will save an hour:** `DeviceAsWebcam: onEncoded Encoding was
+unsuccessful` logged right after STREAMOFF is the encoder-thread drain path
+(pending buffers returned success=false, `Encoder.cpp` threadLoop exit), NOT a
+real encode failure.
 
 ---
 
