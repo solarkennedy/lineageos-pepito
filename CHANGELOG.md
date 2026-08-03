@@ -27,6 +27,7 @@
 
 ### landing (docs/scripts) (since pepito-23.2-20260802)
 - changelog: 20260803
+- changelog: 20260803
 - PLAN-hw-accel: OpenCL app-namespace tick done; Lane E webcam-MJPEG notes
 - PLAN-blocker: new lane — Blocker as a system-UID app, flash-validated
 - PLAN-hw-accel: OpenCL + offload flash-validated on baked images
