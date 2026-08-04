@@ -117,15 +117,24 @@ variant_released() {
     grep -qE "$1" <<<"$names"
 }
 
+# --- 0. date is chosen ONCE, here ------------------------------------------
+# release-all owns the release date: a single value stamped identically on both
+# variants' zips, the changelog, every source tag, and the GitHub release. It is
+# threaded into the remote builds (LINEAGE_BUILD_DATE, exported below) so a build
+# that straddles UTC midnight can't desync vanilla vs gapps — the bug that split
+# 20260803/20260804. Default to the LOCAL calendar date (the day you built on),
+# not UTC, so an evening build west of UTC stays "today"; override with --version.
+[[ -n "$VERSION" ]] || VERSION="$(date +%Y%m%d)"
+[[ "$VERSION" =~ ^[0-9]{8}$ ]] || { echo "error: --version must be YYYYMMDD (got '$VERSION')" >&2; exit 1; }
+export LINEAGE_BUILD_DATE="$VERSION"   # picked up by build-lineage23-remotely.sh → the build
+
 # --- 1. changelog -----------------------------------------------------------
 say "Generating changelog"
-VER_ARG=(); [[ -n "$VERSION" ]] && VER_ARG=(--version "$VERSION")
 
-# Preview via --stdout first: writes nothing, and lets us pin the version so the
-# write pass below can't derive a different one.
-SECTION="$("$SCRIPT_DIR/gen-changelog.sh" --stdout "${VER_ARG[@]}")"
-VERSION="$(sed -n 's/^## \([0-9]\{8\}\) .*/\1/p' <<<"$SECTION" | head -1)"
-[[ -n "$VERSION" ]] || { echo "error: could not determine version from changelog output" >&2; exit 1; }
+# Preview via --stdout first: writes nothing. Pinned to our chosen $VERSION so
+# the changelog heading matches the zips and tags exactly.
+SECTION="$("$SCRIPT_DIR/gen-changelog.sh" --stdout --version "$VERSION")"
+[[ -n "$SECTION" ]] || { echo "error: gen-changelog produced no output for $VERSION" >&2; exit 1; }
 TAG="${TAG_PREFIX}${VERSION}"
 say "Release version: $VERSION  (tag: $TAG)"
 echo "----- release body -----"

@@ -111,7 +111,12 @@ rsync "${RSYNC_COMMON[@]}" "${EDL_CONSTANTS[@]}" \
 # (vendor/lineage/config/version.mk). Matching on local time silently fails to
 # find a just-built zip whenever local and UTC dates differ — i.e. every evening
 # west of UTC.
-DATE_TAG=$(date -u +%Y%m%d)
+#
+# An explicit --tag wins over "now", so a release run on the far side of UTC
+# midnight from its build still finds that build's zip (the zip's date is frozen
+# at build start; date -u has since rolled over). release-all.sh passes the
+# build's date here as --tag, so the whole release pins to the zip, not the clock.
+DATE_TAG="${TAG_OVERRIDE:-$(date -u +%Y%m%d)}"
 ALL_ZIPS=$(ssh "$TARGET" -- "ls '$REMOTE_ROOT/$PRODUCT_OUT'"/lineage-*-"$DATE_TAG"-"$BUILDTYPE_TAG"-*.zip 2>/dev/null || true)
 
 # Both variants are UNOFFICIAL, so filter on the _gapps suffix: gapps zips end

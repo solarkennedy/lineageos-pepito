@@ -42,16 +42,21 @@ for arg in "$@"; do
     esac
 done
 
-# Stamp a real build incremental. With BUILD_NUMBER unset, AOSP falls back to
-# eng.$USER, which lands verbatim in ro.build.version.incremental and the build
-# fingerprint (e.g. .../BP4A.251205.006/eng.kyle:userdebug/release-keys) — an
-# eng-build smell we don't want in a release image. Use the UTC date so the
-# fingerprint's incremental matches the zip's date tag and the GitHub release
-# tag (both keyed on `date -u +%Y%m%d` in release-remotely.sh / version.mk).
-# Exported before envsetup/lunch/mka so the build system picks it up; the
-# ${BUILD_NUMBER:-...} guard lets a caller (e.g. release-all.sh straddling UTC
-# midnight) pin an explicit value.
-export BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d)}"
+# One date drives BOTH the fingerprint incremental (BUILD_NUMBER) and the zip
+# name / ro.lineage.version (LINEAGE_BUILD_DATE, via vendor/lineage version.mk).
+# Deriving them separately from date(1) desyncs a build that straddles UTC
+# midnight — vanilla stamps one day, gapps the next. So pick ONE value here:
+#   injected LINEAGE_BUILD_DATE  >  injected BUILD_NUMBER  >  today (UTC).
+# release-all.sh injects LINEAGE_BUILD_DATE so both variants + the release share
+# a single date it chose up front. Exported before envsetup/lunch/mka so the
+# build system picks them up.
+#
+# (Why stamp at all: with BUILD_NUMBER unset AOSP falls back to eng.$USER, which
+# lands verbatim in ro.build.version.incremental / the fingerprint — an eng-build
+# smell we don't want in a release image.)
+PEPITO_BUILD_DATE="${LINEAGE_BUILD_DATE:-${BUILD_NUMBER:-$(date -u +%Y%m%d)}}"
+export BUILD_NUMBER="$PEPITO_BUILD_DATE"
+export LINEAGE_BUILD_DATE="$PEPITO_BUILD_DATE"
 
 if [[ "$BOOT_ONLY" -eq 1 ]]; then
     BUILD_TARGETS="bootimage"

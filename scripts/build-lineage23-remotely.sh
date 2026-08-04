@@ -134,6 +134,9 @@ BUILD_START=$SECONDS
 # serial-console debug build. Empty/unset by default = normal quiet release.
 REMOTE_ENV="TARGET_PEPITO_KEYMASTER_DHSECAPP_DIAGNOSTIC=true TARGET_PEPITO_HARDWARE_KEYMASTER_DIAGNOSTIC=true"
 [[ -n "${PEPITO_SERIAL_CONSOLE:-}" ]] && REMOTE_ENV="$REMOTE_ENV PEPITO_SERIAL_CONSOLE=$(printf '%q' "$PEPITO_SERIAL_CONSOLE")"
+# Pin the ROM date across the ssh hop so both variants share release-all's one
+# chosen date (else the remote build re-derives it from date(1) — see version.mk).
+[[ -n "${LINEAGE_BUILD_DATE:-}" ]] && REMOTE_ENV="$REMOTE_ENV LINEAGE_BUILD_DATE=$(printf '%q' "$LINEAGE_BUILD_DATE")"
 ssh "$TARGET" -- "cd '$REMOTE_ROOT' && rm -f '$BUILD_LOG' '$BUILD_EXITCODE' && setsid nohup bash -c '$REMOTE_ENV ./scripts/build-lineage23.sh $REMOTE_BUILD_ARGS_STR; echo \$? > $BUILD_EXITCODE' > '$BUILD_LOG' 2>&1 < /dev/null &"
 
 echo "==> Build launched detached on $TARGET (remote log: $BUILD_LOG). Polling..."
