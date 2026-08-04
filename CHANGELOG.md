@@ -1,6 +1,6 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
-## 20260803 (2026-08-03)
+## 20260803 (2026-08-04)
 
 ### device/Mi8937 (since pepito-23.2-20260802)
 - Mi8937: pepito — ship Blocker, running as a system-UID app (no root, no Shizuku)
@@ -26,6 +26,7 @@
 - GoTweaksSettings: zram-zstd toggle defaults ON
 
 ### landing (docs/scripts) (since pepito-23.2-20260802)
+- changelog: 20260803
 - changelog: 20260803
 - changelog: 20260803
 - PLAN-hw-accel: OpenCL app-namespace tick done; Lane E webcam-MJPEG notes
