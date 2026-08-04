@@ -26,6 +26,8 @@
 - GoTweaksSettings: zram-zstd toggle defaults ON
 
 ### landing (docs/scripts) (since pepito-23.2-20260802)
+- ota: 20260803 vanilla
+- changelog: 20260803
 - changelog: 20260803
 - changelog: 20260803
 - changelog: 20260803
