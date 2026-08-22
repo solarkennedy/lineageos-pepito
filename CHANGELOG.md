@@ -1,5 +1,28 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260822 (2026-08-22)
+
+### kernel (msm8937) (since pepito-23.2-20260803)
+- diag: keep the modem on the rpmsg transport on pepito
+
+### device/Mi8937 (since pepito-23.2-20260803)
+- Mi8937: pepito — Wi-Fi calling productization (feeder, toggle gate, fresh-unit arming)
+- Mi8937: add pepito modem power coefficients for mobile-radio attribution
+
+### device/mithorium-common (since pepito-23.2-20260803)
+- mithorium-common: pepito — Wi-Fi calling carrier config + qmux status props
+
+### vendor/lineage (since pepito-23.2-20260803)
+- version: honor an externally injected LINEAGE_BUILD_DATE
+
+### PepitoLauncher2 (since pepito-23.2-20260803)
+- Reserve top scroll headroom so the first row can reach the lens center
+- Redraw the manage-mode brackets while icons animate
+- Keep a manage-mode drag anchored to the finger across the divider
+
+### landing (docs/scripts) (since pepito-23.2-20260803)
+- plans: Wi-Fi calling / VoWiFi bring-up notes
+- release: single authoritative date threaded through build+release
 ## 20260803 (2026-08-04)
 
 ### device/Mi8937 (since pepito-23.2-20260802)
