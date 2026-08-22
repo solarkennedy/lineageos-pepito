@@ -1,6 +1,106 @@
 # LineageOS 23.2 — DIAG modem-visibility side quest (pepito/PVG100)
 
-**Purpose:** stand up a working Qualcomm **DIAG** channel to the modem so we can read the
+> ## ✅ AUTHORITATIVE STATUS 2026-08-13 (supersedes everything below)
+>
+> **Goal restated (current):** get the **MODEM's own DIAG** (F3 log messages + EFS/NV read) working
+> on our **A16 build, on the DUT `c39a6acf`** — so we can read *our* modem's live config and watch
+> its internal REGISTER/acquisition/ePDG behavior. NOT for the rmts fatal (long fixed) — that
+> original purpose is dead. New drivers: the **NAS airplane-reattach** bug (memory `nas-slow-reattach`)
+> and **WFC-on-fresh-units** (memory `wifi-calling-lane` part 42) both hit the same wall: we can read
+> STOCK modem internals but not OUR build's.
+>
+> ### What is actually true right now (verified this session)
+> - ✅ **Modem is HEALTHY** — qmux backport (2026-07-07) killed the `rmts_get_buffer` fatal. Full
+>   telephony/VoLTE/data. **The entire "modem dies before diag registers" premise below is OBSOLETE.**
+> - ✅ **APSS + WCNSS + ADSP diag WORK on the A16 DUT** via `diag-tools/diag-a16-shim/` (A8 `diag_mdlog`
+>   + `libdiagshim.so`, which fixes the 24-byte `DIAG_IOCTL_SWITCH_LOGGING` struct — Path B's ABI work
+>   is effectively DONE). ADSP is QRTR node 5.
+> - ✅ **MODEM (MPSS) diag NOW WORKS on the A16 DUT** — see the 🎉 FLASH-VALIDATED section below.
+>   (Historical evidence of the broken state, for the record: dmesg `diag: control channel is not
+>   open, p: 0` (p:0 = modem); a 49k-frame DUT capture = **1** modem-source F3 line vs 39204 APSS + 1702
+>   WCNSS; `efs2-probe` DCI-to-modem hangs; `qrtr-list` shows `0x1001` (diag svc) **only on node 1 = local
+>   AP**, never on any modem node.
+> - ⚠️ **The 2026-08-09 banner "DIAG works on A16, real modem F3 captured all session" was WRONG** — a
+>   device mix-up. **Every** modem-F3 capture in `diag-tools/captures/` (`a11-rig-wfc-f3-20260805`,
+>   `qmi/a8-*iwlan*`, `nas-reattach/cap-silver-A8-*`) was taken on a **STOCK-kernel rig** (A11 rig =
+>   Silver-as-A11, or stock A8). **None on the A16 DUT.** Do not trust "DIAG works on A16" to mean modem F3.
+>
+> ## 🎉 FLASH-VALIDATED 2026-08-13 (same day): MODEM DIAG WORKS ON THE A16 DUT
+>
+> Kyle flashed the fix; all success criteria met on `c39a6acf`:
+> - debugfs `diag/status`: `MODEM Feature: f7 3e |FCHBMpQsTuvd|` — mask received, socket bit
+>   suppressed (lowercase `s`); NO `control channel is not open, p: 0` in dmesg.
+> - `rpmsginfo`: `mpss: DIAG_CNTL` opened/ch_open, ~9 KB read at boot (modem cmd registration);
+>   all five mpss channels live.
+> - **Modem F3 flows**: 60 s diag-a16-shim capture = 2,583 ext-F3 frames full of modem sources
+>   (`lte_ml1_*_stm.c`, `lte_LL1_*`, `dsatutil_ex.c`, `qpDcm.c`, `ds_andsf_*`) vs 1 modem line in
+>   49k frames pre-fix. Evidence: `diag-tools/captures/dut-a16-modem-f3-WIN-20260813/`.
+> - **EFS DCI path live too**: `efs2-probe hello` + `ls /nv/item_files/ims` work (previously hung).
+> - Telephony unharmed: LTE IN_SERVICE both domains, data CONNECTED, Verizon 311480.
+>
+> **Remaining:** ~~commit~~ ✅ COMMITTED `dec80a40f8fd` on `pepito-rmnet` (2026-08-13); use the
+> instrument — step 4 below (nas-slow-reattach capture, Gold IWLAN/ePDG diff, IMS EFS reads).
+>
+> ### Root cause — ✅ FOUND + FIX VALIDATED 2026-08-13
+> **Not a probe race — the modem's own feature mask evicts the working transport.** Verified live on the
+> DUT: all five `soc:smd:modem.DIAG*` SMD/rpmsg channels exist AND are **bound to `diagchar`**; the modem's
+> CNTL channel over rpmsg **works** — its feature mask arrived (`debugfs .../diag/status`:
+> `p: MODEM Feature: f7 3e |FCHBMpQStuvd|`, vs `00 00` pre-qmux). But bit 13 of that mask =
+> **`F_DIAG_SOCKETS_ENABLED`** (the uppercase `S`; LPASS/WCNSS advertise lowercase `s`). On receipt,
+> `process_incoming_feature_mask` → `process_socket_feature` → `diagfwd_close_transport(TRANSPORT_RPMSG,
+> MODEM)` — the driver **closes the working rpmsg backend by design** and hands the modem to
+> `diagfwd_socket`, which on 4.19 is **QRTR-only** (`AF_QIPCRTR`). The ipc_router modem never advertises
+> diag svc `0x1001` on QRTR (confirmed absent; also absent from
+> `/sys/kernel/debug/msm_ipc_router/dump_servers` — the modem waits for the AP to initiate socket diag,
+> which the QRTR backend never does on ipc_router). Control channel stays closed forever
+> (`diag_send_feature_mask_update ... control channel is not open, p: 0` @16.7s in dmesg).
+> LPASS/WCNSS work precisely because their masks *don't* set the socket bit → rpmsg wins for them.
+>
+> **The fix (kernel, branch `pepito-rmnet`, ✅ committed `dec80a40f8fd`):** pepito-gated override mirroring the
+> `ipc_router_rpmsg_xprt.c` idiom — module param `diagchar.modem_socket_diag` (1=allow sockets,
+> 0=force rpmsg, **-1 default = auto: force rpmsg on `of_machine_is_compatible("xiaomi,pepito")`**,
+> siblings keep QRTR socket diag). Two gates, both `peripheral == PERIPHERAL_MODEM`-scoped:
+> - `diagfwd_cntl.c enable_socket_feature()` — don't set `feature[MODEM].sockets_enabled` → the
+>   close-transport work closes the **SOCKET** side instead and rpmsg wins (the exact LPASS path).
+> - `diag_masks.c diag_send_feature_mask_update()` — don't advertise `F_DIAG_SOCKETS_ENABLED` to the
+>   modem, so its diag task stays committed to SMD instead of half-migrating.
+> Files: `diagfwd_cntl.c` (+param/helper/gate), `diagfwd_cntl.h` (decl), `diag_masks.c` (gate).
+>
+> ### Plan (updated 2026-08-13)
+> 1. ~~Confirm the contention~~ ✅ done (above — no instrumentation needed, debugfs + dmesg sufficed).
+> 2. ~~Write the fix~~ ✅ done, committed `dec80a40f8fd`, flashed.
+> 3. ~~Verify on the DUT after flash~~ ✅ ALL PASSED (see 🎉 section). For re-verification after any
+>    future kernel change: `debugfs diag/status` shows the MODEM feature mask rcvd with
+>    lowercase `s`; dmesg has NO `control channel is not open, p: 0`; a
+>    `diag-tools/diag-a16-shim/` `diag_mdlog -f Diag-all.cfg` capture contains **modem-source F3**
+>    (`RegisterManager.cpp`, `lte_ml1_*`, `emm_*`, `reg_state_*`) — decode with
+>    `diag-tools/decode_f3.py qdb.dec`. Success = nonzero modem F3 hits on `c39a6acf`.
+>    (No userspace change; capture tooling unchanged. A/B without reflash is NOT practical — the
+>    transport choice happens at feature-mask exchange, i.e. boot or modem SSR, and SSR wedges MSS.)
+> 4. **Then it unblocks:** read our A16 modem IMS config (`efs2-probe cat /nv/item_files/ims/*` — needs the
+>    EFS DCI path, which also rides the same modem-diag channel), capture the airplane-wedge modem-internal
+>    REGISTER/P-CSCF (nas-slow-reattach), and capture Gold's IWLAN/ePDG chain (WFC fresh-unit).
+>
+> ### Reference / already-solved pieces (reuse, don't redo)
+> - `diag-tools/diag-a16-shim/` — the SWITCH_LOGGING ABI shim (Path B, done for APSS; will work for modem
+>   the moment the channel binds). `diag-tools/HOWTO-modem-diag-capture.md` — native capture recipe (A11
+>   rig). `decode_f3.py` + `qdb.dec` (0x99 QShrink) / `decode_f3_ext.py` (0x79 ext, no qdb).
+> - **Healthy-modem F3 references to diff against:** `captures/nas-reattach/cap-silver-A8-COLD-6s-recovery-20260813.qmdl`
+>   (stock cold IMS registration), `captures/a11-rig-wfc-f3-20260805/` (stock IWLAN/ePDG). These are the
+>   "what our modem SHOULD do" baselines; the whole point of item 4 is to get the *our-build* counterpart.
+> - ⚠️ Enforcing sepolicy + permissive `su` already present; nothing ships in the flash.
+>
+> ### ROI (why this is worth a kernel excursion beyond one bug)
+> Removes the standing "can't see OUR modem" limitation that recurs across telephony: WFC-on-fresh-units
+> (active, stuck), NAS airplane-reattach (this + `nas-slow-reattach`), future modem crashes/SSR, the eSIM
+> ISD-R refusal (`esim-lpa`), RF/band tuning. Highest single payoff = WFC fresh-unit provisioning.
+>
+> ---
+> **Everything below is PRE-QMUX (2026-07-05) archaeology — kept for the RE record (SMEM-writer diff,
+> efs-shell, the original rmts-fatal framing). It is NOT current status; the rmts fatal it centers on is
+> fixed and the modem is healthy.**
+
+**Purpose (ORIGINAL, obsolete):** stand up a working Qualcomm **DIAG** channel to the modem so we can read the
 modem's own **F3 log messages** and **EFS/NV** — the only remaining way to see *why* the modem
 skips the RFSA buffer query and ERR_FATALs in `rmts_get_buffer` every boot. Spun out of
 `PLAN-radio.md` (session `radio5`, 2026-07-05), which proved that decision is **modem-internal**
