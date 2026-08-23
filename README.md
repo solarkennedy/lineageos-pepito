@@ -88,6 +88,7 @@ partitions, including stock firmware** — the bundle's `README.md` spells this 
 
 1. Download the EDL package from the [releases page](https://github.com/solarkennedy/lineageos-pepito/releases) — **vanilla** or **GApps**, not both.
    The `qdl` flasher is bundled inside the archive; follow the `README.md` it contains.
+1. **Back up first** with the bundled `qdl-dump.sh` (dumps every partition over EDL — the only way back to stock). Instructions are in the archive's `README.md`.
 1. Flash the EDL image set (bootloader, boot, recovery, system, vendor) with the phone in EDL mode.
    *(Detailed EDL loader + partition steps: see [BUILD.md](BUILD.md) §5 — TBD at release.)*
 1. **Boot to recovery** by holding **Power** through 3 boot cycles.

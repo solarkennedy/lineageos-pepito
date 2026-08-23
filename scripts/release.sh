@@ -53,11 +53,13 @@ EDL_DIR="/home/kyle/android/lineage-23/flash-staging"
 # stale FRP token so A15+ FRP can auto-deactivate after a wipe. userdata is
 # deliberately excluded — a release flash must not wipe /data as a side effect.
 EDL_IMAGES=(boot.bin recovery.bin system.bin vendor.bin config.bin)
-# qdl flasher bundled into the EDL package so users don't have to build one that
-# works with this device. Prebuilt x86-64 Linux binary from the pepito branch of
-# https://github.com/xerootg/qdl. Override the path with QDL_BIN if needed.
-QDL_BIN="${QDL_BIN:-/usr/local/bin/qdl}"
-QDL_SRC_URL="https://github.com/xerootg/qdl/tree/pepito"
+# qdl flasher bundled into the EDL package so users don't have to build one.
+# Prebuilt x86-64 Linux binary of modern upstream linux-msm/qdl (adds read
+# support, used by the bundled qdl-dump.sh backup script; the old xerootg
+# pepito fork is only still needed for <erase> tags, which nothing here uses).
+# rsync'd to the build server at ~/.local/bin/qdl; override with QDL_BIN.
+QDL_BIN="${QDL_BIN:-$HOME/.local/bin/qdl}"
+QDL_SRC_URL="https://github.com/linux-msm/qdl"
 XZ_LEVEL=6
 # --------------------------------------------------------------------------
 
@@ -141,11 +143,14 @@ $update_note
 - \`config.bin\` — a 32 KB zero-fill flashed over the \`config\` partition to
   clear any stale factory-reset-protection (FRP) token, so you don't get a
   bogus "factory reset" prompt on every boot. It does **not** touch \`/data\`.
-- \`qdl\` — the flasher itself, a prebuilt x86-64 Linux binary from the
-  \`pepito\` branch of $QDL_SRC_URL (stock upstream qdl does not handle this
-  device). Needs common shared libs (libxml2, libudev, libicu, liblzma) — on
-  any modern desktop distro it just runs. If it won't, build it from that
-  branch and use your own \`qdl\` instead.
+- \`qdl\` — the flasher itself, a prebuilt x86-64 Linux binary of upstream
+  $QDL_SRC_URL (which also does EDL *reads* — that's what the backup script
+  uses). Needs common shared libs (libusb-1.0, libxml2 and their usual
+  dependencies) — on any modern desktop distro it just runs. If it won't,
+  build it from that repo (\`meson setup build && ninja -C build\`; add
+  \`-Dzip-container=disabled\` if you lack libzip) and use your own \`qdl\`.
+- \`qdl-dump.sh\` — backup script: dumps every partition to its own \`.bin\`
+  plus generated XML manifests. See "Back up first" below.
 
 This package does **not** touch modem, bootloader, TrustZone, RPM, or other
 firmware partitions — those are stock, device-specific, and already on your
@@ -172,11 +177,30 @@ backup. If you're not 100% sure, check the label.
 ## Before you start
 
 - **Back up first.** With a full backup the PVG100 is effectively unbrickable
-  over EDL. See the backup guide:
+  over EDL, and a backup is the ONLY way back to stock or out of a
+  wrong-variant flash. The bundled \`qdl-dump.sh\` does it in one step (phone
+  in EDL, see step 2 below for how to get there):
+
+      sudo ./qdl-dump.sh pvg100_firehose.elf backup-\$(date +%F)
+
+  (PVG100E: use \`pvg100e_firehose.elf\`.) It reads the phone's partition
+  table and dumps **every partition** — including your stock firmware and
+  modem calibration — to per-partition \`.bin\` files, plus two generated
+  manifests: \`readback.xml\` (what was read) and \`rawprogram_restore.xml\`.
+  To restore later: put the phone in EDL and, from this directory,
+
+      sudo ./qdl --storage emmc --include backup-DATE pvg100_firehose.elf backup-DATE/rawprogram_restore.xml
+
+  A full dump is ~29 GB and slow (an hour or more); add
+  \`--exclude userdata\` to skip the encrypted (and useless without the boot
+  chain that created it) data partition and shrink it to ~3 GB. Needs
+  \`python3\`. Afterwards the phone stays in EDL, ready for flashing.
+  Alternative manual guide:
   https://xdaforums.com/t/guide-using-edl-to-backup-a-palm-pvg-100-pepito-on-linux.4719549/
 - **You will lose your data.** Coming from stock (or any mismatched build) the
   first boot reformats \`/data\` for file-based encryption. Save anything you care about.
-- **You need:** an x86-64 Linux machine, \`xz-utils\`, and a USB cable. \`qdl\`
+- **You need:** an x86-64 Linux machine, \`xz-utils\`, \`python3\` (for the
+  backup script only), and a USB cable. \`qdl\`
   is bundled — no separate install. (Source: $QDL_SRC_URL.)
 
 ## Flashing
@@ -220,7 +244,8 @@ backup. If you're not 100% sure, check the label.
 
 - \`./qdl\` "permission denied" or no device: run it with \`sudo\`, or add a udev
   rule for the 9008 device. If the bundled binary won't run at all (missing
-  libs / non-x86-64 host), build qdl from $QDL_SRC_URL.
+  libs / non-x86-64 host), build qdl from $QDL_SRC_URL
+  (\`meson setup build && ninja -C build\`).
 - Black screen after flashing: give the first boot ~5 minutes; if nothing, put
   the phone back into EDL and reflash.
 - Bugs and questions: https://github.com/$REPO/issues
@@ -423,10 +448,17 @@ if ! $SKIP_EDL; then
         cp "$EDL_DIR/$img" "$PKG_DIR/$img"
     done
 
-    # Bundle the qdl flasher (pepito branch of xerootg/qdl).
+    # Bundle the qdl flasher (modern linux-msm/qdl — must have read support,
+    # the bundled qdl-dump.sh backup script depends on it).
     [[ -f "$QDL_BIN" ]] || { echo "error: qdl binary not found at $QDL_BIN (set QDL_BIN)" >&2; exit 1; }
+    "$QDL_BIN" --help 2>&1 | grep -q "read-xml" \
+        || { echo "error: $QDL_BIN has no read support (old fork?) — bundle linux-msm qdl" >&2; exit 1; }
     cp "$QDL_BIN" "$PKG_DIR/qdl"
     chmod +x "$PKG_DIR/qdl"
+
+    # Backup script (see the "Back up first" section of the README).
+    cp "$SCRIPT_DIR/qdl-dump.sh" "$PKG_DIR/qdl-dump.sh"
+    chmod +x "$PKG_DIR/qdl-dump.sh"
 
     write_edl_readme "$PKG_DIR/README.md"
 

@@ -43,7 +43,19 @@ clear_ramoops() {
 for f in "$BOOT_IMG" "$FLASH_DIR/pvg100_firehose.elf" "$FLASH_DIR/rawprogram0.pvg100.xml"; do
     [[ -f "$f" ]] || die "$f not found — run scripts/prepare-flash.sh first"
 done
-command -v qdl >/dev/null || die "'qdl' not found in PATH"
+# qdl binary: $QDL override > modern linux-msm build > PATH (old pepito fork).
+if [[ -z "${QDL:-}" ]]; then
+    for cand in "$HOME/.local/bin/qdl" "$HOME/Projects/qdl-upstream/build/qdl" "$(command -v qdl || true)"; do
+        [[ -n "$cand" && -x "$cand" ]] && QDL=$cand && break
+    done
+fi
+[[ -n "${QDL:-}" ]] || die "no qdl binary found (set QDL=...)"
+echo "Using qdl: $QDL ($("$QDL" --version 2>/dev/null || echo 'pepito fork, no --version'))"
+# Modern qdl needs --allow-missing for rawprogram entries whose images aren't
+# staged (userdata, gpt_*); the old fork skipped those silently and ignores
+# the flag's long form, so only pass it when supported.
+ALLOW_MISSING=()
+"$QDL" --help 2>&1 | grep -q "allow-missing" && ALLOW_MISSING=(--allow-missing)
 
 echo "Boot image: $BOOT_IMG ($(du -h "$BOOT_IMG" | cut -f1))"
 
@@ -65,7 +77,7 @@ echo -e "\nEDL device detected."
 
 # Run from FLASH_DIR so qdl resolves the rawprogram XML's filenames relative to it.
 FLASH_START=$SECONDS
-(cd "$FLASH_DIR" && systemd-inhibit qdl --storage emmc pvg100_firehose.elf rawprogram0.pvg100.xml)
+(cd "$FLASH_DIR" && systemd-inhibit "$QDL" --storage emmc "${ALLOW_MISSING[@]}" pvg100_firehose.elf rawprogram0.pvg100.xml)
 
 notify "Flash complete — pepito" \
 "qdl finished in $(( (SECONDS - FLASH_START) / 60 ))m
