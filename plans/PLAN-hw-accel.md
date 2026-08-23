@@ -288,10 +288,20 @@ documents history + revert path). DUT1 left with offload live-enabled
 (setprop, reverts on reboot) for music smoke-testing.
 
 **Remaining validation (post-flash, non-blocking):**
-- [ ] Real music app (Twelve — it defaults enableOffload=true) — play, pause,
-      seek, track-switch, A2DP routing mid-stream.
+- [x] Real music app — **tested 2026-08-22, premise FALSE: Twelve never
+      requests offload.** Bench MP3s (95 s, incl. a `-write_xing 0` no-gapless
+      control) played via Twelve on DUT1 → AudioTrack always created
+      FLAG_DEEP_BUFFER, no OFFLOAD thread, screen-off made no difference.
+      Policy DOES offer `compressed_offload` (12 profiles incl. mp3 44.1k) —
+      the shipped Twelve/ExoPlayer just doesn't ask (its "enableOffload"
+      default doesn't reach setAudioOffloadPreferences in this version). Not a
+      ROM gap: the 08-03 direct-AudioTrack probe validated the full HAL path
+      on this baked build. Consequence: offload benefits only apps that
+      request it — the CT-3 offload-vs-PCM A/B needs the direct probe as the
+      offload leg, not Twelve.
 - [ ] The lane's original success metric: CT-3/coulomb screen-off music mA,
-      offload vs PCM (and vs stock if a witness ever returns to the bench).
+      offload vs PCM (offload leg = direct AudioTrack probe per above; and vs
+      stock if a witness ever returns to the bench).
 
 ### Original deferral analysis (kept for context — deferred 2026-07-06) 🟡
 
@@ -317,19 +327,24 @@ low-priority lane after A+B, with new angles:
 
 ---
 
-## Lane D — IPA tethering offload (parked) 🟡
+## Lane D — IPA tethering offload (parked, priority DOWNGRADED 2026-08-22) 🟡
 
-`PLAN-rmnet.md` Phase 4: data path uses IPA, but hotspot/tethering NAT runs on
-CPU because `ipacm` (IPA control manager, programs the NAT/routing rules into
-the IPA) was never staged. Matters only under active tethering load (CPU wakes
-+ throughput ceiling).
+**2026-08-22 bench evidence (tethering validation, memory `tethering-works-oob`):
+tethering fully works WITHOUT this lane, and the framework's BPF offload
+ENGAGES on 4.19** — during a cellular-upstream hotspot session (Gold, LTE),
+`dumpsys tethering` showed live IPv4 upstream NAT forwarding rules + per-flow
+stats in the kernel BPF maps. So NAT already runs in the in-kernel fast path,
+not the netd slow path. The `ITetheringOffload` HAL question is answered: not
+needed for function; BPF is the modern replacement for most of its benefit.
 
-**Plan:** stage nightly `ipacm` + config (`IPACM_cfg.xml`), its rc + sepolicy;
-validate: hotspot on, iperf through the phone, confirm offload stats in
-`/d/ipa/` and lower CPU load vs baseline. Also gates the Android
-`ITetheringOffload` HAL question (config_tether offload flags). Effort: 1-2
-sessions. Priority: lowest of the four unless Kyle starts using hotspot in the
-car.
+What ipacm would still buy: moving forwarding off the CPU entirely (IPA hw
+pipes) — lower CPU wakes + a higher throughput ceiling under sustained load.
+Only worth it if hotspot becomes a heavy real-world use case (e.g. car).
+
+**Plan (if ever):** stage nightly `ipacm` + config (`IPACM_cfg.xml`), its rc +
+sepolicy; validate: hotspot on, iperf through the phone, confirm offload stats
+in `/d/ipa/` and lower CPU load vs the (now-BPF) baseline. Effort: 1-2
+sessions. Priority: lowest in this file.
 
 ---
 
