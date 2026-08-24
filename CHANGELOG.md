@@ -22,6 +22,7 @@
 
 ### landing (docs/scripts) (since pepito-23.2-20260822)
 - changelog: 20260823
+- changelog: 20260823
 - Switch to modern linux-msm qdl; add qdl-dump.sh EDL backup script
 - plans: refresh PLAN.md to 2026-08-22; tethering validated end-to-end
 ## 20260822 (2026-08-22)
