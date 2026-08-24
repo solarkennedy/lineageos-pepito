@@ -1,5 +1,28 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260823 (2026-08-24)
+
+### kernel (msm8937) (since pepito-23.2-20260822)
+- power: qpnp-fg: allow resetting wear history via cycle_counts write
+
+### device/Mi8937 (since pepito-23.2-20260822)
+- qmux: ims_enabler: wifi_call must be 1, not 2 — 2 registers IMS-over-IWLAN SMS-only
+- Mi8937: pepito — clear modem WLAN availability on Wi-Fi loss (fixes the ~50 s "Emergency calls only" cold re-attach)
+
+### device/mithorium-common (since pepito-23.2-20260822)
+- mithorium-common: battery wear profile — add confirmed Reset wear data button
+- gotweaks: GPU performance floor on by default
+- gotweaks: add GPU performance floor toggle (min_pwrlevel 375MHz)
+- gotweaks: default zram to lz4, make zstd opt-in
+
+### LineageParts (since pepito-23.2-20260822)
+- GoTweaks: GPU performance floor switch defaults on
+- GoTweaks: GPU performance floor switch
+- GoTweaks: zram zstd toggle defaults off, document lmkd-kill cost
+
+### landing (docs/scripts) (since pepito-23.2-20260822)
+- Switch to modern linux-msm qdl; add qdl-dump.sh EDL backup script
+- plans: refresh PLAN.md to 2026-08-22; tethering validated end-to-end
 ## 20260822 (2026-08-22)
 
 ### kernel (msm8937) (since pepito-23.2-20260803)
