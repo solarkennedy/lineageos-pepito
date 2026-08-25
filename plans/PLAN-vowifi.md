@@ -453,6 +453,24 @@ Kyle reflashed with the `group root vendor_qti_diag` fix. All validated live on 
 - ✅ **Auto-fire write path proven:** staged `field4=0` on all three via efs2-probe, then toggled WFC off→on (`settings put global wfc_ims_enabled 0` then `1`). `WfcBridge` drove `persist.sys.pepito.wfc_enabled` 0→1, init spawned `qmux_wfc_efswrite`, and it logged `field 4 0 -> 1 (verified)` ×3 + `done: 3 file(s) armed, 0 error(s)`, status `applied`, field4 re-read `1` ×3, **zero AVC denials**. This is the exact production path a fresh unit takes when its owner enables Wi-Fi calling.
 - **⇒ The fresh-unit fix is DONE and ROM-validated.** Full chain: WfcBridge (toggle→prop) → init (`on property:wfc_enabled=1`) → `wfc_efswrite` (parse-anchored single-byte write-if-0 over DCI/EFS2, `vendor_qti_diag` group, no capability) → field4=1 → feeder drives establish → modem reads field4 live (part-47 bench) → tunnel. Combined with the yesterday's proof that field4=1 (runtime) → WFC works same-session, flash-and-go on a fresh unit is now complete. Gold left healthy: field4=1, `wfc_efswrite=applied`, feeder feeding, WFC on. (Optional final belt-and-suspenders: a fresh-unit-from-cold SMS test on a never-provisioned unit; not required — every link is independently proven.)
 
+## 🎉⭐⭐⭐ PART 48 (2026-08-23) — FIRST FULL E2E VOICE TEST SINCE PART 41 CAUGHT A SHIPPED REGRESSION: `wifi_call=2` (part 47) makes IMS-over-IWLAN register SMS-ONLY. Fix = stock's `1`; ✅ real Wi-Fi calls on BOTH units, Gold flash-and-go.
+
+Kyle asked for the deferred end-to-end voice test (call on Gold, SIM→DUT, call again). It failed identically on both units and root-caused to our own part-47 change — the SMS bar had been masking a voice regression since 08-21.
+
+**Failure signature (identical both units, Aug-23 build):**
+- SMS over IMS/IWLAN under airplane: works (the old bar — kept passing).
+- MT voice call → straight to voicemail, no `SET_RINGING` (carrier T-ADS finds no voice-capable IMS contact).
+- MO dial → framework refuses: `DisconnectCause(Radio off) "cannot dial voice call in airplane mode, POWER_OFF"` — Telephony doesn't consider the phone WFC-voice-capable.
+- ⭐ **The decisive probe: `imsa-probe` (pushed to both units).** `ims_registered=1` (sip:+1…@vzims.com) but `sms_service_status=2 FULL_SERVICE` / **`voip_service_status=0 NO_SERVICE`**. The modem's IMS registration carried SMS only. Everything upstream (framework refusal, voicemail routing) follows from that one field.
+
+**Ruled out live before the find:** feeder-v2 prime-then-stop (2 min of forced `feeding` → no change); reboot-after-SIM-insert (clean boot with SIM, feeding during registration → still SMS-only); WFC toggle off/on (no change); QMI store diffs (byte-identical to the proven state); the NAS-fix boot-clear (no `qmux_wfc_down` service exists on this build).
+
+**🎯 ROOT CAUSE: part 47's `ims_enabler` entry `wfc.wifi_call` want=2.** Stock's working value is **1** (part 29); the DUT read 1 when stock-matched (part 33). The part-45 "DUT=2 works" observation dates from the SMS-only era — nobody ever voice-tested with 2. Live A/B on the DUT: `imss-probe setmsg32 0x53 0x14 1` + feeder re-prime → **`voip_service_status` flipped to FULL_SERVICE in ~40 s, no reboot** → MO call to a live number: `SET_DIALING`→`SET_ACTIVE` with `prop=[wifi]` held to the end, real RTP on `r_rmnet_data1`, clean remote hangup. (Semantics note: whatever part 9's `wfc_status−1` decode meant, 2 in this field yields an SMS-only registration; 1 yields voice+SMS.)
+
+**✅ FIX SHIPPED + FLASH-VALIDATED SAME DAY:** one-line `ims_enabler.c` change (`want 2→1`, comment rewritten). Kyle rebuilt + flashed Gold: first boot `ims_enabler=applied` (found persisted 2, corrected to 1, EFS-persists), second boot (SIM in, zero-touch) `ok` + `voip_service_status=FULL_SERVICE` already up at first poll ~60 s post-boot → **MO Wi-Fi call from Gold connected and held `[wifi]`, RTP ~40 pps on `r_rmnet_data1`, clean hangup — genuinely flash-and-go.** DUT still on the old build: its live-written 1 persists in EFS, but **the old enabler re-arms 2 on every boot — flash the DUT with the fixed build.**
+
+**⭐ Method lesson (add to the lane's permanent kit):** `imsa-probe`'s per-service status (SMS vs VoIP split) is the truth-teller the SMS bar can't see — **any future WFC validation must include a voice call or at least `voip_service_status=2`,** not just an SMS. MT leg on the fixed build: tested same session (inbound call to Gold after the fix).
+
 ### 📄 E911 emergency address — a per-LINE carrier prerequisite, NOT a ROM gap (clarified 2026-08-21)
 Kyle asked whether the "initial E911 piece" is still missing. It is not a ROM/modem item and is orthogonal to everything productized here:
 - **Per-line, carrier-account state.** Registered once on the Warp line via Kyle's Pixel (PLAN-wifi-calling, 2026-08-06). Keyed to the subscriber (MSISDN/IMPI), not the IMEI, so it **travels with the SIM** — which is why DUT + Gold both do WFC on our ROM with no on-device E911 step (Gold's SMS today included).
@@ -1073,3 +1091,12 @@ Full evidence in `PLAN-wifi-calling.md`; these cost sessions each.
 - **ISIM/IMPI theory** — dead: MPPM logs `is_impi_imsi_ready = 1`.
 - **IMS msgid → code mapping by affine search** — proven unrecoverable; find functions structurally in Ghidra instead.
 - **Porting stock's `andsfCne.xml`** — it carries no routing policy.
+
+## 🎉 PARTS 49–52 (2026-08-24) — virgin-unit WFC root-caused on the gifted PVG100 (2103dc19); fix STAGED
+
+Summary (full detail in memory `wifi-calling-lane.md` parts 49–52):
+- **Part 49** — fresh unit, SIM inserted after first boot: IWLAN gate `0x16` read 0 although the boot-time enabler had `applied` it. The IMSS store is per-subscription: a SIM-less write never persists; a SIM-in write does (proven across reboot, part 51). DUT A/B with the same SIM: not reproduced (its gate was already in EFS).
+- **Part 50** — DUT: WFC needs no airplane mode. With the gate armed IMS goes IWLAN whenever Wi-Fi is up, LTE or not (call `[HD wifi]`, RTP on `r_rmnet_data1`); Settings "Calling preference" is inert on this v01 modem (control A/B). Verizon carrier config hides the row (`editable_wfc_mode_bool=false`); the visible "Roaming preference" is cellular-roaming only.
+- **Part 51** — with the gate persisted the unit still registered over WLAN SMS-only. `ps_sys` field 3 (1 vs 3) FALSIFIED. 1,000-file EFS diff vs DUT: the only real delta = empty IMS MSISDN (`ims/qp_ims_config` @0x0b = IMSS `GET 0x54 TLV 0x19`). Direct EFS writes to IMSS-owned files are clobbered by the modem's RAM re-save; only QMI SETs stick.
+- **Part 52** — `imss-probe setstr 0x53 0x18 <digits>` → voice FULL_SERVICE over WLAN in 10 s, real Wi-Fi call; persists across reboot; cold boot LTE+Wi-Fi → voice on WLAN at t=10 s.
+- **Fix (staged, uncommitted):** `ims_enabler.c` phase 2 learns the MSISDN from IMSA `GET_REGISTRATION_STATUS` TLV 0x15 (`tel:` URI) and writes it (prop `vendor.qmux.ims_msisdn` = kept|set|pending|failed); `init.qmux.rc` re-starts the enabler on `gsm.sim.state=LOADED`. Bench-tested from `/data/local/tmp` on the gifted unit (fast path 60 ms `kept`; cleared-MSISDN path 45 s `set`, verified). Needs a ROM build + fresh-unit flash validation.
