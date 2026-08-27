@@ -21,8 +21,11 @@
 # resource-only tweak, not a functional dependency.
 #
 # Re-running replaces product/, system_ext/, gapps.mk and Android.bp (NOT
-# source/, where the zip itself lives -- see below); nothing generated here
-# should ever be hand-edited.
+# source/, where the zip itself lives, and NOT overrides/); nothing generated
+# here should ever be hand-edited.
+#
+# To ship a newer APK than NikGapps provides, drop it at
+# overrides/<ModuleName>.apk -- see OVERRIDES_DIRNAME below.
 #
 # Usage (pass the base package plus any addon zips -- all merged into one payload):
 #   extract-nikgapps.py \
@@ -43,8 +46,10 @@
 # but that only helps once/if this tree ends up inside a git working copy.)
 import argparse
 import io
+import os
 import re
 import shutil
+import subprocess
 import sys
 import zipfile
 from pathlib import Path
@@ -84,6 +89,166 @@ PARTITION_SOONG_PROP = {
 EXCLUDED_APP_SETS = {
     "GoogleClock",
 }
+
+# --- APK overrides -------------------------------------------------------
+# NikGapps freezes some payloads for years (CarrierServices shipped
+# 117.0/2022-08-08 in the 2026-02-22 basic package). Drop a replacement APK at
+# overrides/<ModuleName>.apk -- ModuleName being the priv-app/app *directory*
+# name as it appears in the tree, e.g. overrides/CarrierServices.apk -- and it
+# is swapped in after extraction, with its privapp-permissions allowlist
+# regenerated to match.
+#
+# overrides/ is NEVER wiped by a re-run (only product/, system_ext/, system/,
+# vendor/, gapps.mk and Android.bp are), so an override survives re-extraction.
+#
+# Safety rails, all HARD FAILURES -- a bad override must break the build here,
+# not bootloop the phone:
+#   * signer cert digest must equal the APK being replaced. Google signs
+#     CarrierServices with CN=rcsstack, which *defines* the
+#     com.google.android.ims.* permissions Bugle holds; a different Google key
+#     silently breaks the Bugle<->Jibe binding and looks like "RCS just won't
+#     provision".
+#   * package name must match.
+#   * the override must correspond to a module that actually got extracted
+#     (otherwise it is stale and silently doing nothing).
+#
+# The allowlist is regenerated as the UNION of what NikGapps shipped and what
+# the override requests, across EVERY xml declaring that package -- note
+# CarrierServices appears in both com.google.android.ims.xml *and*
+# NikGapps-privapp-permissions-google-p.xml. A privileged permission that is
+# requested but not allowlisted throws IllegalStateException in
+# AppIdPermissionPolicy.onSystemReady -> zygote death -> boot loop; that is
+# exactly the GoogleClock failure documented above. Union (never subtract)
+# means we cannot drop an entry some other app still depends on.
+OVERRIDES_DIRNAME = "overrides"
+
+
+# Self-test args that make each tool exit 0 without doing real work. The tree's
+# prebuilts/sdk/tools/linux/bin/apksigner is a wrapper that cannot find its own
+# apksigner.jar in this checkout and fails with "can't find apksigner.jar" on
+# *stdout* at rc=1 -- so candidates are probed, not merely found on disk.
+_TOOL_SELFTEST = {"aapt2": ["version"], "apksigner": ["--version"]}
+_TOOL_CACHE = {}
+
+
+def _tool(name):
+    """Locate a working build tool, preferring the tree's prebuilts but verifying each."""
+    if name in _TOOL_CACHE:
+        return _TOOL_CACHE[name]
+    candidates = [
+        TREE_ROOT / "prebuilts" / "sdk" / "tools" / "linux" / "bin" / name,
+        TREE_ROOT / "prebuilts" / "sdk" / "tools" / name,
+    ]
+    found = shutil.which(name)
+    if found:
+        candidates.append(Path(found))
+    tried = []
+    for c in candidates:
+        if not (c.is_file() and os.access(c, os.X_OK)):
+            continue
+        probe = subprocess.run([str(c)] + _TOOL_SELFTEST.get(name, ["--version"]),
+                               capture_output=True, text=True)
+        if probe.returncode == 0:
+            _TOOL_CACHE[name] = str(c)
+            return str(c)
+        tried.append(f"{c} (rc={probe.returncode}: "
+                     f"{(probe.stdout or probe.stderr).strip().splitlines()[0][:60] if (probe.stdout or probe.stderr).strip() else 'no output'})")
+    detail = "\n  ".join(tried) if tried else "no candidate was executable"
+    sys.exit(f"error: no working '{name}' found (needed to validate overrides):\n  {detail}")
+
+
+def _apk_badging(apk):
+    out = subprocess.run([_tool("aapt2"), "dump", "badging", str(apk)],
+                         capture_output=True, text=True).stdout
+    m = re.search(r"package: name='([^']+)'.*?versionCode='([^']+)'.*?versionName='([^']*)'", out)
+    if not m:
+        sys.exit(f"error: cannot read package info from {apk}")
+    return m.group(1), int(m.group(2)), m.group(3)
+
+
+def _apk_permissions(apk):
+    out = subprocess.run([_tool("aapt2"), "dump", "permissions", str(apk)],
+                         capture_output=True, text=True).stdout
+    return {m.group(1) for m in re.finditer(r"^uses-permission: name='([^']+)'", out, re.M)}
+
+
+def _apk_signer(apk):
+    out = subprocess.run([_tool("apksigner"), "verify", "--print-certs", str(apk)],
+                         capture_output=True, text=True).stdout
+    m = re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-f]+)", out)
+    if not m:
+        sys.exit(f"error: cannot read signing certificate from {apk} (unsigned?)")
+    return m.group(1)
+
+
+def _rewrite_allowlist(xml_path, package, perms):
+    """Union `perms` into the <privapp-permissions package=...> block. Returns added set."""
+    text = xml_path.read_text()
+    pat = re.compile(
+        r'(<privapp-permissions\s+package="' + re.escape(package) + r'"\s*>)(.*?)(</privapp-permissions>)',
+        re.S)
+    m = pat.search(text)
+    if not m:
+        return set()
+    existing = set(re.findall(r'name="([^"]+)"', m.group(2)))
+    added = perms - existing
+    if not added:
+        return set()
+    indent = "\t\t"
+    body = "\n".join(f'{indent}<permission name="{p}"/>' for p in sorted(existing | perms))
+    xml_path.write_text(text[:m.start()] + m.group(1) + "\n" + body + "\n\t" + m.group(3) + text[m.end():])
+    return added
+
+
+def apply_overrides(out_dir, apk_modules):
+    """Swap in overrides/<ModuleName>.apk and refresh their allowlists."""
+    ov_dir = out_dir / OVERRIDES_DIRNAME
+    if not ov_dir.is_dir():
+        return
+    overrides = sorted(ov_dir.glob("*.apk"))
+    if not overrides:
+        return
+
+    for ov in overrides:
+        module = ov.stem
+        if module not in apk_modules:
+            sys.exit(f"error: override {ov.name} names module '{module}', which was not "
+                     f"extracted from any zip -- stale override, remove it or fix the name")
+        partition, rel, privileged = apk_modules[module]
+        target = out_dir / partition / rel
+
+        old_pkg, old_vc, old_vn = _apk_badging(target)
+        new_pkg, new_vc, new_vn = _apk_badging(ov)
+        if old_pkg != new_pkg:
+            sys.exit(f"error: override {ov.name} is package '{new_pkg}' but replaces "
+                     f"'{old_pkg}' -- refusing")
+        old_sig, new_sig = _apk_signer(target), _apk_signer(ov)
+        if old_sig != new_sig:
+            sys.exit(f"error: override {ov.name} signer mismatch -- refusing.\n"
+                     f"  shipped:  {old_sig}\n  override: {new_sig}\n"
+                     f"  A different signing key breaks signature-protected permissions "
+                     f"this package defines for other apps.")
+        if new_vc < old_vc:
+            print(f"warning: override {ov.name} versionCode {new_vc} is OLDER than the "
+                  f"shipped {old_vc} -- swapping anyway", file=sys.stderr)
+
+        target.write_bytes(ov.read_bytes())
+        print(f"override: {module} {old_vn} ({old_vc}) -> {new_vn} ({new_vc})")
+
+        if not privileged:
+            continue
+        perms = _apk_permissions(ov)
+        touched = []
+        for xml_path in sorted((out_dir / partition / "etc" / "permissions").glob("*.xml")):
+            added = _rewrite_allowlist(xml_path, new_pkg, perms)
+            if added:
+                touched.append((xml_path, added))
+        if touched:
+            for xml_path, added in touched:
+                print(f"  allowlist {xml_path.relative_to(out_dir)}: +{len(added)} "
+                      f"({', '.join(sorted(added))})")
+        else:
+            print("  allowlist: already covers every requested permission")
 
 
 def parse_install_manifest(zf):
@@ -183,6 +348,8 @@ def main():
         print("warning: skipped entries:", file=sys.stderr)
         for s in skipped:
             print(f"  {s}", file=sys.stderr)
+
+    apply_overrides(out_dir, apk_modules)
 
     sorted_copy_files = sorted(copy_files)
     sorted_apk_modules = sorted(apk_modules.items())
