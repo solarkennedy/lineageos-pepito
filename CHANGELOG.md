@@ -1,5 +1,20 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260902 (2026-09-02)
+
+### device/Mi8937 (since pepito-23.2-20260823)
+- Mi8937: pepito — fix three defects that broke flash-and-go Wi-Fi calling
+- Mi8937: pepito — opt-in persistent adb root across reboots
+- Mi8937: gapps — speech-to-text out of the box (default recognizer overlay)
+- qmux: ims_enabler — provision the IMS MSISDN + re-run on SIM load (virgin-unit VoWiFi)
+
+### device/mithorium-common (since pepito-23.2-20260823)
+- sepolicy: document vendor.qmux.ims_msisdn (ims_enabler MSISDN phase status prop)
+
+### landing (docs/scripts) (since pepito-23.2-20260823)
+- scripts: add pepito-spec.sh — offline "what did this unit ship with" report
+- extract-nikgapps: add APK override mechanism with safety rails
+- PLAN-vowifi: parts 49-52 — virgin-unit WFC root cause (per-sub IMSS store + empty IMS MSISDN), fix staged in Mi8937 95051da4
 ## 20260823 (2026-08-24)
 
 ### kernel (msm8937) (since pepito-23.2-20260822)
