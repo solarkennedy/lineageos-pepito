@@ -6,7 +6,8 @@
 # Given the signed zip you built and flash-tested yourself, this:
 #   1. sanity-checks it (exists, under GitHub's 2 GiB release-asset limit)
 #   2. builds an EDL bundle from flash-staging/ (per-variant firehose loaders
-#      + rawprogram XMLs for both PVG100 and PVG100E, raw
+#      + rawprogram XMLs for both PVG100 and PVG100E, an optional
+#      Magisk-patched boot image, raw
 #      boot/recovery/system/vendor, README) and
 #      compresses the whole thing as one .tar.xz
 #   3. creates (or reuses) a GitHub Release and uploads the zip, the EDL
@@ -53,6 +54,16 @@ EDL_DIR="/home/kyle/android/lineage-23/flash-staging"
 # stale FRP token so A15+ FRP can auto-deactivate after a wipe. userdata is
 # deliberately excluded — a release flash must not wipe /data as a side effect.
 EDL_IMAGES=(boot.bin recovery.bin system.bin vendor.bin config.bin)
+# Shipped alongside but deliberately NOT referenced by either rawprogram XML:
+# an optional, Magisk-pre-patched boot image for users who want root. Built by
+# prepare-flash.sh via make-magisk-boot.sh. Users can't roll their own —
+# magiskboot fails to parse our fail-open signature block and repacks the image
+# unsigned, which aboot refuses (splash hang). The graft is hardcoded, so this
+# image carries the same Root of Trust as boot.bin: swapping between the two
+# does not re-derive FBE keys and does not wipe /data. Required input, so a
+# release can never silently ship without it (build it, or --skip-edl).
+EDL_EXTRA_IMAGES=(boot-magisk.bin)
+MAGISK_VERSION="v30.7"   # keep in sync with prebuilts/Magisk-*.apk
 # qdl flasher bundled into the EDL package so users don't have to build one.
 # Prebuilt x86-64 Linux binary of modern upstream linux-msm/qdl (adds read
 # support, used by the bundled qdl-dump.sh backup script; the old xerootg
@@ -140,6 +151,9 @@ $update_note
 - In either XML only the boot/recovery/system/vendor/config entries are used
   here; the rest are skipped with \`--allow-missing\`.
 - \`boot.bin\`, \`recovery.bin\`, \`system.bin\`, \`vendor.bin\` — the raw images
+- \`boot-magisk.bin\` — **optional**: the same boot image, pre-patched with
+  Magisk $MAGISK_VERSION for root. Not used by either XML — see "Root (optional)"
+  below. Ignore this file if you don't want root.
 - \`config.bin\` — a 32 KB zero-fill flashed over the \`config\` partition to
   clear any stale factory-reset-protection (FRP) token, so you don't get a
   bogus "factory reset" prompt on every boot. It does **not** touch \`/data\`.
@@ -235,6 +249,43 @@ backup. If you're not 100% sure, check the label.
    a few minutes** while it formats \`/data\`. If it instead reboots into recovery
    asking for a factory reset, that's the encryption mismatch failing safe —
    wipe data and reboot.
+
+## Root (optional)
+
+\`boot-magisk.bin\` is this build's boot image with Magisk $MAGISK_VERSION already
+patched in. **You cannot make your own** by running our \`boot.bin\` through the
+Magisk app: this device's bootloader needs a signature block that \`magiskboot\`
+can't parse, so it silently repacks the image unsigned and the phone then hangs
+at the PALM splash. Use this file instead.
+
+To use it, put it in \`boot.bin\`'s place before step 3 of the flashing steps
+above — neither XML names \`boot-magisk.bin\`, they flash whatever file is called
+\`boot.bin\`:
+
+    mv boot.bin boot-stock.bin
+    mv boot-magisk.bin boot.bin
+
+then run the same \`qdl\` command as above. To go back to un-rooted later, undo
+the rename and reflash. (Already rooted and just swapping boot images? \`dd\` the
+file over \`/dev/block/bootdevice/by-name/boot\` instead — no EDL needed.)
+
+Once it boots, install the Magisk app (https://github.com/topjohnwu/Magisk/releases,
+version $MAGISK_VERSION) to manage it. Root is not required to use this ROM and is
+not supported — you're on your own with it.
+
+The first time you open the app it will ask to do some **"additional setup"** and
+then reboot. That is expected and safe: the boot image ships only the minimum
+Magisk needs to start, and this step installs the rest into \`/data/adb/magisk\`.
+It does **not** touch the boot partition — verified: the partition's checksum is
+byte-for-byte unchanged afterwards.
+
+⚠️ **Do not use Magisk's "Direct Install"** to update Magisk later. It re-patches
+the live boot partition and strips the signature block, which puts you back at
+the splash hang with no way out but EDL. Reflash \`boot.bin\` (or a newer
+\`boot-magisk.bin\`) instead.
+
+Both images share the same verified-boot Root of Trust, so switching either
+direction keeps \`/data\` and its encryption intact — no wipe, no re-setup.
 
 ## Verify your download
 
@@ -351,7 +402,7 @@ if ! $SKIP_EDL; then
     for f in "$EDL_FIREHOSE" "$EDL_FIREHOSE_E" "$EDL_RAWPROGRAM" "$EDL_RAWPROGRAM_E"; do
         [[ -f "$f" ]] || MISSING+=("$f")
     done
-    for img in "${EDL_IMAGES[@]}"; do
+    for img in "${EDL_IMAGES[@]}" "${EDL_EXTRA_IMAGES[@]}"; do
         [[ -f "$EDL_DIR/$img" ]] || MISSING+=("$EDL_DIR/$img")
     done
     if (( ${#MISSING[@]} > 0 )); then
@@ -444,7 +495,7 @@ if ! $SKIP_EDL; then
     cp "$EDL_RAWPROGRAM" "$PKG_DIR/"
     cp "$EDL_RAWPROGRAM_E" "$PKG_DIR/"
 
-    for img in "${EDL_IMAGES[@]}"; do
+    for img in "${EDL_IMAGES[@]}" "${EDL_EXTRA_IMAGES[@]}"; do
         cp "$EDL_DIR/$img" "$PKG_DIR/$img"
     done
 

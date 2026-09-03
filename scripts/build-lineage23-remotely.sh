@@ -63,12 +63,13 @@ SOURCE_EXCLUDES=(
     --exclude='/kernel/**/.*.cmd'
 )
 
-# The four images prepare-flash.sh produces per build (desparsified system/
-# vendor, signed boot/recovery). The firehose loaders and rawprogram XMLs
-# (pvg100_/pvg100e_-prefixed) are device-constant, already present locally,
-# and not re-fetched.
+# The images prepare-flash.sh produces per build (desparsified system/vendor,
+# signed boot/recovery, and the Magisk-patched boot variant). The firehose
+# loaders and rawprogram XMLs (pvg100_/pvg100e_-prefixed) are device-constant,
+# already present locally, and not re-fetched.
 STAGE_FILTERS=(
     --include='boot.bin'
+    --include='boot-magisk.bin'
     --include='recovery.bin'
     --include='system.bin'
     --include='vendor.bin'

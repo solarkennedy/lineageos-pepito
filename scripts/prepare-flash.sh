@@ -10,6 +10,12 @@
 #     image here is idempotent. Switching an EXISTING key-signed install onto this
 #     graft changes the ROT once → one /data wipe.
 #   - Writes a ZEROED config.bin (clears a stale FRP token — see below)
+#   - Builds boot-magisk.bin: the same boot image pre-patched with Magisk and
+#     re-grafted, for users who want root (scripts/make-magisk-boot.sh; skip
+#     with --no-magisk). Users cannot patch boot.bin themselves — magiskboot
+#     can't parse our fail-open signature block, so it repacks UNSIGNED and
+#     aboot hangs at the splash. Same hardcoded graft => same Root of Trust as
+#     boot.bin, so switching between the two does not wipe /data.
 #
 # We deliberately do NOT touch userdata here: the release must not wipe a user's
 # /data as a side effect of flashing. Coming from stock, the first boot formats
@@ -32,13 +38,16 @@ PRODUCT_OUT="$LINEAGE_ROOT/out/target/product/Mi8937"
 
 BOOT_ONLY=0
 NO_RAMDISK=0
+NO_MAGISK=0
 for arg in "$@"; do
     case "$arg" in
         --boot-only|-b) BOOT_ONLY=1 ;;
         --no-ramdisk)   NO_RAMDISK=1; BOOT_ONLY=1 ;;
+        --no-magisk)    NO_MAGISK=1 ;;
         -h|--help)
             echo "Usage: $0 [--boot-only|-b] [--no-ramdisk]"
             echo "  --boot-only   Stage only boot.bin (skips system/vendor/recovery/userdata)"
+            echo "  --no-magisk   Skip building boot-magisk.bin (the rooted boot image)"
             echo "  --no-ramdisk  Repack boot.bin with an empty ramdisk (diagnostic)."
             echo "                Implies --boot-only. Useful for bypassing initramfs"
             echo "                unpack issues to triage downstream kernel BUGs."
@@ -99,6 +108,19 @@ else
     echo "==> Signing boot image..."
     cp "$PRODUCT_OUT/boot.img" "$FLASH_DIR/boot_unsigned.img"
     /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot
+fi
+
+# Rooted variant of whatever boot.bin we just staged. Skipped for the
+# --no-ramdisk diagnostic image (no ramdisk to patch) and for --no-magisk.
+# Non-fatal: a missing Magisk APK must not cost a whole prepare-flash run —
+# release.sh is where a missing boot-magisk.bin is a hard error.
+if [[ "$NO_MAGISK" -eq 0 && "$NO_RAMDISK" -eq 0 ]]; then
+    echo "==> Building Magisk-patched boot image..."
+    if ! "$SCRIPT_DIR/make-magisk-boot.sh" --in "$FLASH_DIR/boot.bin" \
+                                           --out "$FLASH_DIR/boot-magisk.bin" 2>&1 | sed 's/^/    /'; then
+        echo "    WARNING: boot-magisk.bin was NOT built (see above). boot.bin is unaffected." >&2
+        rm -f "$FLASH_DIR/boot-magisk.bin"
+    fi
 fi
 
 if [[ "$BOOT_ONLY" -eq 0 ]]; then

@@ -21,3 +21,7 @@ vendor/
 .DS_Store
 .release-notes.md
 .release-xda-post.txt
+
+# Magisk APK for scripts/make-magisk-boot.sh — upstream binary, not ours to vendor.
+# Kept in the working tree (rsync mirrors it to the build server), out of git.
+prebuilts/*.apk
