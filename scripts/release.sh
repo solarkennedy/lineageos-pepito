@@ -279,6 +279,11 @@ Magisk needs to start, and this step installs the rest into \`/data/adb/magisk\`
 It does **not** touch the boot partition — verified: the partition's checksum is
 byte-for-byte unchanged afterwards.
 
+Modules work, including Zygisk ones: enable Zygisk in the app's settings if a
+module asks for it. Modules that ship custom SELinux rules work too — the image
+is built with a pre-init storage partition configured, which is what lets those
+rules reach the kernel policy at boot.
+
 ⚠️ **Do not use Magisk's "Direct Install"** to update Magisk later. It re-patches
 the live boot partition and strips the signature block, which puts you back at
 the splash hang with no way out but EDL. Reflash \`boot.bin\` (or a newer

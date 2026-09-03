@@ -39,6 +39,22 @@ SIGN_BOOT="$LINEAGE_ROOT/device/xiaomi/mithorium-common/boot-signing/sign-boot-g
 
 IN="$FLASH_DIR/boot.bin"
 OUT="$FLASH_DIR/boot-magisk.bin"
+# Partition holding Magisk's preinit dir, where modules' sepolicy.rule files are
+# staged for magiskinit to apply at boot. Without it magiskinit never creates
+# .magisk/preinit, module installs print "Unable to find preinit dir", and NO
+# module's custom SELinux rules are ever applied -- which under Enforcing breaks
+# modules subtly rather than loudly.
+#
+# ⚠️ Must be a partition LABEL, never the device node the phone reports.
+# `magisk --preinit-device` returns "mmcblk0p35" on a PVG100, but that index is
+# variant-specific: comparing our two rawprogram XMLs, the `oem` label is entry
+# 35 on the PVG100 and 50 on the PVG100E (persist: 30 vs 7, cache: 29 vs 49), so
+# a baked node number would make magiskinit mount and write into an unrelated
+# partition on every E unit. magiskinit resolves this string as a PARTNAME, and
+# our fstab mounts by-name/oem at /metadata on both variants, so the label is
+# portable where the node is not. Flash-validated 2026-09-03: resolves to
+# /metadata/watchdog/magisk, and Shamiko's rules reach the live kernel policy.
+PREINIT_DEVICE="${MAGISK_PREINIT_DEVICE:-oem}"
 # Magisk APK is pinned in the landing repo's prebuilts/ so the build server (an
 # rsync mirror of that repo) has it without fetching anything. MAGISK_APK, then
 # an explicit --apk, override the search.
@@ -61,6 +77,8 @@ while [[ $# -gt 0 ]]; do
         --in)  IN="$2";  shift 2 ;;
         --out) OUT="$2"; shift 2 ;;
         --apk) APK="$2"; shift 2 ;;
+        --preinit-device) PREINIT_DEVICE="$2"; shift 2 ;;   # label, not a node
+        --no-preinit)     PREINIT_DEVICE=""; shift ;;
         -h|--help) grep '^#' "$0" | sed -n '2,30p' | cut -c3-; exit 0 ;;
         *) echo "Unknown arg: $1" >&2; exit 1 ;;
     esac
@@ -111,11 +129,15 @@ export SOURCEDMODE=1 BOOTMODE=false
 # to skip_initramfs.
 export KEEPVERITY=false KEEPFORCEENCRYPT=false PATCHVBMETAFLAG=false \
        RECOVERYMODE=false LEGACYSAR=false
+# Normally resolved on-device (BOOTMODE=true); we must supply it by label.
+export PREINITDEVICE="$PREINIT_DEVICE"
 . ./boot_patch.sh "$1"
 EOF
 
 cp "$IN" "$WORK/stock.img"
 echo "==> Patching with magiskboot"
+# host_patch.sh runs as a child process, so this must be exported, not just set.
+export PREINIT_DEVICE
 ( cd "$WORK" && sh ./host_patch.sh stock.img )
 [[ -f "$WORK/new-boot.img" ]] || die "boot_patch.sh produced no new-boot.img"
 
@@ -138,7 +160,19 @@ cp "$WORK/magiskboot" "$WORK/verify/"
       echo "ERROR: ramdisk /init is not AArch64 (e_machine=0x$MACHINE, want 0xb7)" >&2
       echo "       The device-arch binaries were taken from the wrong lib/ dir." >&2
       exit 1; }
-  echo "  ramdisk /init: AArch64 ELF (e_machine=0xb7)" )
+  echo "  ramdisk /init: AArch64 ELF (e_machine=0xb7)"
+
+  # And that the preinit device made it into the baked config, or module
+  # sepolicy rules will silently never be applied.
+  ./magiskboot cpio ramdisk.cpio "extract .backup/.magisk cfg" >/dev/null 2>&1
+  chmod 644 cfg 2>/dev/null || true
+  if [ -n "$PREINIT_DEVICE" ]; then
+      grep -q "^PREINITDEVICE=$PREINIT_DEVICE\$" cfg || {
+          echo "ERROR: PREINITDEVICE=$PREINIT_DEVICE missing from baked config" >&2; exit 1; }
+      echo "  preinit device: $PREINIT_DEVICE (module sepolicy rules will apply)"
+  else
+      echo "  preinit device: NONE — module sepolicy.rule files will NOT be applied"
+  fi )
 
 echo
 echo "Done: $OUT ($(stat -c %s "$OUT") bytes, $MAGISK_VER)"
