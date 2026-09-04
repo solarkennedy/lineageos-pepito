@@ -3,6 +3,9 @@
 ## 20260903 (2026-09-04)
 
 ### landing (docs/scripts) (since pepito-23.2-20260902)
+- ota: 20260903 gapps
+- ota: 20260903 vanilla
+- changelog: 20260903
 - changelog: 20260903
 - PLAN: status refresh — device roster, NAS/WFC/tethering/AA/integrity lanes closed
 - changelog: 20260903
