@@ -3,6 +3,7 @@
 ## 20260903 (2026-09-04)
 
 ### landing (docs/scripts) (since pepito-23.2-20260902)
+- changelog: 20260903
 - PLAN: status refresh — device roster, NAS/WFC/tethering/AA/integrity lanes closed
 - changelog: 20260903
 - make-magisk-boot: bake PREINITDEVICE=oem so module sepolicy rules apply
