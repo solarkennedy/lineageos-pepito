@@ -1,5 +1,10 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260903 (2026-09-04)
+
+### landing (docs/scripts) (since pepito-23.2-20260902)
+- make-magisk-boot: bake PREINITDEVICE=oem so module sepolicy rules apply
+- scripts: ship a pre-patched Magisk boot image in the EDL bundle
 ## 20260902 (2026-09-02)
 
 ### device/Mi8937 (since pepito-23.2-20260823)
