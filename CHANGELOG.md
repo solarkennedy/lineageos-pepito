@@ -1,5 +1,12 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260906 (2026-09-06)
+
+### device/Mi8937 (since pepito-23.2-20260903)
+- Mi8937: publish the GSF device ID for the Play certification row
+
+### LineageParts (since pepito-23.2-20260903)
+- LineageParts: add a Google Play certification section to Pepito Tweaks
 ## 20260903 (2026-09-04)
 
 ### landing (docs/scripts) (since pepito-23.2-20260902)
