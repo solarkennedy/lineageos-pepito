@@ -20,6 +20,8 @@ DO_SHA=0
 cd "$DIR"
 
 # Report path: alongside the dump when writable (root-owned dumps are not), else $PWD.
+tmpid=$(mktemp)
+trap 'rm -f "$tmpid"' EXIT
 SPEC=${SPEC_OUT:-}
 if [ -z "$SPEC" ]; then
     if [ -w "$DIR" ]; then SPEC=$DIR/SPEC.md
@@ -147,10 +149,32 @@ if [ -n "$M" ]; then
 else echo "_(no modem image)_"; fi
 echo
 
-echo "## Traceability / SKU"
+echo "## Identity (traceability partition)"
 echo
 T=$(img traceability || true)
-if [ -n "$T" ]; then echo '```'; strings -n 6 "$T" | awk 'NR<=10'; echo '```'
+if [ -n "$T" ]; then
+    # The IMEI is the first 15-digit numeric string in the partition. Luhn-check it:
+    # a failure means the wrong partition or a corrupt dump, not an unusual phone.
+    strings -n 15 "$T" | grep -oE '^0[0-9]{14}' | head -1 > "$tmpid" 2>/dev/null || true
+    python3 - "$(cat "$tmpid" 2>/dev/null)" <<'EOF'
+import sys
+s = sys.argv[1] if len(sys.argv) > 1 else ""
+if not s:
+    print("**IMEI**: _not found_ — is this really a traceability image?")
+else:
+    d = [int(c) for c in s][::-1]
+    tot = sum(d[0::2]) + sum(sum(divmod(x * 2, 10)) for x in d[1::2])
+    print(f"**IMEI**: `{s}`  (Luhn {'✅ valid' if tot % 10 == 0 else '❌ INVALID — suspect dump'})")
+EOF
+    sku=$(strings -n 6 "$T" | grep -oE '[A-Z0-9]NBPVG100-[A-Z0-9]+' | head -1)
+    echo
+    echo "**SKU**: \`${sku:-not found}\`  — the leading character tracks the production batch"
+    echo "(known: \`1N\`/\`2N\` early units, \`J\`, \`K\`); an empty SKU is unusual and worth noting."
+    echo
+    echo "Raw traceability strings:"
+    echo '```'
+    strings -n 6 "$T" | awk 'NR<=10'
+    echo '```'
 else echo "_(no traceability image)_"; fi
 echo
 
