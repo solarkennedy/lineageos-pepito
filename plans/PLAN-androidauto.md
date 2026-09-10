@@ -144,6 +144,12 @@ specific to **accessory mode + a real car host**, not general USB signal/power.
 2. After a **clean** flash: install Android Auto from Play (re-grafts onto the stub), grant the
    nearby-devices perm (or let AA setup prompt).
 3. **No** GSF registration needed.
+3a. Notification access: STAGED 2026-09-10 (uncommitted, unflashed) — gapps-only overlay sets
+   `config_defaultListenerAccessPackages=com.google.android.projection.gearhead`, so the stub's
+   `SharedNotificationListenerManager$ListenerService` lands in `enabled_notification_listeners`
+   on FIRST boot (no `notification_policy.xml` yet). Fresh-flash only; dirty-flashed units keep
+   needing the manual toggle. Validate: fresh flash → `settings get secure
+   enabled_notification_listeners` shows the gearhead component before AA setup runs.
 4. (Optional) flash the kernel with the wusb3801 bail-out fix.
 5. Plug into the car → currently stalls at §5. Once §5 is solved, AA should project.
 
