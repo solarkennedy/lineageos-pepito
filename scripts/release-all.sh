@@ -82,6 +82,7 @@ TAG_REPOS=(
   "$TREE/hardware/interfaces	solarkennedy"
   "$TREE/hardware/qcom-caf/bt	solarkennedy"
   "$TREE/system/core	solarkennedy"
+  "$TREE/system/sepolicy	solarkennedy"
   "$TREE/system/bpfprogs	solarkennedy"
   "$TREE/vendor/lineage	solarkennedy"
   "$LAUNCHER	origin"

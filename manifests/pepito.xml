@@ -69,6 +69,14 @@
   <remove-project name="LineageOS/android_system_core" />
   <project path="system/core" name="android_system_core" remote="pepito" revision="pepito-23.2-r1" />
 
+  <!-- working branch: pepito-sepolicy — allow pepito_gsfid to read the GMS
+       checkin prefs, backing the "Google Play certification" row in Pepito
+       Tweaks. Load-bearing under Enforcing: without it the row can't read the
+       GSF device ID. ⚠️ Also carries neverallow exemptions AOSP won't take —
+       re-apply after every upstream merge. -->
+  <remove-project name="LineageOS/android_system_sepolicy" />
+  <project path="system/sepolicy" name="android_system_sepolicy" remote="pepito" revision="pepito-23.2-r1" groups="pdk" />
+
   <!-- working branch: pepito-timeinstate — 2 commits: revert CO-RE/BTF
        tracepoint-defs support + build timeInState with -mcpu=v2 for the
        pre-5.1 kernel BPF verifier. Other half of the zero-CPU-attribution fix.
