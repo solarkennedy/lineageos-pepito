@@ -1,5 +1,22 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260910 (2026-09-10)
+
+### kernel (msm8937) (since pepito-23.2-20260906)
+- misc: bhy: drain FIFO in 256-byte chunks and make recovery actually run
+
+### device/Mi8937 (since pepito-23.2-20260906)
+- Mi8937: pre-approve Android Auto notification listener (gapps)
+- Mi8937: publish the GSF ID after storage unlocks, not at boot_completed
+
+### LineageParts (since pepito-23.2-20260906)
+- LineageParts: let the Play certification row re-fetch the device ID
+
+### landing (docs/scripts) (since pepito-23.2-20260906)
+- release: track system/sepolicy as a pepito fork
+- plans: draft the Android 17 / LineageOS 24.0 upgrade lane
+- PLAN-androidauto: record staged default notification-listener approval
+- pepito-spec.sh: surface IMEI + SKU as labelled, Luhn-checked identity
 ## 20260906 (2026-09-06)
 
 ### device/Mi8937 (since pepito-23.2-20260903)
