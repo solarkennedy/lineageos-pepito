@@ -1,5 +1,71 @@
 # LineageOS 23.2 — Sensors Bring-up (pepito / PVG100)
 
+> ## ⭐⭐⭐ 2026-09-09 — BHy "wedge" ROOT-CAUSED (I²C CONTROLLER, not the hub) + ✅ FLASH-VALIDATED. Fix ✅ COMMITTED `0f46503b31ef` (pepito-rmnet).
+>
+> **What it really is.** After a suspend the hub's non-wakeup FIFO holds up to
+> 8254 bytes; the driver reads it in ONE transfer; on pepito's i2c-2 the 4.19
+> `i2c-msm-v2` runs with `qcom,disable-dma` (Xiaomi `common/soc.dtsi`, also
+> i2c_3/i2c_5) and **its BLOCK mode never completes a read longer than 256
+> bytes** — 256 OK, 257 → `TIMEOUT_ERROR mode:BLOCK`, SCL held low. Proven
+> with `i2ctransfer` on the live bus: the wusb3801 at 0x60 fails the same way,
+> i2c-6 (DMA on) reads 3000 bytes fine. The hub was innocent all along; it is
+> only ever asked for >256 bytes after a suspend, hence "wedge after
+> suspend/resume churn". Awake repro without any suspend: give the accel a 5 s
+> batch latency via sysfs → 1762-byte publish → identical timeout storm.
+> Details + numbers in memory `i2c-msm-v2-block-mode-limit` /
+> `bhy-hub-wedge-no-recovery`.
+>
+> **The user-visible 25 s stall** = `bhy_i2c.c` retrying the 2.36 s controller
+> timeout 10× while holding `mutex_bus_op`; every sensors-HAL call blocked,
+> WindowManager sat in `WindowOrientationListener.enable()` holding its lock,
+> touch input frozen 23 s (`PointerEventDispatcher0 spent 23053ms`). Keyguard
+> is not the actor and there is nothing to fix on the AP side.
+>
+> **The July recovery path never worked — three blockers, all fixed now:**
+> (1) `mcu_monitor_thread` parks in `wait_event(ram_patch_loaded)` and only the
+> recovery loader sets that flag, never the HAL's `req_fw` boot path ⇒ the
+> monitor never ran once (0 log lines in a 2.8 h boot) ⇒ Reset#0..3 all
+> unreachable; the 07-23 "fix" only masked the IRQ forever. (2) `reset()` →
+> `bhy_load_ram_patch()` opened a non-existent `/system/vendor/firmware/ram_patch.fw`
+> ⇒ hub reset into ROM, upload fails, hub dead. (3) `INT_DEBUG_COUNT` is not
+> where time goes (1000 fast-fails = 27 ms), so direction 1 of the task was moot.
+> With a tmpfs alias for the firmware file, the chain `load_ram_patch → monitor
+> wakes → Reset#0 → reload (0.8 s) → enable_irq → events` was observed working
+> end to end for the first time.
+>
+> **Staged in `kernel/xiaomi/msm8937` (`drivers/misc/bhy/`):** FIFO drained in
+> **250-byte addressed chunks** (≤256 = controller FIFO mode; multiple of the
+> hub's 50-byte register window — 256-byte chunks re-send 6 stale bytes at
+> every boundary, 250 verified seamless with 20 ms timestamp continuity);
+> recovery loader uses `request_firmware("bhi160b_ram_patch.fw")` like the boot
+> path; `req_fw` arms the monitor (`ram_patch_loaded` + wake); hard i2c errors
+> on the FIFO path trip the IRQ immediately (`int_force_disable`) and wake the
+> monitor, whose 10 s `msleep` became a wakeable wait; `bhy_i2c.c` stops
+> retrying after one slow (≥100 ms) failure; monitor's 10 s log spam gated
+> behind `enable_irq_log`. **Expected after flash:** zero `TIMEOUT_ERROR` on
+> resume, no stall; worst case on a genuinely dead hub ≈ 0.6 s timeout + ~1.1 s
+> reset/reload.
+>
+> **Validate after flash (USB adb, not TCP):** (a) accel on (GMS usually holds
+> it; else sysfs `sensor_sel=1`, conf `32 00 00 00 01 00 04 00`), screen off,
+> let it suspend ≥60 s, wake → `dmesg | grep -c TIMEOUT_ERROR` = 0, accel
+> events current in `dumpsys sensorservice`, no `Slow dispatch`/`Long monitor
+> contention` in logcat; (b) awake repro: conf `32 00 88 13 01 00 04 00`
+> (5 s latency) → no timeouts, no `Invalid FIFO data`; (c) fault injection:
+> `i2ctransfer -y 2 w2@0x28 0x9b 0x01` (hub reset to ROM) → `Reset#` +
+> `Ram patch loaded successfully` within ~15 s, sensors back.
+>
+> **✅ Flash-validated 2026-09-09 on 9c2e6b00 (kernel g6ad770dd7fb4 #27, Enforcing).**
+> (1) The killer read: forced an **8256-byte** FIFO (mask HOST_CTRL bit7, accumulate,
+> unmask) → driver logged `Fifo length: 8256`, drained it with **0 TIMEOUT_ERROR,
+> 0 Invalid FIFO, 0 fifo-fail** — the exact read that used to time out at 2.36 s and
+> stall 25 s. Zero `TIMEOUT_ERROR` across the whole boot. (2) Recovery: `RESET_REQ`
+> to ROM → `Int High → Reset#0 → Ram patch loaded successfully` (reload 0.79 s) →
+> events in ~1.2 s; a first for any build. (3) No regression: clean boot, no
+> WARN/BUG, boot firmware load OK (`ram_id=11696`), accel+gyro live. ⚠️ A genuine
+> deep-suspend drain is NOT reproducible over USB adb (USB blocks suspend); the
+> mask-bit method above is the bench-equivalent and is deterministic.
+
 > ## ✅ SOLVED 2026-07-23 — STEP COUNTER WORKS (was always 0). Fix = use the hub's NATIVE step handles, not the custom pedometer slot.
 >
 > **Fix validated on hardware the same day.** `std_step_handles=1` (new
