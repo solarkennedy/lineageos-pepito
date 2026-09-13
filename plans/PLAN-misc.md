@@ -921,3 +921,62 @@ driver.** Direct LED writes are fine only for reading `reg_dump`.
   at all, whatever the HAL sent.
 - USB drops on this bench every time the LED switches — read-only polling is stable,
   LED writes are not. Related: [[usb-adb-auth-prompt-storm]].
+
+## 11. "Use SIM" toggle trap — ROOT-CAUSED in QCRIL, mitigation STAGED 2026-09-12
+
+**Symptom:** Settings → SIMs → "Use SIM" off then on leaves `gsm.sim.state=NOT_READY`; the
+framework re-sends `ENABLE_UICC_APPLICATIONS` 4× (5 s apart) and qcril answers
+`GENERIC_FAILURE` every time. (The July "qcril's getter always answers true" story in
+`PLAN-qmux.md` is FALSIFIED — the framework and AOSP are correct at both layers.)
+
+**Severity (measured on `9c2e6b00`, build 20260913, US Mobile/Verizon-profile SIM):**
+- The wedge **survives a reboot**. The disable persisted `USER_PREF=0` in
+  `qcril.db:qcril_manual_prov_table`; at boot the modem auto-provisions the USIM, then
+  qcril reads `USER_PREF=0` and deactivates it — through exactly the buggy path — and
+  every later ENABLE fails the same way. A user has no recovery (no root, no qcrild restart).
+- `setprop ctl.restart qmux_qcrild` heals in ~6 s: the fresh process finds the modem
+  *already* deprovisioned, its boot-time deactivate is a harmless no-op (both responses
+  err 0, session cache stays clean), and the framework's ENABLE then activates
+  (try 1: CDMA ok / GW err 38, writes `USER_PREF=1`; try 2: mode-pref 1, GW ok → LOADED).
+
+**Root cause (prebuilt `libril-qc-hal-qmi.so`, verbose `persist.vendor.radio.adb_log_on=1`):**
+- Because the card carries a **CSIM** app next to the USIM, `qcril_qmi_prov_get_sub_mode_pref_*`
+  computes mode-pref **3 (GW+1X)** even though only the GW session is ever provisioned
+  (1X primary is `0xFFFF` on the modem — `nas-probe uim`).
+- Deactivate with mode-pref 3: GW session → state 3 (DEACTIVATION_IN_PROGRESS), 1X "ignored"
+  (already 0); the QMI callback then calls `qcril_uim_update_prov_session_type
+  session_type:1 state:0` — it clears the **1X** slot instead of GW. GW_PRI is stuck at 3
+  for the life of the process.
+- Activate: `qcril_uim_find_prov_session_type` sees `GW_PRI:3` → "Cannot Activate
+  RIL_sub_type: 0" (GW never sent, `gw_err_code 26` NO_EFFECT synthesized); the 1X/CSIM
+  activate is sent and the modem answers 0x3 INTERNAL (`cdma_err_code 38`); 2 expected
+  responses both fail → GENERIC_FAILURE.
+- USIM-only cards (mode-pref 1) cannot hit the clobber; every Verizon-profile SIM can.
+- `ril.subscription.types=RUIM` (`mithorium-common/system.prop:18`, EMPTY on stock) is NOT
+  the mechanism — the string does not occur in the blob. Still a stock divergence; unrelated.
+- Stock A8.1 has no toggle / IRadio 1.5, so there is no stock witness for this bug.
+
+**Mitigation (staged, unbuilt):** make the sequence unreachable — one carried AOSP patch.
+- `frameworks/opt/telephony` `GsmCdmaPhone.canDisablePhysicalSubscription()` returns false
+  when `ro.telephony.uicc_apps_toggle=false` (default true; new fork — add to `TAG_REPOS`
+  + the changelog repo set + a personal remote at release time).
+- `device/xiaomi/Mi8937/device.mk` sets the prop under `TARGET_DEVICE_PEPITO`.
+- Every Settings entry point (`SimsSection`, `MobileNetworkMainSwitchPreference`,
+  `ToggleSubscriptionDialogActivity`, `SimOnboarding*`, `ChooseSimActivity`) keys off
+  `SubscriptionManager.canDisablePhysicalSubscription()`, so the switch disappears for
+  physical SIMs; eSIM profiles (`isEmbedded`) keep theirs. Boot-time re-apply is driven by
+  the modem's `areUiccApplicationsEnabled`, not this check, so nothing else changes.
+- Validation on flash: Settings → SIMs shows no "Use SIM" switch; `service call isub 45`
+  → `0` (was `1`); `service call isub 46 i32 0 i32 1` — the ISub call is still honoured
+  by the service (the patch hides UI, it is not a server-side guard), so do NOT run it on
+  a unit you care about.
+- Not chosen: an auto-heal (restart `qmux_qcrild` when ENABLE fails) — needs sepolicy for
+  a `ctl.` prop from `system_server`/radio and leaves the persisted `USER_PREF=0` race at
+  boot; hiding the switch is strictly safer.
+
+**Standing defects noticed on the way:**
+- `/data/vendor/radio/iccid_0` is `null,null,null` (mtime = first boot + 60 s, never
+  rewritten) vs stock `<iccid>,mcc,mnc`. RESOLVED as non-defect: it is written by
+  `qcril_qmi_pdc_set_sim_info`, the PDC/MBN carrier-config loader's SIM-info file, and only
+  gets real values once an MBN db is loaded (`persist.vendor.radio.{sw,hw}_mbn_loaded` are
+  0 here — the parked MCFG lane, `PLAN-mcfg.md`). Nothing to fix on its own.

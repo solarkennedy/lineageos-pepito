@@ -169,7 +169,7 @@ Resolved boot-era history (keep for archaeology, all ✅): **§A** `other_ext_me
 - [ ] Camera: face-test the FD 640×480 substitution build. `PLAN-camera.md`.
 - [ ] Bluetooth: profile matrix pass.
 - [ ] `TARGET_SCREEN_DENSITY` 320 override; `TARGET_OTA_ASSERT_DEVICE` += pepito; other papercuts in `PLAN-misc.md`.
-- Parked / known-issues: SIM-PIN auto-verify (-29 TA buffer limit); cosmetic early-boot rmts blip (crash_count 2, self-recovers); **never use the SIM enable/disable toggle** (wedges UICC apps — recovery `ctl.restart qmux_qcrild`; memory `sim-uicc-toggle-trap`); battery-profile selection (BYD vs itech/ascent) unverified; `mdss` gdsc/clk warnings benign but unexplained; Gold-unit black-screen PS_HOLD deaths + late USB-unplug detection attributed to that unit's hardware (aged battery + flaky magnetic-tip USB pogo pins) — not a ROM lane (memory `blackscreen-pshold-death`).
+- Parked / known-issues: SIM-PIN auto-verify (-29 TA buffer limit); cosmetic early-boot rmts blip (crash_count 2, self-recovers); **"Use SIM" toggle wedges the SIM across reboots** — ⭐⭐ ROOT-CAUSED 2026-09-12 in the prebuilt qcril (CSIM+USIM cards → mode-pref 3 → GW session clobbered); switch hidden via staged `ro.telephony.uicc_apps_toggle=false` patch (`PLAN-misc.md` §11); recovery `ctl.restart qmux_qcrild`; memory `sim-uicc-toggle-trap`; battery-profile selection (BYD vs itech/ascent) unverified; `mdss` gdsc/clk warnings benign but unexplained; Gold-unit black-screen PS_HOLD deaths + late USB-unplug detection attributed to that unit's hardware (aged battery + flaky magnetic-tip USB pogo pins) — not a ROM lane (memory `blackscreen-pshold-death`).
 
 ## TEMP commits / bring-up debt (revert before upstream)
 

@@ -408,7 +408,7 @@ the nightly `upgrade/*.sql` (0..10) + manual_prov re-insert (procedure in scratc
 simdebug1; radio:radio 660). Radio logging left ON: `persist.vendor.radio.adb_log_on=1`; radio
 logcat buffer bumped to 16M (non-persistent).
 
-**Separate bug fixed same session — "Use SIM" toggle trap:** disable toggle deactivates UICC apps
+**Separate bug fixed same session — "Use SIM" toggle trap** (⚠️ mechanism below FALSIFIED 2026-09-12 — real root cause is a qcril provisioning-session clobber, see `PLAN-misc.md` §11)**:** disable toggle deactivates UICC apps
 via qcrild, but qcril's `areUiccApplicationsEnabled` getter always answers true → framework never
 re-sends enable → SIM wedged NOT_READY across reboots. Fix/workaround: `setprop ctl.restart
 qmux_qcrild` (qcril re-activates provisioning from its db). Don't use the toggle. Also: qcril's

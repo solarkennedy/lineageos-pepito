@@ -77,6 +77,7 @@ TAG_REPOS=(
   "$TREE/bootable/recovery	solarkennedy"
   "$TREE/frameworks/base	solarkennedy"
   "$TREE/frameworks/native	solarkennedy"
+  "$TREE/frameworks/opt/telephony	solarkennedy"
   "$TREE/lineage-sdk	solarkennedy"
   "$TREE/packages/apps/LineageParts	solarkennedy"
   "$TREE/hardware/interfaces	solarkennedy"

@@ -28,6 +28,7 @@ REPOS=(
   "$TREE/bootable/recovery	recovery"
   "$TREE/frameworks/base	frameworks/base"
   "$TREE/frameworks/native	frameworks/native"
+  "$TREE/frameworks/opt/telephony	frameworks/opt/telephony"
   "$TREE/lineage-sdk	lineage-sdk"
   "$TREE/packages/apps/LineageParts	LineageParts"
   "$TREE/hardware/interfaces	hardware/interfaces"
