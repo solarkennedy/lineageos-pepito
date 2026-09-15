@@ -21,6 +21,7 @@
 - LineageParts: give Life Mode its own settings section
 
 ### landing (docs/scripts) (since pepito-23.2-20260910)
+- changelog: 20260915
 - SIM toggle trap: root cause, hidden-switch mitigation, new opt/telephony fork
 ## 20260910 (2026-09-10)
 
