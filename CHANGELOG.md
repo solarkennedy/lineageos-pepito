@@ -1,5 +1,27 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260915 (2026-09-15)
+
+### kernel (msm8937) (since pepito-23.2-20260910)
+- misc: bhy: detect a param-ack wedge and keep the reset monitor armed
+
+### device/Mi8937 (since pepito-23.2-20260910)
+- Mi8937: hide the "Use SIM" switch on pepito
+- Mi8937: reconcile the IMS MSISDN with the network, not just its shape
+
+### device/mithorium-common (since pepito-23.2-20260910)
+- mithorium-common: move the battery wear profile into Settings > Battery
+- XiaomiParts: open Life Mode settings on a tile long-press
+
+### frameworks/opt/telephony
+- (first tagged in 20260915 — no prior anchor)
+
+### LineageParts (since pepito-23.2-20260910)
+- LineageParts: draw Pepito Tweaks a custom icon
+- LineageParts: give Life Mode its own settings section
+
+### landing (docs/scripts) (since pepito-23.2-20260910)
+- SIM toggle trap: root cause, hidden-switch mitigation, new opt/telephony fork
 ## 20260910 (2026-09-10)
 
 ### kernel (msm8937) (since pepito-23.2-20260906)
