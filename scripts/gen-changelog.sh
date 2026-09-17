@@ -31,6 +31,7 @@ REPOS=(
   "$TREE/frameworks/opt/telephony	frameworks/opt/telephony"
   "$TREE/lineage-sdk	lineage-sdk"
   "$TREE/packages/apps/LineageParts	LineageParts"
+  "$TREE/packages/apps/Updater	Updater"
   "$TREE/hardware/interfaces	hardware/interfaces"
   "$TREE/hardware/qcom-caf/bt	hardware/qcom-caf/bt"
   "$TREE/system/core	system/core"

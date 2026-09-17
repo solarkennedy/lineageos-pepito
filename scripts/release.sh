@@ -25,6 +25,8 @@
 #   ./scripts/release.sh <zip> --edl-only    # EDL bundle only, no OTA zip or JSON
 #   ./scripts/release.sh <zip> --notes-file CHANGELOG_SECTION.md  # release body
 #     (note: the body is only set when the release is CREATED, not on re-upload)
+#     The notes are also embedded into the pepito.json entry ("changelog" /
+#     "changelog_url" keys) for the Updater's "What's new" — on every variant.
 #
 # Device/version/romtype/date are parsed from a standard LineageOS filename
 # (lineage-<version>-<YYYYMMDD>-<romtype>-<device>[-signed].zip); override any
@@ -570,6 +572,21 @@ if ! $EDL_ONLY; then
     [[ -n "$POST_TS" ]] || POST_TS="$(stat -c %Y "$ZIP")"   # fallback: zip mtime
     DATETIME_ARGS=(--datetime "$POST_TS")
 
+    # Embed the release notes into this entry as optional "changelog" /
+    # "changelog_url" keys (ignored by the stock Updater, shown as "What's new"
+    # by ours). Applied to every variant of the day, even when the GitHub
+    # release already existed and the body was left alone.
+    CHANGELOG_ARGS=()
+    NOTES_TMP=""
+    if [[ -n "$NOTES" ]]; then
+        NOTES_TMP="$(mktemp)"
+        printf '%s\n' "$NOTES" > "$NOTES_TMP"
+        CHANGELOG_ARGS=(--changelog-file "$NOTES_TMP"
+                        --changelog-url "https://github.com/$REPO/releases/tag/$TAG")
+    else
+        echo "note: no --notes/--notes-file, so no changelog embedded in $OTA_JSON_REL" >&2
+    fi
+
     python3 "$GEN_JSON" "$ZIP" \
         --device "$DEVICE" \
         --version "$VERSION" \
@@ -578,7 +595,9 @@ if ! $EDL_ONLY; then
         --tag "$TAG" \
         --output "$OTA_JSON" \
         --keep "$KEEP" \
-        "${DATETIME_ARGS[@]}"
+        "${DATETIME_ARGS[@]}" \
+        "${CHANGELOG_ARGS[@]}"
+    [[ -n "$NOTES_TMP" ]] && rm -f "$NOTES_TMP"
 
     # --- commit + push (skipped on a .git-less mirror, see the note above) --
     if $HAS_GIT; then

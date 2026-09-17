@@ -17,6 +17,9 @@
 #      followed by the XDA thread URL to paste it into. Skipped if claude is
 #      absent; never fails the release.
 #
+# The release notes are also embedded into each pepito.json entry ("changelog" /
+# "changelog_url" keys) for the Updater's "What's new" (plans/PLAN-ota-changelog.md).
+#
 # Vanilla is built+released BEFORE gapps is built, on purpose: the two variants
 # share out/target/product/Mi8937/ and each build's installclean wipes the
 # other's zip, so the release must happen while its zip still exists.
@@ -80,6 +83,7 @@ TAG_REPOS=(
   "$TREE/frameworks/opt/telephony	solarkennedy"
   "$TREE/lineage-sdk	solarkennedy"
   "$TREE/packages/apps/LineageParts	solarkennedy"
+  "$TREE/packages/apps/Updater	solarkennedy"
   "$TREE/hardware/interfaces	solarkennedy"
   "$TREE/hardware/qcom-caf/bt	solarkennedy"
   "$TREE/system/core	solarkennedy"
