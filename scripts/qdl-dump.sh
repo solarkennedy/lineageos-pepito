@@ -33,7 +33,8 @@ fi
 "$QDL" --help 2>&1 | grep -q "read-xml" || die "$QDL is too old (no read support) — need linux-msm qdl"
 
 [ $# -ge 2 ] || die "usage: qdl-dump.sh <firehose.elf> <outdir> [--exclude a,b,...]"
-FIREHOSE=$(realpath "$1")
+# No realpath(1): macOS only gained it in 12.3.
+FIREHOSE="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
 OUT=$2
 EXCLUDE=""
 if [ $# -ge 3 ]; then

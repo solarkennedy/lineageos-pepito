@@ -165,8 +165,10 @@ $update_note
   dependencies) — on any modern desktop distro it just runs. If it won't,
   build it from that repo (\`meson setup build && ninja -C build\`; add
   \`-Dzip-container=disabled\` if you lack libzip) and use your own \`qdl\`.
-- \`qdl-dump.sh\` — backup script: dumps every partition to its own \`.bin\`
-  plus generated XML manifests. See "Back up first" below.
+- \`qdl-dump.sh\` — backup script for **Linux and macOS**: dumps every
+  partition to its own \`.bin\` plus generated XML manifests. See step 3.
+- \`fh_dump.py\` — the same backup for **Windows**, where \`qdl\` cannot read
+  this phone. Read-only; contributed by a PVG100 owner. See step 3.
 
 This package does **not** touch modem, bootloader, TrustZone, RPM, or other
 firmware partitions — those are stock, device-specific, and already on your
@@ -192,99 +194,173 @@ backup. If you're not 100% sure, check the label.
 
 ## Before you start
 
-- **Back up first.** With a full backup the PVG100 is effectively unbrickable
-  over EDL, and a backup is the ONLY way back to stock or out of a
-  wrong-variant flash. The bundled \`qdl-dump.sh\` does it in one step (phone
-  in EDL, see step 2 below for how to get there):
-
-      sudo ./qdl-dump.sh pvg100_firehose.elf backup-\$(date +%F)
-
-  (PVG100E: use \`pvg100e_firehose.elf\`.) It reads the phone's partition
-  table and dumps **every partition** — including your stock firmware and
-  modem calibration — to per-partition \`.bin\` files, plus two generated
-  manifests: \`readback.xml\` (what was read) and \`rawprogram_restore.xml\`.
-  To restore later: put the phone in EDL and, from this directory,
-
-      sudo ./qdl --storage emmc --include backup-DATE pvg100_firehose.elf backup-DATE/rawprogram_restore.xml
-
-  A full dump is ~29 GB and slow (an hour or more); add
-  \`--exclude userdata\` to skip the encrypted (and useless without the boot
-  chain that created it) data partition and shrink it to ~3 GB. Needs
-  \`python3\`. Afterwards the phone stays in EDL, ready for flashing.
-  Alternative manual guide:
-  https://xdaforums.com/t/guide-using-edl-to-backup-a-palm-pvg-100-pepito-on-linux.4719549/
+- **Back up first** (step 3). With a full backup the PVG100 is effectively
+  unbrickable over EDL, and a backup is the ONLY way back to stock or out of a
+  wrong-variant flash. Please don't skip it because it's inconvenient.
 - **You will lose your data.** Coming from stock (or any mismatched build) the
-  first boot reformats \`/data\` for file-based encryption. Save anything you care about.
-- **You need:** an x86-64 Linux machine, \`xz-utils\`, \`python3\` (for the
-  backup script only), and a USB cable. \`qdl\`
-  is bundled — no separate install. (Source: $QDL_SRC_URL.)
-  Flashing from Windows is possible too — see "Flashing from Windows" below —
-  but the backup needs Linux.
+  first boot needs \`/data\` reformatted for file-based encryption. Save anything
+  you care about.
+- **Any of Linux, macOS or Windows works.** What each one uses:
 
-## Flashing
+  | | Flashing | Backup |
+  |---|---|---|
+  | **Linux** (x86-64) | bundled \`./qdl\` | bundled \`./qdl-dump.sh\` (needs \`python3\`) |
+  | **Linux** (other CPUs), **macOS** | \`qdl\` from upstream (download or Homebrew-build) | bundled \`./qdl-dump.sh\` with that \`qdl\` (needs \`python3\`) |
+  | **Windows** | \`qdl.exe\` from upstream | bundled \`fh_dump.py\` (needs Python + \`pyserial\`) |
 
-1. Extract this archive:
+  Tested: Linux (every release) and Windows 11 (user-reported, 20260915 build).
+  macOS uses the same USB code path as Linux but nobody has reported a run yet —
+  if you try it, please tell us how it went: https://github.com/$REPO/issues
 
-       tar xf ${TAG_BUNDLE_NAME}.tar.xz
-       cd ${TAG_BUNDLE_NAME}
+Everywhere below, **PVG100E owners substitute** \`pvg100e_firehose.elf\` and
+\`rawprogram0.pvg100e.xml\` for the PVG100 file names (see above — this matters).
 
-2. Put the phone into **EDL (9008)** mode:
-   - if it still boots or reaches recovery:  \`adb reboot edl\`
-   - otherwise use the PVG100 hardware key method (see the project page above).
+## Step 1 — Get the tools and extract the package
 
-   The screen stays black in EDL — that's expected. Confirm the phone is in EDL
-   with \`lsusb\`: a \`Qualcomm ... 9008\` device should appear.
+**Linux**
 
-3. Flash (the bundled \`./qdl\` — root or a 9008 udev rule is needed for USB).
-   **Use the loader and XML that match your variant** (see above):
+    sudo apt install xz-utils python3        # or your distro's equivalent
+    tar xf ${TAG_BUNDLE_NAME}.tar.xz
+    cd ${TAG_BUNDLE_NAME}
 
-   PVG100:
+The bundled \`./qdl\` is an x86-64 binary. On another CPU (or if it won't
+start), download \`qdl-binary-ubuntu-*\` from $QDL_SRC_URL/releases
+(v2.8 or newer) or build it (\`meson setup build && ninja -C build\`), and use
+that \`qdl\` wherever these steps say \`./qdl\`. USB access needs root (\`sudo\`,
+as shown) or a udev rule for \`05c6:9008\`.
 
-       sudo ./qdl --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml
+**macOS**
 
-   PVG100E:
+    tar xf ${TAG_BUNDLE_NAME}.tar.xz
+    cd ${TAG_BUNDLE_NAME}
 
-       sudo ./qdl --storage emmc --allow-missing pvg100e_firehose.elf rawprogram0.pvg100e.xml
+Download \`qdl-binary-macos-arm64-*.zip\` (Apple Silicon) or
+\`qdl-binary-macos-intel-*.zip\` from $QDL_SRC_URL/releases (v2.8 or
+newer), unzip it and copy its \`qdl\` **over** the bundled Linux \`./qdl\` in this
+folder. macOS quarantines downloaded binaries; clear that once with
+\`xattr -dr com.apple.quarantine ./qdl\`. No \`sudo\` and no driver needed.
+\`python3\` comes with the Xcode command line tools (\`xcode-select --install\`).
+(Prefer to build? \`brew install libxml2 libusb libzip meson ninja\`, then
+\`meson setup build && ninja -C build\` in a checkout of that repo.)
 
-   \`--allow-missing\` is required: each XML lists the full stock partition
-   table and only boot/recovery/system/vendor/config are included here.
+**Windows**
 
-4. When \`qdl\` finishes, let the phone reboot on its own. **The first boot takes
-   a few minutes** while it formats \`/data\`. If it instead reboots into recovery
-   asking for a factory reset, that's the encryption mismatch failing safe —
-   wipe data and reboot. If it boot-loops without ever reaching recovery, hold
-   **Power** continuously through three reboots until "Entering Recovery Mode"
-   appears, then choose *Factory reset → Format data*.
+1. Extract this archive — 7-Zip opens \`.tar.xz\` (extract twice: \`.xz\`, then
+   \`.tar\`).
+2. Download \`qdl-binary-windows-x64-*.zip\` from $QDL_SRC_URL/releases
+   (v2.8 or newer) and unzip its contents **into the extracted folder**, next
+   to the \`.elf\` and \`.bin\` files. The bundled \`qdl\` (no \`.exe\`) is the Linux
+   binary — ignore it.
+3. For the backup: install Python 3 from https://www.python.org/downloads/ (tick
+   "Add python.exe to PATH"), then in a terminal: \`pip install pyserial\`.
+4. Driver: with the phone in EDL (step 2) Device Manager must show **Qualcomm
+   HS-USB QDLoader 9008 (COMx)** under *Ports*. Windows often has this driver
+   already; if the phone shows up as an unknown \`QUSB_BULK\` device instead,
+   install the Qualcomm (or Quectel) QDLoader USB driver. **No Zadig / WinUSB
+   swap** — qdl talks to the COM port directly. Note the COM number for step 3.
 
-## Flashing from Windows
+Open a terminal (PowerShell is fine) in the extracted folder for the rest.
 
-Everything above assumes Linux, but flashing works from Windows too (reported
-working on Windows 11 with the 20260915 build — thanks to the user who wrote
-this up). No Linux, no Zadig, no driver swapping:
+## Step 2 — Put the phone into EDL (9008) mode
 
-1. Put the phone in EDL (\`adb reboot edl\`). Windows should bind it to a
-   **Qualcomm HS-USB QDLoader 9008 (COMx)** port. If it shows up as an unknown
-   device instead, install the Qualcomm (or Quectel) QDLoader USB driver first.
-2. The bundled \`./qdl\` is a Linux binary — don't use it. Download the official
-   Windows x64 build of the same tool (\`qdl-binary-windows-x64-*.zip\`, v2.8 or
-   newer) from $QDL_SRC_URL/releases. It talks to the COM port on its own.
-3. Extract this archive (7-Zip opens \`.tar.xz\`), open a terminal in the
-   extracted folder and run the same command as step 3 above, without
-   \`sudo\` — for a PVG100:
+- If it still boots or reaches recovery:  \`adb reboot edl\`
+- Otherwise use the PVG100 hardware key method (see the project page above).
 
-       qdl.exe --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml
+The screen stays black in EDL — that's expected. Confirm it arrived:
 
-   (PVG100E: \`pvg100e_firehose.elf\` and \`rawprogram0.pvg100e.xml\`.) One
-   \`failed to read sector data\` line at the start is harmless — see below.
+- Linux: \`lsusb\` shows a \`Qualcomm ... 9008\` device
+- macOS: \`system_profiler SPUSBDataType | grep -i -A3 qualcomm\`, or look for
+  \`QUSB_BULK\` in *System Information → USB*
+- Windows: Device Manager → *Ports* → *Qualcomm HS-USB QDLoader 9008 (COMx)*
 
-⚠️ **Backing up from Windows does not work with qdl.** \`qdl-dump.sh\` is a
-Linux shell script, and the Windows qdl build cannot *read* from this phone at
-all: the PVG100's loader sends the sector data before its XML response and
-never announces raw mode, so qdl throws the data away (\`failed to read sector
-data\` / \`unable to determine sector size for read operation\`). Writes are
-unaffected. **Take your backup from Linux** — a live USB stick is enough — and
-come back to Windows to flash if you like. Please don't skip the backup because
-it is inconvenient; it is the only way back to stock.
+## Step 3 — Back up
+
+Either tool reads the phone's partition table and dumps **every partition** —
+including your stock firmware and modem calibration — to per-partition \`.bin\`
+files, plus \`gpt-lun0.bin\` and two generated manifests: \`readback.xml\` (what
+was read) and \`rawprogram_restore.xml\` (how to write it back). The phone is
+left in EDL afterwards, ready for step 4.
+
+A full dump is ~29 GB and slow (an hour or more). Add \`--exclude userdata\` to
+skip the data partition — it is encrypted and useless without the exact boot
+chain that created it — which shrinks the backup to ~7 GB.
+
+**Linux**
+
+    sudo ./qdl-dump.sh pvg100_firehose.elf backup-\$(date +%F) --exclude userdata
+
+**macOS** (same script, no \`sudo\`)
+
+    ./qdl-dump.sh pvg100_firehose.elf backup-\$(date +%F) --exclude userdata
+
+**Windows** — \`qdl.exe\` can flash this phone but cannot *read* it over the COM
+port: the PVG100's loader sends the sector data before its XML reply and never
+announces raw mode, so qdl throws the data away (\`failed to read sector data\` /
+\`unable to determine sector size for read operation\`). The bundled
+\`fh_dump.py\` is a small read-only dumper that copes with that ordering; the
+only commands it ever sends the phone are \`<configure>\` and \`<read>\`.
+
+1. It needs the Firehose loader already running on the phone, and uploading it
+   is qdl's job. Run one read with qdl — **it is expected to fail** with the
+   error above, but the loader stays resident:
+
+       .\qdl.exe --storage emmc --skip-reset pvg100_firehose.elf read 0/0+34 gpt-test.bin
+
+2. Dump, using the COM number from Device Manager:
+
+       python fh_dump.py COM10 backup-today --exclude userdata --rom-xml rawprogram0.pvg100.xml
+
+   \`--rom-xml\` also cross-checks the phone's real partition table against the
+   XML you are about to flash with. It must report \`OK - every partition offset
+   and size matches\`. **If it reports mismatches, stop** — you have picked the
+   wrong variant's XML (or have an unusual unit); do not flash, open an issue.
+   It writes \`SHA256SUMS.txt\` next to the images. Expect ~12 MiB/s.
+
+**Restoring a backup** (any OS, phone in EDL, from this folder; Windows:
+\`.\qdl.exe\` and no \`sudo\`):
+
+    sudo ./qdl --storage emmc --include backup-DATE pvg100_firehose.elf backup-DATE/rawprogram_restore.xml
+
+Keep the backup somewhere safe — it contains your phone's unique calibration
+and IMEI data and cannot be recreated from anyone else's phone.
+Alternative manual guide (Linux, \`edl\` tool):
+https://xdaforums.com/t/guide-using-edl-to-backup-a-palm-pvg-100-pepito-on-linux.4719549/
+
+## Step 4 — Flash
+
+**Use the loader and XML that match your variant** (see above).
+
+Linux:
+
+    sudo ./qdl --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml
+
+macOS:
+
+    ./qdl --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml
+
+Windows:
+
+    .\qdl.exe --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml
+
+PVG100E, any OS: the same command with \`pvg100e_firehose.elf
+rawprogram0.pvg100e.xml\`.
+
+\`--allow-missing\` is required: each XML lists the full stock partition table
+and only boot/recovery/system/vendor/config are included here. On Windows one
+\`failed to read sector data\` line at the start is harmless (it is the read
+problem described in step 3; writes are unaffected). If qdl complains that the
+device is already in Firehose mode after a backup, that is fine — it carries on.
+
+## Step 5 — First boot
+
+When \`qdl\` finishes, let the phone reboot on its own. **The first boot takes a
+few minutes.** Coming from stock, \`/data\` has to be reformatted:
+
+- If it reboots into recovery asking for a factory reset, that's the encryption
+  mismatch failing safe — choose *Factory reset → Format data*, then reboot.
+- If it boot-loops without ever reaching recovery, hold **Power** continuously
+  through three reboots until "Entering Recovery Mode" appears, then do the
+  same *Factory reset → Format data*.
 
 ## Root (optional)
 
@@ -294,7 +370,7 @@ Magisk app: this device's bootloader needs a signature block that \`magiskboot\`
 can't parse, so it silently repacks the image unsigned and the phone then hangs
 at the PALM splash. Use this file instead.
 
-To use it, put it in \`boot.bin\`'s place before step 3 of the flashing steps
+To use it, put it in \`boot.bin\`'s place before step 4 (Flash)
 above — neither XML names \`boot-magisk.bin\`, they flash whatever file is called
 \`boot.bin\`:
 
@@ -334,10 +410,15 @@ direction keeps \`/data\` and its encryption intact — no wipe, no re-setup.
 
 ## Trouble?
 
-- \`./qdl\` "permission denied" or no device: run it with \`sudo\`, or add a udev
-  rule for the 9008 device. If the bundled binary won't run at all (missing
-  libs / non-x86-64 host), build qdl from $QDL_SRC_URL
-  (\`meson setup build && ninja -C build\`).
+- Linux: \`./qdl\` "permission denied" or no device — run it with \`sudo\`, or
+  add a udev rule for the 9008 device. If the bundled binary won't run at all
+  (missing libs / non-x86-64 host), use an upstream build (step 1).
+- macOS: "cannot be opened because the developer cannot be verified" — clear
+  the quarantine flag (step 1).
+- Windows: qdl finds no device — check Device Manager shows the *QDLoader 9008*
+  COM port, not \`QUSB_BULK\`/WinUSB (step 1). \`fh_dump.py\` "timed out waiting
+  for XML" — the loader isn't running yet; do the qdl read in step 3 first, and
+  make sure nothing else (a serial terminal, another qdl) holds the COM port.
 - Black screen after flashing: give the first boot ~5 minutes; if nothing, put
   the phone back into EDL and reflash.
 - Bugs and questions: https://github.com/$REPO/issues
@@ -551,6 +632,8 @@ if ! $SKIP_EDL; then
     # Backup script (see the "Back up first" section of the README).
     cp "$SCRIPT_DIR/qdl-dump.sh" "$PKG_DIR/qdl-dump.sh"
     chmod +x "$PKG_DIR/qdl-dump.sh"
+    # Windows equivalent: qdl's COM-port backend cannot read this phone.
+    cp "$SCRIPT_DIR/fh_dump.py" "$PKG_DIR/fh_dump.py"
 
     write_edl_readme "$PKG_DIR/README.md"
 
