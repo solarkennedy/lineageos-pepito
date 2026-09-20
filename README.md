@@ -94,6 +94,16 @@ partitions, including stock firmware** — the bundle's `README.md` spells this 
 1. **Boot to recovery** by holding **Power** through 3 boot cycles.
 1. **First boot requires a userdata wipe** coming from stock (the switch to file-based encryption).
 
+#### Flashing from Windows
+
+The bundle and its instructions assume Linux, but **flashing works from Windows too** (user-reported on Windows 11, no Zadig):
+with the phone in EDL, Windows binds it to a *Qualcomm HS-USB QDLoader 9008 (COMx)* port, and the official
+[linux-msm `qdl` Windows x64 build](https://github.com/linux-msm/qdl/releases) (v2.8+) flashes it with the same command line as on Linux.
+The step-by-step is in the bundle's `README.md` under "Flashing from Windows".
+
+⚠️ **The backup still needs Linux.** `qdl-dump.sh` is a shell script, and the Windows `qdl` build cannot read from the PVG100 at all
+(its loader sends sector data in an order `qdl` rejects; writes are unaffected). A Linux live USB is enough — take the backup there, then flash from wherever you like.
+
 ## The gory details
 
 See the details in **[bring-up write-up](https://kyle.cascade.family/posts/porting-android-16-to-a-palm-pvg100-pepito)** blog post.

@@ -218,6 +218,8 @@ backup. If you're not 100% sure, check the label.
 - **You need:** an x86-64 Linux machine, \`xz-utils\`, \`python3\` (for the
   backup script only), and a USB cable. \`qdl\`
   is bundled — no separate install. (Source: $QDL_SRC_URL.)
+  Flashing from Windows is possible too — see "Flashing from Windows" below —
+  but the backup needs Linux.
 
 ## Flashing
 
@@ -250,7 +252,39 @@ backup. If you're not 100% sure, check the label.
 4. When \`qdl\` finishes, let the phone reboot on its own. **The first boot takes
    a few minutes** while it formats \`/data\`. If it instead reboots into recovery
    asking for a factory reset, that's the encryption mismatch failing safe —
-   wipe data and reboot.
+   wipe data and reboot. If it boot-loops without ever reaching recovery, hold
+   **Power** continuously through three reboots until "Entering Recovery Mode"
+   appears, then choose *Factory reset → Format data*.
+
+## Flashing from Windows
+
+Everything above assumes Linux, but flashing works from Windows too (reported
+working on Windows 11 with the 20260915 build — thanks to the user who wrote
+this up). No Linux, no Zadig, no driver swapping:
+
+1. Put the phone in EDL (\`adb reboot edl\`). Windows should bind it to a
+   **Qualcomm HS-USB QDLoader 9008 (COMx)** port. If it shows up as an unknown
+   device instead, install the Qualcomm (or Quectel) QDLoader USB driver first.
+2. The bundled \`./qdl\` is a Linux binary — don't use it. Download the official
+   Windows x64 build of the same tool (\`qdl-binary-windows-x64-*.zip\`, v2.8 or
+   newer) from $QDL_SRC_URL/releases. It talks to the COM port on its own.
+3. Extract this archive (7-Zip opens \`.tar.xz\`), open a terminal in the
+   extracted folder and run the same command as step 3 above, without
+   \`sudo\` — for a PVG100:
+
+       qdl.exe --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml
+
+   (PVG100E: \`pvg100e_firehose.elf\` and \`rawprogram0.pvg100e.xml\`.) One
+   \`failed to read sector data\` line at the start is harmless — see below.
+
+⚠️ **Backing up from Windows does not work with qdl.** \`qdl-dump.sh\` is a
+Linux shell script, and the Windows qdl build cannot *read* from this phone at
+all: the PVG100's loader sends the sector data before its XML response and
+never announces raw mode, so qdl throws the data away (\`failed to read sector
+data\` / \`unable to determine sector size for read operation\`). Writes are
+unaffected. **Take your backup from Linux** — a live USB stick is enough — and
+come back to Windows to flash if you like. Please don't skip the backup because
+it is inconvenient; it is the only way back to stock.
 
 ## Root (optional)
 
