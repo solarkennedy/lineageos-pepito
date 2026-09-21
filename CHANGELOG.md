@@ -25,6 +25,8 @@
 - (first tagged in 20260921 — no prior anchor)
 
 ### landing (docs/scripts) (since pepito-23.2-20260915)
+- ota: 20260921 vanilla
+- changelog: 20260921
 - plans/docs: emergency-only + watchdog + BHy poll-mode lanes, microG add-on
 - fh_dump.py: Apache-2.0, drop the contributor note
 - docs: backup + flashing on Linux, macOS and Windows; bundle fh_dump.py
