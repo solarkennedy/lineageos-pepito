@@ -1,6 +1,18 @@
 {
   "response": [
     {
+      "datetime": 1790017096,
+      "filename": "lineage-23.2-20260921-UNOFFICIAL-Mi8937.zip",
+      "id": "606c58d92da67fe41985b697bc2d2a81879e5c747fc1a46aaeb9d9abcd084525",
+      "sha256": "606c58d92da67fe41985b697bc2d2a81879e5c747fc1a46aaeb9d9abcd084525",
+      "romtype": "UNOFFICIAL",
+      "size": 1164621870,
+      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260921/lineage-23.2-20260921-UNOFFICIAL-Mi8937.zip",
+      "version": "23.2",
+      "changelog": "### kernel (msm8937)\n- misc: bhy: stop the MCU monitor from racing system suspend\n\n### device/Mi8937\n- Mi8937: bhy-wrapper: Q14 quaternion resolution; note the dead hals.conf\n- Mi8937: wrap the BHy HAL to fix its advertised range/resolution\n- Mi8937: create the BHy calibration dir from a system_ext rc\n- Mi8937: point the Updater's \"Show changelog\" at the pepito changelog\n\n### device/mithorium-common\n- XiaomiParts: add emergency-only recovery watchdog (experimental, off)\n- mithorium-common: load the BHy HAL through its pepito wrapper\n- mithorium-common: drop the BHy calibration mkdir from init.target.rc\n- thermal: pepito skin config - SEVERE at 60 C, not the Xiaomi 50 C\n- thermal: arm trip_point_0 when a zone has no trip_point_1\n\n### LineageParts\n- GoTweaks: add emergency-only recovery toggle (experimental, off)",
+      "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20260921"
+    },
+    {
       "datetime": 1789497508,
       "filename": "lineage-23.2-20260915-SNAPSHOT-Mi8937_gapps.zip",
       "id": "4190fd0154d6edaa2c60b7dcce0deb2444e6756049144d100e9ad791f78027fc",
@@ -88,16 +100,6 @@
       "romtype": "SNAPSHOT",
       "size": 1604539988,
       "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260902/lineage-23.2-20260902-SNAPSHOT-Mi8937_gapps.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1788379244,
-      "filename": "lineage-23.2-20260902-UNOFFICIAL-Mi8937.zip",
-      "id": "124c753b493f655c690fb3e8fca3b3194cfdff40f64694ac42b4d4dc9ea87659",
-      "sha256": "124c753b493f655c690fb3e8fca3b3194cfdff40f64694ac42b4d4dc9ea87659",
-      "romtype": "UNOFFICIAL",
-      "size": 1164488252,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260902/lineage-23.2-20260902-UNOFFICIAL-Mi8937.zip",
       "version": "23.2"
     }
   ]
