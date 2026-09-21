@@ -1,5 +1,97 @@
 # LineageOS 23.2 — Sensors Bring-up (pepito / PVG100)
 
+> ## ✅ 2026-09-20 — BHy "overnight MCU crash / reset loop" ROOT-CAUSED + FIXED: `8dc0c83fbe0b` (kernel `pepito-rmnet`)
+> It was never the hub. `mcu_monitor_thread` (non-freezable kthread) polled CHIP_STATUS over i2c during
+> the system-suspend window where i2c-msm-v2 refuses transfers (`slave:0x28 is calling xfer when system
+> is suspended`, -5 / -110); since `5b6a5ac` one failed read = an immediate reset, and the reload then
+> straddled the next suspend. Hub never reported FIRMWARE_IDLE in any log. Fix = freezable monitor +
+> 3-strike detection + resume never leaves `in_suspend` set. Proven on dut1: 16 036 suspend cycles, 0
+> failures (old build ~64 expected). Full trail: `PLAN-bhy-pollmode.md` §16. Remaining: new2 night.
+>
+> ## 🔴 2026-09-13 — Unlock stall on new2 (`9c2e6b00`, build 20260913): hub stopped ACKING PARAMETER requests + recovery monitor PARKED. Live-recovered; fix STAGED, UNBUILT, awaiting re-review.
+>
+> **Symptom.** Every unlock takes several seconds, whatever the lock
+> interval; auto-rotate on/off makes no difference; pattern lock; no face
+> enrolled. Gold (same lock type) is not affected.
+>
+> **Evidence (live, USB adb, uptime 7 h 20 m).**
+> - Unlock at 13:55:48: `LockSettingsService` verify took 0.1 s (fine). Then
+>   `Looper: Slow dispatch took 7611ms android.ui … DisplayRotation$OrientationListener`,
+>   `keyguardGoingAway` held the WM lock another 1.15 s,
+>   `PointerEventDispatcher0 spent 4367ms` (touch frozen). 14:23 unlock: 5.8 s.
+> - dmesg: `bhy_write_parameter Wait for ack failed[3, 65]` ×4 per wake, 166 in
+>   the ring buffer. Each = `BHY_PARAM_ACK_WAIT_RETRY` 100 × `usleep_range(10–20 ms)`
+>   ≈ 1.9 s. The orientation listener is enabled on every wake (not gated by
+>   auto-rotate; it also backs the rotate-suggestion button).
+> - **Not the 09-09 FIFO bug:** plain register I/O was fine (`reset_flag` read 83 ms),
+>   `ram_id=11696` (patch loaded), but sysfs `working_mode`/`op_mode`/`status_bank`
+>   each failed after ~2.1 s with `bhy_read_parameter Wait for ack failed` — the
+>   hub firmware had stopped servicing parameter requests. `bhy` IRQ count frozen
+>   (1418). Last accel event wall 07:02:41 (ts 49.8 s after boot); every accel
+>   registration since → `PERMISSION_DENIED` in sensorservice.
+> - `check_watchdog_reset()` reads CHIP_STATUS, which still succeeds with
+>   FIRMWARE_IDLE clear ⇒ the monitor calls the hub healthy. No `Reset#` all day.
+> - Boot-time cause LOST (dmesg + logcat rotated, logpersistd off).
+>
+> **Live recovery (root):** `echo 1 > /sys/class/input/input1/load_ram_patch`
+> → `request_firmware` loaded `bhi160b_ram_patch.fw` in 0.94 s (so the running
+> kernel `g6ad770dd7fb4-dirty` HAS the 0f46503b loader, even though 6ad770dd does
+> not descend from 0f46503b in netbook4's tree — builder divergence); `op_mode`
+> read in 56 ms. **Then, unprompted:** the next `sensor_conf` write woke the
+> monitor → `Int High detected, Try to Reset#0` / `Reset sequence started (1)` →
+> second reload → `sync_sensor` re-enabled accel → events flowing (IRQ 1418 →
+> 1944), 0 ack failures since. ⇒ `irq_force_disabled` had been set for hours and
+> the monitor never acted on it. Unlock speed after recovery NOT yet confirmed.
+>
+> **Second bug (why nothing recovered).** `mcu_monitor_thread` re-evaluates
+> `wait_event_interruptible(monitor_wq, … atomic_read(&ram_patch_loaded))` at the
+> top of EVERY loop pass. `RAM_PATCH_READY == 0`, `bhy_load_ram_patch()` sets
+> READY at entry, and all of its ~15 early-return error paths leave it READY ⇒
+> **one failed reload parks the monitor for good**. The manual reload set LOADED
+> and un-parked it. Probable story for this boot (unproven): hub hung ~50 s in, a
+> reset's reload failed partway, monitor parked, IRQ left force-disabled.
+>
+> **Staged fix** — `kernel/xiaomi/msm8937` `drivers/misc/bhy/bhy_core.{c,h}`,
+> +58/−3, uncommitted, **not compiled** (no local KERNEL_OBJ; builder unreachable):
+> 1. New `param_ack_timeout()` replaces the `Wait for ack failed` PERR in both
+>    `bhy_read_parameter()` and `bhy_write_parameter()`: sets `param_wedged`, and
+>    if `!irq_force_disabled` calls `int_force_disable()` (IRQ off + wake monitor →
+>    Reset#0), else just `wake_up(monitor_wq)`. Guarded so `disable_irq` can't nest
+>    (reset()'s `direct_ram_patch` re-enables exactly once).
+> 2. Both parameter functions return `-EIO` immediately while `param_wedged` ⇒ a
+>    dead hub costs one ~2 s timeout, not 7.6 s per wake.
+> 3. `bhy_load_ram_patch()` clears `param_wedged` right after
+>    `bhy_i2c_clear_degraded()` under `mutex_bus_op`, before `sync_sensor()`.
+> 4. New `hub_ever_loaded`, set wherever LOADED is set (`bhy_store_req_fw()` HAL
+>    boot path and `bhy_load_ram_patch()` success). The monitor loop wait becomes
+>    `kthread_should_stop() || hub_ever_loaded || ram_patch_loaded`. Retries stay
+>    bounded by `cnt_reset`/`skip_reset` (3 per `RESET_TIMEOUT` = 30 min).
+>
+> **Review questions for the 09-09 author.**
+> - `param_wedged`/`irq_force_disabled` are plain bools touched from the monitor,
+>   sysfs (under `mutex_bus_op`) and the FIFO IRQ path (`int_debug`). Acceptable,
+>   as for the existing `irq_force_disabled`, or do they need the mutex / atomics?
+> - Is any parameter op legitimately slow enough (>1–2 s ack) to false-trip a
+>   full reload? E.g. self-test, FOC, `bhy_reinit`, calibration pages.
+> - With the monitor no longer parked after a failed reload, reset() →
+>   `direct_ram_patch` re-enables the IRQ on a hub that may be in ROM with no
+>   firmware. Does the level-high IRQ then storm until `int_debug` re-trips?
+>   Should a failed `bhy_load_ram_patch()` leave the IRQ disabled instead?
+> - After `skip_reset` (3 resets), `param_wedged` stays set for up to 30 min ⇒
+>   sensors stay dead but unlock stays fast. Right trade-off?
+> - `check_watchdog_reset()` could also probe a cheap parameter read to catch
+>   this state proactively. Not done: while wedged it would cost 2 s of
+>   `mutex_bus_op` per 10 s poll unless it respects `param_wedged`.
+>
+> **Test plan after flash.** (a) Baseline: 20 lock/unlock cycles on new2; grep
+> `Slow dispatch.*Orientation` + `Wait for ack failed` = 0. (b) Forced wedge: no
+> clean repro of the ack hang yet. Candidates: `echo 1 > load_ram_patch` racing a
+> `sensor_conf` write, or making the reload fail partway (tmpfs overlay hiding
+> the firmware) to exercise failed-reload → monitor-still-armed; expect `Reset#0`
+> within ms and the next unlock at most ~1 s slower than baseline. (c) Capture
+> dmesg in the first 2 min of every boot on new2 until the boot+50 s hang recurs,
+> to find the real trigger. Memory: `bhy-param-ack-hang-unlock-stall`.
+
 > ## ⭐⭐⭐ 2026-09-09 — BHy "wedge" ROOT-CAUSED (I²C CONTROLLER, not the hub) + ✅ FLASH-VALIDATED. Fix ✅ COMMITTED `0f46503b31ef` (pepito-rmnet).
 >
 > **What it really is.** After a suspend the hub's non-wakeup FIFO holds up to

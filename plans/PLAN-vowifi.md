@@ -1100,3 +1100,56 @@ Summary (full detail in memory `wifi-calling-lane.md` parts 49–52):
 - **Part 51** — with the gate persisted the unit still registered over WLAN SMS-only. `ps_sys` field 3 (1 vs 3) FALSIFIED. 1,000-file EFS diff vs DUT: the only real delta = empty IMS MSISDN (`ims/qp_ims_config` @0x0b = IMSS `GET 0x54 TLV 0x19`). Direct EFS writes to IMSS-owned files are clobbered by the modem's RAM re-save; only QMI SETs stick.
 - **Part 52** — `imss-probe setstr 0x53 0x18 <digits>` → voice FULL_SERVICE over WLAN in 10 s, real Wi-Fi call; persists across reboot; cold boot LTE+Wi-Fi → voice on WLAN at t=10 s.
 - **Fix (staged, uncommitted):** `ims_enabler.c` phase 2 learns the MSISDN from IMSA `GET_REGISTRATION_STATUS` TLV 0x15 (`tel:` URI) and writes it (prop `vendor.qmux.ims_msisdn` = kept|set|pending|failed); `init.qmux.rc` re-starts the enabler on `gsm.sim.state=LOADED`. Bench-tested from `/data/local/tmp` on the gifted unit (fast path 60 ms `kept`; cleared-MSISDN path 45 s `set`, verified). Needs a ROM build + fresh-unit flash validation.
+
+## 🔴 PART 55 (2026-09-12) — NUMBER-CHANGE (port-in) edge case: phase 2's "kept" fast path never re-checks, so a ported line keeps the OLD MSISDN forever
+
+**Trigger:** Kyle ported his personal number onto unit `9c2e6b00` (US Mobile / Warp, MCC-MNC 311480). SMS works, the framework picked the new number up — but Google Messages' RCS still shows the old one.
+
+**Measured on 9c2e6b00 (build `BP4A.251205.006`, 2026-09-10, `vendor.qmux.ims_msisdn=kept`):**
+
+| Source | Value | Verdict |
+|---|---|---|
+| IMSA `GET_REGISTRATION_STATUS` TLV 0x15 (P-Associated-URI) | `sip:+14156962801@vzims.com`, `tel:+14156962801` | **the network's truth — NEW number** |
+| IMSS `GET 0x54` TLV 0x19 (our MSISDN store, modem EFS) | `14254788846` | 🔴 **STALE — the old Warp number** |
+| `telephony/siminfo` `number` / `phone_number_source_ims` | `+14156962801` | ✅ framework is correct (it reads IMS) |
+| `imsa-probe` service status | voip `FULL_SERVICE`, `voip_service_rat=1` (cellular) | voice on WWAN despite WFC on, bridge `up`, Wi-Fi associated |
+
+**Root cause (ours):** `msisdn_phase()` tested only *plausibility* — `msisdn_is_provisioned(cur)` → log "already set" → `kept` → return, never querying IMSA. A port-in leaves a **well-formed but wrong** number in EFS, and since the ICCID never changes nothing else in the stack invalidates it. Same hole would swallow a SIM swap to a different line on a unit that already had a number.
+
+**Fix (staged, uncommitted — `device/xiaomi/Mi8937/qmux/ims_enabler.c`):** phase 2 now **reconciles instead of keeping**. Every run reads both the IMSS store and the IMSA registration URI:
+- equal → `kept` (steady state, still zero NV writes)
+- store empty / placeholder `"0"` / too short → `set` (the part-52 virgin-unit path, unchanged)
+- store holds a *different* real number → **`updated`** (new status value; the port-in / SIM-swap path)
+- no registration inside `MSISDN_BUDGET_S` → `kept` if the store was plausible (logged as "unverified"), else `pending`
+
+Cost of the change: a provisioned unit no longer returns in ~60 ms on iteration 1 — it waits for IMS to register (a few 5 s iterations; registration lands ~10-45 s after boot). It is still a **bounded** wait in a `oneshot` that then exits: `MSISDN_BUDGET_S=180` / `RETRY_SLEEP_S=5` = ~36 iterations worst case (no SIM / airplane / no service), which is exactly what the virgin-unit path already paid. No steady-state polling — the process is gone, and it only runs at boot and on `persist.sys.pepito.wfc_enabled=1`. The IMSS store read is hoisted out of the poll (one successful read, then only IMSA is polled), so a waiting iteration costs one QMI connect/GET/release, not two. `init.qmux.rc` comment updated; statuses are now `kept|set|updated|pending|failed`.
+
+**✅ FLASH-VALIDATED 2026-09-12** (build `ro.build.date` Sat Sep 12 18:27 PDT, unit 9c2e6b00, first boot):
+```
+ims_enabler: msisdn in store "14254788846" != registration URI — number changed, replacing
+ims_enabler: reg_mgr.ims_test_mode already 0 … wfc.iwlan_pref already 1 … wfc.wifi_call already 1
+ims_enabler: msisdn: updated from registration URI (11 digits, verified)
+init: Service 'qmux_ims_enabler' (pid 1014) exited with status 0 oneshot service took 27.374 seconds
+```
+- `vendor.qmux.ims_enabler=ok`, **`vendor.qmux.ims_msisdn=updated`** (the new status, first time it has ever fired).
+- IMSS `GET 0x54` TLV 0x19 = `31 34 31 35 36 39 36 32 38 30 31` = **`14156962801`**, matching IMSA's `tel:+14156962801`. Gate `0x16`=1, `0x15`=1 untouched.
+- **WFC actually engaged on the ported number:** `voip_service_rat` **1 → 0** (cellular → WLAN), `gsm.network.type=IWLAN`, and a live ePDG tunnel — `ip xfrm state` shows ESP `spi 0x5534413c` to `141.207.177.233` with `espinudp sport 4500`. voip `FULL_SERVICE`, IMS `REGISTERED`.
+- ⭐ The 27.4 s runtime is the reconcile wait doing its job, and the run straddled the RTC jump (service started at stamp `01-11 23:35`, success lines at `18:39:43`) — exactly the case `now_mono()` exists for. A wall-clock deadline would have aborted it.
+- ⚠️ Reading the status props now needs root: non-root shell gets `Access denied finding property "vendor.qmux.ims_enabler"` (and an `ims_enabler_exec` getattr denial on `ls`). Expected, not a regression — `adb root` first.
+
+**✅ SMS + voice driven 2026-09-12 18:54-18:56 to (408) 502-3700, both from adb:**
+- **SMS over Wi-Fi ✅** — `service call isms 5 i32 1 s16 "com.android.shell" i32 -1 s16 "4085023700" i32 -1 s16 "<text>" i32 0 i32 0 i32 1 i64 0` (⚠️ `null` in `service call` writes a null *binder*, not a null String16 — use **`i32 -1`**, which is how `writeString16(null)` encodes, else the stub throws `BadParcelableException: Parcel data not fully consumed` and nothing is sent). Result: `ImsSmsDispatcher isAvailable: up=true reg=true cap=true` → `onSendSmsResult status=1 reason=0`, row in `content://sms/sent`, with `onImsConnected imsRadioTech=1` (IWLAN) at that moment.
+- **Voice call ✅ connected but rode LTE, NOT Wi-Fi** — `am start -a android.intent.action.CALL -d tel:4085023700` → telecom `state=ACTIVE`, `prop=[HD]` (AMR-WB, real IMS call), ~35 s, far end hung up. But IMS **handed IWLAN→LTE for the call**: data RAT is `14(LTE)` throughout the call window, `isWifi: N` at teardown, and 5 s after teardown `PhoneSwitcher: onImsRadioTechChanged old tech : 0 new tech : 1` + `updateVoWifiIcon … show VoWifi Icon: true` restore IWLAN.
+⇒ **New datum for the [wfc-wifi-preference lane](PLAN-wifi-calling.md):** with the MSISDN finally correct, idle state is genuinely IWLAN (`voip_service_rat=0`, ePDG tunnel up, SMS over Wi-Fi) — yet an **MO voice call still triggers a handover to LTE**. So the stale MSISDN was never the cause of that lane's symptom; the two are independent. ⚠️ Also note `sms_service_rat=0` and `voip_service_rat=0` at idle = WLAN (the enum is 0=WLAN, 1=WWAN — earlier parts' "rat changes from 1" readings are consistent). The pre-fix live shortcut, for reference on any other unit: `LD_PRELOAD=/vendor/lib64/libqmi_force_ipcr.so imss-probe -n setstr 0x53 0x18 <digits>`.
+
+**RCS half:** Messages' data dir is gone on this unit post-flash (`/data/user/0/com.google.android.apps.messaging` absent, app still installed, `boot_count=23`, 222 other data dirs intact) ⇒ its per-ICCID provisioning cache with the old number is wiped, so RCS re-provisions from scratch on next launch and should come up on `+14156962801`. Worth confirming `msisdn_for_iccid_<ICCID>` reads the new number once Messages has been opened and RCS says Connected.
+
+### The RCS half is NOT ours — Google Messages caches the number per-ICCID
+
+`com.google.android.ims` (Carrier Services) has never even run on this unit (no `databases/`/`shared_prefs/`); RCS lives in Messages' own stack. Its state still carries the old number:
+
+- `shared_prefs/provisioning_engine_state_cache_<ICCID>.pref.xml` — `mPublicIdentity`/`mUserName`/`mAuthDigestUsername`/`mPhoneContext` all `tel:+14254788846`, plus `mFtHttpContentServerUser`.
+- `shared_prefs/sim_state_tracker.xml` — split brain: the **per-subId and per-ICCID** blobs hold the NEW `+14156962801`, while `default_sim_subscription_info` / `default_sms_sim_subscription_info` / `default_data_sim_subscription_info` still hold the OLD one.
+- `shared_prefs/bugle.xml` — 2 more hits.
+
+So Bugle re-provisions on **ICCID change**, not on number change, and a port-in keeps the ICCID. Nothing in the ROM feeds it the old number (our `siminfo` row is right). User-side fix: turn RCS off in Messages → clear Messages (and Carrier Services) storage → re-provision, which re-verifies the new number. A physical SIM eject/reinsert is the other trigger Bugle's change detection listens for — but ⚠️ **NOT** the Settings "Use SIM" toggle: re-tested 2026-09-12 on this very build, it still wedges the card at `NOT_READY` (see memory `sim-uicc-toggle-trap`, mechanism now = qcril answering GENERIC_FAILURE to ENABLE_UICC_APPLICATIONS; recover with `setprop ctl.restart qmux_qcrild`). Worth a **release-notes** line: "if you port a number onto the phone, clear Google Messages storage to re-provision RCS." Re-check whether the stale IMSS MSISDN *also* delayed RCS verification once the reconcile fix is flashed — RCS verification over SIP would have carried the wrong identity.
