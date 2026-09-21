@@ -168,7 +168,7 @@ $update_note
 - \`qdl-dump.sh\` — backup script for **Linux and macOS**: dumps every
   partition to its own \`.bin\` plus generated XML manifests. See step 3.
 - \`fh_dump.py\` — the same backup for **Windows**, where \`qdl\` cannot read
-  this phone. Read-only; contributed by a PVG100 owner. See step 3.
+  this phone. Read-only. See step 3.
 
 This package does **not** touch modem, bootloader, TrustZone, RPM, or other
 firmware partitions — those are stock, device-specific, and already on your

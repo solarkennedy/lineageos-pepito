@@ -1,9 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
 """Read-only Firehose backup for the Palm PVG100 over a Windows QDLoader COM port.
 
-Contributed by a PVG100 owner (report of 2026-09-20 against the 20260915 build),
-shipped unmodified apart from this paragraph. It is the Windows counterpart of
-qdl-dump.sh and writes the same files (gpt-lun0.bin, readback.xml,
-rawprogram_restore.xml, <partition>.bin) plus SHA256SUMS.txt.
+The Windows counterpart of qdl-dump.sh: writes the same files (gpt-lun0.bin,
+readback.xml, rawprogram_restore.xml, <partition>.bin) plus SHA256SUMS.txt.
 
 qdl v2.8 can't read from this phone: the PVG100 firehose sends the sector data
 *before* its XML ACK (and never sends rawmode="true"), so qdl discards the data.

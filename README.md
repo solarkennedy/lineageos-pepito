@@ -118,7 +118,7 @@ sudo ./qdl-dump.sh pvg100_firehose.elf backup-$(date +%F) --exclude userdata
 ./qdl-dump.sh pvg100_firehose.elf backup-$(date +%F) --exclude userdata
 ```
 
-**Windows:** `qdl.exe` can write to this phone but not *read* from it (the PVG100's loader sends sector data in an order qdl's COM-port backend rejects), so the package includes `fh_dump.py`, a read-only dumper contributed by a PVG100 owner. First let qdl upload the loader — this read is **expected to fail**, the loader stays running — then dump over the COM port shown in Device Manager:
+**Windows:** `qdl.exe` can write to this phone but not *read* from it (the PVG100's loader sends sector data in an order qdl's COM-port backend rejects), so the package includes `fh_dump.py`, a read-only dumper. First let qdl upload the loader — this read is **expected to fail**, the loader stays running — then dump over the COM port shown in Device Manager:
 
 ```powershell
 .\qdl.exe --storage emmc --skip-reset pvg100_firehose.elf read 0/0+34 gpt-test.bin
