@@ -1,5 +1,35 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20260921 (2026-09-21)
+
+### kernel (msm8937) (since pepito-23.2-20260915)
+- misc: bhy: stop the MCU monitor from racing system suspend
+
+### device/Mi8937 (since pepito-23.2-20260915)
+- Mi8937: bhy-wrapper: Q14 quaternion resolution; note the dead hals.conf
+- Mi8937: wrap the BHy HAL to fix its advertised range/resolution
+- Mi8937: create the BHy calibration dir from a system_ext rc
+- Mi8937: point the Updater's "Show changelog" at the pepito changelog
+
+### device/mithorium-common (since pepito-23.2-20260915)
+- XiaomiParts: add emergency-only recovery watchdog (experimental, off)
+- mithorium-common: load the BHy HAL through its pepito wrapper
+- mithorium-common: drop the BHy calibration mkdir from init.target.rc
+- thermal: pepito skin config - SEVERE at 60 C, not the Xiaomi 50 C
+- thermal: arm trip_point_0 when a zone has no trip_point_1
+
+### LineageParts (since pepito-23.2-20260915)
+- GoTweaks: add emergency-only recovery toggle (experimental, off)
+
+### Updater
+- (first tagged in 20260921 — no prior anchor)
+
+### landing (docs/scripts) (since pepito-23.2-20260915)
+- plans/docs: emergency-only + watchdog + BHy poll-mode lanes, microG add-on
+- fh_dump.py: Apache-2.0, drop the contributor note
+- docs: backup + flashing on Linux, macOS and Windows; bundle fh_dump.py
+- docs: flashing from Windows, and the boot-loop way into recovery
+- ota: embed each release's changelog in pepito.json for the Updater
 ## 20260915 (2026-09-15)
 
 ### kernel (msm8937) (since pepito-23.2-20260910)
