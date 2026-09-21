@@ -25,6 +25,7 @@
 - (first tagged in 20260921 — no prior anchor)
 
 ### landing (docs/scripts) (since pepito-23.2-20260915)
+- changelog: 20260921
 - ota: 20260921 vanilla
 - changelog: 20260921
 - plans/docs: emergency-only + watchdog + BHy poll-mode lanes, microG add-on
