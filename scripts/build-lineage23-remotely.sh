@@ -84,6 +84,24 @@ REMOTE_BUILD_ARGS_STR="${REMOTE_BUILD_ARGS[*]:-}"
 
 ssh "$TARGET" -- "mkdir -p '$REMOTE_ROOT'"
 
+# Memory preflight. Soong's analysis pass alone peaks at ~31 GB RSS, and
+# Stellaris16 has no headroom once something else bloats: on 2026-09-24 an
+# Xorg leak (30 GB after 18 h up) left soong_build OOM-killed with the only
+# clue a bare "Killed" in out/error.log. Check MemAvailable + free swap before
+# spending 10 minutes on the rsync. PEPITO_BUILD_MIN_GB=0 bypasses the check.
+MIN_GB="${PEPITO_BUILD_MIN_GB:-40}"
+read -r AVAIL_GB SWAP_GB HOG <<<"$(ssh "$TARGET" -- '
+    awk "/MemAvailable/{a=\$2} /SwapFree/{s=\$2} END{printf \"%d %d \", a/1048576, s/1048576}" /proc/meminfo
+    ps -eo rss,comm --sort=-rss | awk "NR==2{printf \"%s(%dGB)\", \$2, \$1/1048576}"')"
+if (( AVAIL_GB + SWAP_GB < MIN_GB )); then
+    echo "!! $TARGET has ${AVAIL_GB} GB available + ${SWAP_GB} GB free swap (< ${MIN_GB} GB)." >&2
+    echo "   Largest process: $HOG. Soong needs ~31 GB; the build would be OOM-killed." >&2
+    echo "   Free memory first (a leaking Xorg = restart the GNOME session), or" >&2
+    echo "   PEPITO_BUILD_MIN_GB=0 to override." >&2
+    exit 1
+fi
+echo "==> $TARGET memory: ${AVAIL_GB} GB available + ${SWAP_GB} GB swap (largest: $HOG)"
+
 # Hold a sleep inhibitor on the server for the whole sync+build+fetch run;
 # Stellaris16 idle-suspends (suspend-then-hibernate) and ssh/rsync traffic
 # does not count as user activity. -tt ties the remote inhibitor's lifetime

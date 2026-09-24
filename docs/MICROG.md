@@ -39,8 +39,10 @@ with microG's own key.
    ```
    The zip is unsigned, so recovery says signature verification failed —
    choose **Yes / install anyway**. It ends with `Done!`.
-4. Reboot. Open **microG Settings → Self-Check**; everything should be ticked.
-   In *Location*, enable the Wi-Fi and mobile-network modules. Add your Google
+4. Reboot. Open **microG Settings → Self-Check**. One row starts unticked —
+   *"This app can appear on top of other apps"* — tap it and allow; everything
+   else should already be ticked. In *Location*, enable the Wi-Fi and
+   mobile-network modules. Add your Google
    account from *microG Settings → Account* **before** opening the Play Store.
 
 ### If something goes wrong
