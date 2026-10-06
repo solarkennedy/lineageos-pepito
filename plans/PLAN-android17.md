@@ -4,8 +4,27 @@
 to LineageOS 24.0 (Android 17, `cp2a`, `android-17.0.0_r1`) without losing any of the July–September
 work, and keep 23.2 shippable until 24.0 is validated on the bench.
 
-**Status:** drafted 2026-09-10 from research only — nothing synced, nothing built. Facts below were
+**Status:** 2026-10-05 — Phase 1 under way: builder tree `~/android/lineage-24` synced as a pure-upstream baseline (see §2). Nothing built yet. Facts below were
 checked against GitHub/upstream on 2026-09-10; re-verify anything dated before acting.
+
+---
+
+## Re-scan 2026-10-04 — blocker status
+
+| Blocker (09-10) | Now | Evidence |
+|---|---|---|
+| "No release before official Mi8937 24.0 nightlies" (§1 gate) | **Gate is dead.** Yumi Yukimura **dropped OFFICIAL support for Mi8917/Mi8937/Mi439 on 2026-08-21** (hudson `3c395bed2`); last Mi8937 nightly 23.2 2026-08-18. There will be no official 24.0 nightlies. The maintainer still pushed the `lineage-24.0` device commit on 09-10 and keeps `Mi-Thorium/…mithorium-common` `a17/master` alive. Separately, hudson has **zero** `lineage-24.0` targets for any device, so 24.0 has not shipped anywhere yet. | `gh api LineageOS/hudson` |
+| Upstream port status | Unchanged since 09-10. Mi8937 +1, mithorium-common +6/−1 (still missing `compat-vdso.config`), kernel 24.0 == 23.2. **New:** Mi-Thorium `a17/master` has `TARGET_COMPILE_WITH_MSM_KERNEL := true` (09-07, "now unset from lineage side, however our stuff still needs it"), and LineageOS `lineage-24.0` does **not**. Take it, or the build likely breaks. | compare APIs |
+| `hardware/qcom-caf/bt` dropped | Still dropped; no 24.0 branch. Open Q1 answered: upstream mithorium.mk uses the **prebuilt** path (`android.hardware.bluetooth@1.0.vendor`, qti btconfigstore/bt-audio), which is why they don't need caf/bt. We do, because we source-build libbt-vendor, so the plan stays: carry our fork via the local manifest. | 24.0 `mithorium.mk` |
+| `bluetooth/1.0/default`, `radio/compat` on A17 (Q2) | **Both present** on `lineage-24.0` hardware/interfaces. Not a blocker. | contents API |
+| NikGapps A17 | **Still none** (SF `Releases/Android-17` = 404). **New option: MindTheGapps `cinnamonbun` (A17) branch is active** (last commit 09-15). Possible bridge for the gapps variant, but it means re-validating the pepito-gapps packaging (AA stub, GoogleTTS, DeskClock exclusion). | SF, GitHub |
+| crDroid 17.0 (Sense re-port source) | `17.0` branch exists. Unblocked. | |
+| microG | v0.3.17 released 09-29. Retest on A17 only. | |
+| Builder disk (Q4) | **Resolved:** builder reachable, 540 GB free, which is enough for a second tree. Local only has 145 GB free (was 173), so a local second tree still needs `--reference`, and the builder is the better home. | ssh/df |
+| Freeze-23.2 uncommitted items | Launcher3 `TaskbarManagerImpl.java` **still uncommitted**. `build/make` audit answered: envsetup = bench-only, but **the 4 product-mk edits SHIP**. They add `TARGET_EXCLUDES_{SECURE_ELEMENT,WAPPUSH,ONS}` guards, and `lineage_Mi8937.mk:14-16` sets all three. These are load-bearing debloat changes, **uncommitted, in an unforked repo**. They need a `build/make` fork and a commit before the rebase. | git status |
+| Patch inventory drift | device/Mi8937 102 (was 92), mithorium-common 111 (was 90), kernel 97, LineageParts 25. More to rebase, still mechanical. | `rev-list m/lineage-23.2..HEAD` |
+
+**Net:** no hard technical blocker on the device side. The real blockers are now (1) **policy**: the "wait for official nightlies" gate can't fire, so Kyle needs a new go signal (proposal: upstream 24.0 general release, or just "our matrix is green"); (2) **gapps**: NikGapps A17 is absent, and MindTheGapps A17 is the alternative; (3) **freeze hygiene**: Launcher3 plus the build/make debloat guards must become commits; (4) **blob source**: no 24.0 Mi8937 nightly will ever exist to pull blobs from (Q6), so we build A17 on the current A15/A16 blob set and validate. That was already the fallback, and now it's the only path.
 
 ---
 
@@ -58,18 +77,18 @@ never `repo sync` the 23.2 tree's patched AOSP repos without the `pepito-*` bran
 
 ## 2. Phase 1 — Stand up the 24.0 tree and prove upstream builds
 
-- [ ] **Freeze 23.2 first.** Commit the uncommitted load-bearing bits so they exist as commits to carry:
+- [~] (2026-10-06: Launcher3 → `solarkennedy/android_packages_apps_Launcher3` `pepito-taskbar` `f3967a3bd7`; build/make → `solarkennedy/android_build` `pepito-debloat` `a597dfac73` (4 product-mk guards; envsetup.sh netbook4 guard left uncommitted = bench-only); both added to `manifests/pepito.xml`, `TAG_REPOS`, changelog `REPOS`. Left: PIF graft disposition, `pepito-23.2-pre24` tags, /release-sweep.) **Freeze 23.2 first.** Commit the uncommitted load-bearing bits so they exist as commits to carry:
       `packages/apps/Launcher3` TaskbarManagerImpl patch (branch `pepito-taskbar`, fork needed),
       audit `build/make` 5 dirty files (envsetup guard = bench-only; the 4 `target/product/*.mk`
       edits — what are they, do they ship?), PIF graft (memory says staged/uncommitted — find and commit
       or drop). Tag every pepito branch `pepito-23.2-pre24` so the rebase has a fixed origin. Run
       `/release-sweep` to confirm clean + pushed.
-- [ ] **Wake the builder**, record free disk on both machines, decide placement (§1).
-- [ ] `repo init -u https://github.com/LineageOS/android.git -b lineage-24.0 --git-lfs --reference=/home/kyle/android/lineage-23`
+- [x] (2026-10-05: builder up, 540 GB → 346 GB free after sync; tree lives on the builder only) **Wake the builder**, record free disk on both machines, decide placement (§1).
+- [x] (2026-10-05, baseline variant: local manifest = upstream device/kernel `lineage-24.0` + TheMuppets blobs `lineage-23.2`; our caf/bt fork deferred to Phase 2; sync needs `-j6 --retry-fetches=5`, AOSP 429s at -j16) `repo init -u https://github.com/LineageOS/android.git -b lineage-24.0 --git-lfs --reference=/home/kyle/android/lineage-23`
       into `~/android/lineage-24/`; local manifest = the three Mi8937 repos on **upstream**
       `lineage-24.0` plus `hardware/qcom-caf/bt` from **our fork** (`pepito`, base `lineage-23.2-caf`)
       because upstream dropped it. `repo sync`.
-- [ ] **Build stock `lineage_Mi8937 cp2a userdebug` with zero pepito changes.** Purpose: separate
+- [ ] (2026-10-05 build #1: 1h02m, 130626/236607 done, ONE failure = XiaomiParts javac — upstream devicesettings `01e1033` (same day) deleted `doze_settings_help_{title,text}` still used by mithorium-common parts. Pinned devicesettings to parent `b3556d4` via `extend-project` in the builder's local manifest. Durable fix = carry the 2 strings in our mithorium-common `parts/res`.) **Build stock `lineage_Mi8937 cp2a userdebug` with zero pepito changes.** Purpose: separate
       "A17 breaks this family" from "our patches broke it". Expect: kernel headers genrule works,
       legacy libion, displayservice fork. If BT fails to link without `qcom-caf/bt`, we learn how
       upstream intends BT on 24.0 (ask on the Mi-Thorium channel / read their 24.0 device commits).

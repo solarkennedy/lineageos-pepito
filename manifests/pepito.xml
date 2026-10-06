@@ -48,6 +48,29 @@
   <remove-project name="LineageOS/android_frameworks_native" />
   <project path="frameworks/native" name="android_frameworks_native" remote="pepito" revision="pepito-timeinstate" />
 
+  <!-- working branch: pepito-debloat — 1 commit: TARGET_EXCLUDES_{SECURE_ELEMENT,
+       WAPPUSH,ONS} guards in target/product/*.mk; lineage_Mi8937.mk sets all three.
+       The linkfiles mirror upstream's default.xml entry (envsetup.sh, core, …) and
+       must stay, or build/envsetup.sh vanishes.
+       NOTE: branch-pinned — no pepito-23.2-r1 tag on this fork yet; the next
+       release will tag it and the manifest regen re-pins to that tag. -->
+  <remove-project name="LineageOS/android_build" />
+  <project path="build/make" name="android_build" remote="pepito" revision="pepito-debloat" groups="pdk,sysui-studio" >
+    <linkfile src="CleanSpec.mk" dest="build/CleanSpec.mk" />
+    <linkfile src="buildspec.mk.default" dest="build/buildspec.mk.default" />
+    <linkfile src="core" dest="build/core" />
+    <linkfile src="envsetup.sh" dest="build/envsetup.sh" />
+    <linkfile src="target" dest="build/target" />
+    <linkfile src="tools" dest="build/tools" />
+  </project>
+
+  <!-- working branch: pepito-taskbar — 1 commit: TaskbarManagerImpl honors
+       enableTaskbarOnPhones() so SystemUI's nav bar and the taskbar don't both
+       add a TYPE_NAVIGATION_BAR window (Trebuchet crash-loop). Needs the
+       vendor/lineage aconfig override. NOTE: branch-pinned, see above. -->
+  <remove-project name="LineageOS/android_packages_apps_Launcher3" />
+  <project path="packages/apps/Launcher3" name="android_packages_apps_Launcher3" remote="pepito" revision="pepito-taskbar" />
+
   <!-- working branch: pepito-qs-volume-slider -->
   <remove-project name="LineageOS/android_lineage-sdk" />
   <project path="lineage-sdk" name="android_lineage-sdk" remote="pepito" revision="pepito-23.2-r1" />
