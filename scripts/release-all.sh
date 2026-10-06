@@ -87,6 +87,7 @@ TAG_REPOS=(
   "$TREE/packages/apps/Launcher3	solarkennedy"
   "$TREE/packages/apps/Updater	solarkennedy"
   "$TREE/hardware/interfaces	solarkennedy"
+  "$TREE/hardware/lineage/interfaces	solarkennedy"
   "$TREE/hardware/qcom-caf/bt	solarkennedy"
   "$TREE/system/core	solarkennedy"
   "$TREE/system/sepolicy	solarkennedy"

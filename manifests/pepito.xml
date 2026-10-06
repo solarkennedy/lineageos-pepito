@@ -83,6 +83,14 @@
   <remove-project name="LineageOS/android_hardware_interfaces" />
   <project path="hardware/interfaces" name="android_hardware_interfaces" remote="pepito" revision="pepito-23.2-r1" />
 
+  <!-- working branch: pepito — 3 commits: radio config wrapper exits instead of
+       aborting when the HIDL RIL dies (load-bearing), camera provider never serves
+       a failed HAL module, AIDL torch strength on legacy camera HALs (torch tile
+       slider). Forked 2026-10-06; before that these lived only on netbook4.
+       NOTE: branch-pinned until the next release tags it. -->
+  <remove-project name="LineageOS/android_hardware_lineage_interfaces" />
+  <project path="hardware/lineage/interfaces" name="android_hardware_lineage_interfaces" remote="pepito" revision="pepito" />
+
   <!-- working branch: pepito — libbt-vendor Pronto/SMD on 4.19 + controller
        BDADDR NVM write (VS 0xFC0B tag 2) at USERIAL_OPEN. -->
   <remove-project name="LineageOS/android_hardware_qcom_bt" />

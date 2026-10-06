@@ -35,6 +35,7 @@ REPOS=(
   "$TREE/packages/apps/Launcher3	Launcher3"
   "$TREE/packages/apps/Updater	Updater"
   "$TREE/hardware/interfaces	hardware/interfaces"
+  "$TREE/hardware/lineage/interfaces	hardware/lineage/interfaces"
   "$TREE/hardware/qcom-caf/bt	hardware/qcom-caf/bt"
   "$TREE/system/core	system/core"
   "$TREE/system/bpfprogs	system/bpfprogs"
