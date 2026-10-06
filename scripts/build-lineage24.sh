@@ -1,12 +1,12 @@
 #!/bin/bash
-# Build script for Lineage 23.2 Mi8937 pepito variant
+# Build script for LineageOS 24.0 (Android 17) Mi8937 pepito variant
 # Uses the exact kernel config from official nightly build
 
 set -e
 
-LINEAGE_ROOT="/home/kyle/android/lineage-23"
+LINEAGE_ROOT="${LINEAGE_ROOT:-/home/kyle/android/lineage-24}"
 TARGET_PRODUCT="lineage_Mi8937"
-TARGET_RELEASE="bp4a"
+TARGET_RELEASE="cp2a"   # lineage-24.0 / android-17.0.0_r1 (23.2 was bp4a)
 TARGET_VARIANT="userdebug"
 
 BOOT_ONLY=0
@@ -73,7 +73,7 @@ else
 fi
 
 echo "================================"
-echo "Lineage 23.2 Mi8937 Build Script"
+echo "LineageOS 24.0 Mi8937 Build Script"
 echo "================================"
 echo "Product:  $TARGET_PRODUCT"
 echo "Release:  $TARGET_RELEASE"
@@ -88,7 +88,7 @@ cd "$LINEAGE_ROOT"
 echo "[*] Sourcing build environment..."
 source build/envsetup.sh > /dev/null 2>&1
 
-# Set up lunch (three-part format required by Lineage 23.2)
+# Set up lunch (three-part format: product release variant)
 echo "[*] Setting up lunch: $TARGET_PRODUCT $TARGET_RELEASE $TARGET_VARIANT"
 lunch "$TARGET_PRODUCT" "$TARGET_RELEASE" "$TARGET_VARIANT" > /dev/null 2>&1 || {
     echo "ERROR: lunch failed"

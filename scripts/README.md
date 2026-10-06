@@ -9,8 +9,8 @@ throughout — read before running. In the bench tree these live behind a
 
 | Script | What it does |
 |---|---|
-| `build-lineage23.sh` | full build entry point (envsetup, lunch `lineage_Mi8937-bp4a-userdebug`, image set) |
-| `build-lineage23-remotely.sh` | same, on the remote build server via rsync |
+| `build-lineage24.sh` | full build entry point, run on the build server (envsetup, `lunch lineage_Mi8937 cp2a userdebug`, `mka bacon`) |
+| `build-lineage24-remotely.sh` | from netbook4: mirror this branch to the server, `repo sync` the manifest's projects (git-driven: commit + push first), build, stage + fetch flash images to `~/android/lineage-24/flash-staging/` |
 | `prepare-flash.sh` | stages a flashable set: sparse→raw system/vendor, **signs boot/recovery for the PVG100 bootloader**, zeroes the FBE header (forces fresh `/data` format) |
 | `backup-to-archive.sh` | bench backup |
 | `clear-ramoops.sh` | clears pstore/ramoops between crash captures |
@@ -63,3 +63,7 @@ differently-signed image and getting the "decryption unsuccessful" prompt. So:
   exists only because the signing key is private.
 - The flip side: **changing the key on an existing install forces a wipe.** It is
   a pre-ship decision, not a later tweak.
+
+> **lineageos24.0 branch:** the release scripts (`release-all.sh`, `release-remotely.sh`,
+> `release.sh`, `gen-changelog.sh`, `gen-ota-json.py`) are still the 23.2 versions and are
+> not ported yet. They still call `build-lineage23-remotely.sh` and use the 23.2 paths and tags.

@@ -29,12 +29,12 @@
 # must name the exact version shipped and link upstream.
 #
 # Wired into prepare-flash.sh (runs on every build), rsynced back by
-# build-lineage23-remotely.sh, and shipped in the EDL bundle by release.sh.
+# build-lineage24-remotely.sh, and shipped in the EDL bundle by release.sh.
 
 set -euo pipefail
 
-LINEAGE_ROOT="${LINEAGE_ROOT:-/home/kyle/android/lineage-23}"
-FLASH_DIR="${FLASH_DIR:-/home/kyle/Personal-Projects/lineage-23/flash-staging}"
+LINEAGE_ROOT="${LINEAGE_ROOT:-/home/kyle/android/lineage-24}"
+FLASH_DIR="${FLASH_DIR:-$LINEAGE_ROOT/flash-staging}"
 SIGN_BOOT="$LINEAGE_ROOT/device/xiaomi/mithorium-common/boot-signing/sign-boot-graft.py"
 
 IN="$FLASH_DIR/boot.bin"

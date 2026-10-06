@@ -27,8 +27,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-LINEAGE_ROOT="/home/kyle/android/lineage-23"
-FLASH_DIR="/home/kyle/Personal-Projects/lineage-23/flash-staging"
+LINEAGE_ROOT="${LINEAGE_ROOT:-/home/kyle/android/lineage-24}"
+FLASH_DIR="${FLASH_DIR:-$LINEAGE_ROOT/flash-staging}"
 # Canonical grafter now lives in the device tree (so the build can reach it too);
 # this is the single copy. Re-grafting the build's already-grafted boot.img here
 # is idempotent, so EDL staging is unchanged.
@@ -59,6 +59,7 @@ done
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 [[ -f "$PRODUCT_OUT/boot.img" ]]     || die "boot.img not found — run build first"
+mkdir -p "$FLASH_DIR"
 [[ -f "$SIGN_BOOT" ]]                || die "boot signing script not found at $SIGN_BOOT"
 
 if [[ "$BOOT_ONLY" -eq 0 ]]; then
@@ -100,7 +101,7 @@ if [[ "$NO_RAMDISK" -eq 1 ]]; then
         --ramdisk_offset 0x01000000 \
         --tags_offset 0x00000100 \
         --header_version 0 \
-        --os_version 16.0.0 \
+        --os_version 17.0.0 \
         --os_patch_level 2026-05 \
         --output "$FLASH_DIR/boot_unsigned.img"
     /usr/bin/python3 "$SIGN_BOOT" "$FLASH_DIR/boot_unsigned.img" "$FLASH_DIR/boot.bin" /boot

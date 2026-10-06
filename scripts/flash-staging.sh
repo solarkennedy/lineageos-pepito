@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-FLASH_DIR="/home/kyle/android/lineage-23/flash-staging"
+FLASH_DIR="${FLASH_DIR:-/home/kyle/android/lineage-24/flash-staging}"
 BOOT_IMG="$FLASH_DIR/boot.bin"
 EDL_USB_ID="05c6:9008"
 NO_ADB=0

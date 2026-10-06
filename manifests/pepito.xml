@@ -1,61 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Local manifest for the pepito (Palm PVG100) LineageOS 23.2 build.
-  Drop into .repo/local_manifests/ before `repo sync`.
+  Local manifest for the pepito (Palm PVG100) LineageOS 24.0 (Android 17) build.
+  Drop into .repo/local_manifests/ of a `repo init -b lineage-24.0` tree;
+  scripts/build-lineage24-remotely.sh installs it on the builder before every sync.
 
-  STATUS: RELEASE r1 (tag pepito-23.2-r1, 2026-07-22).
+  STATUS: in development, no 24.0 release yet. Projects track BRANCHES
+  (pepito-24 unless noted); a release will re-pin them to tags.
 
-  Every project below is pinned to the immutable tag `pepito-23.2-r1` rather
-  than to a branch, so a `repo sync` reproduces exactly the tree this release
-  was built from. Branch names are recorded in comments for anyone who wants to
-  follow ongoing work instead.
-
-  ⚠️ ONE PROJECT IS PRIVATE: vendor/xiaomi. A `repo sync` with this manifest
-  will FAIL at that project for anyone without access. It holds Xiaomi/Palm
-  proprietary blobs, so this is deliberate — the reproducible public path is to
-  regenerate it with device/xiaomi/Mi8937/extract-files.py from a documented
-  stock/nightly source. That works because the blob edits are scripted (the
-  DT_NEEDED libqmi_force_ipcr.so fixups), not hand-hacked.
-
-  Everything else, including PepitoLauncher2, is public.
+  ⚠️ vendor/xiaomi is PRIVATE (proprietary blobs) and fetched over SSH; a sync
+  fails there without access. Everything else is public.
+  ⚠️ Not in any repo: vendor/lineage-priv/ (signing keys) and
+  device/xiaomi/Mi8937/security/pepitolauncher2/*.{pk8,x509.pem}. Copy them in.
 -->
 <manifest>
-  <remote name="pepito" fetch="https://github.com/solarkennedy/" revision="pepito-23.2-r1" />
+  <remote name="pepito" fetch="https://github.com/solarkennedy/" />
+  <remote name="pepito-ssh" fetch="ssh://git@github.com/solarkennedy/" />
 
-  <!-- ── Device / kernel (not in the LineageOS default manifest) ──────────── -->
-  <!-- working branch: pepito-rmnet -->
-  <project path="device/xiaomi/Mi8937" name="android_device_xiaomi_Mi8937" remote="pepito" revision="pepito-23.2-r1" />
-  <project path="device/xiaomi/mithorium-common" name="android_device_xiaomi_mithorium-common" remote="pepito" revision="pepito-23.2-r1" />
-  <project path="kernel/xiaomi/msm8937" name="android_kernel_xiaomi_msm8937" remote="pepito" revision="pepito-23.2-r1" />
+  <!-- rebased onto lineage-24.0 -->
+  <project path="device/xiaomi/Mi8937" name="android_device_xiaomi_Mi8937" remote="pepito" revision="pepito-24" />
+  <project path="device/xiaomi/mithorium-common" name="android_device_xiaomi_mithorium-common" remote="pepito" revision="pepito-24" />
+  <project path="kernel/xiaomi/msm8937" name="android_kernel_xiaomi_msm8937" remote="pepito" revision="pepito-24" />
 
-  <!-- ── Overrides for projects that ship in the LineageOS default manifest ── -->
-  <!-- working branch: lineage23-pepito -->
-  <remove-project name="LineageOS/android_bootable_recovery" />
-  <project path="bootable/recovery" name="android_bootable_recovery" remote="pepito" revision="pepito-23.2-r1" />
-
-  <!-- working branch: pepito-qs-volume-slider
-       Carries: Paranoid Sense face provider (+ BiometricScheduler null-retriever
-       guard), Compose QS volume slider, TaskbarManagerImpl.isTaskbarEnabled()
-       patch (load-bearing with the vendor/lineage aconfig flag below). -->
+  <!-- AOSP-repo forks rebased onto lineage-24.0 (2026-10-06). Not carried: Updater (upstream Kotlin rewrite), system/core (fs_mgr moved to system/fs/fs_mgr). -->
   <remove-project name="LineageOS/android_frameworks_base" />
-  <project path="frameworks/base" name="android_frameworks_base" remote="pepito" revision="pepito-23.2-r1" />
-
-  <!-- working branch: pepito-timeinstate — 1 commit: revert libtimeinstate
-       raw-tracepoint attach for sched_process_free. Half of the zero-CPU-
-       attribution fix on the 4.19 kernel (other half: system/bpfprogs below).
-       NOTE: branch-pinned — no pepito-23.2-r1 tag on this fork yet; the next
-       release will tag it and the manifest regen re-pins to that tag. -->
+  <project path="frameworks/base" name="android_frameworks_base" remote="pepito" revision="pepito-24" groups="pdk-cw-fs,pdk-fs,sysui-studio" />
   <remove-project name="LineageOS/android_frameworks_native" />
-  <project path="frameworks/native" name="android_frameworks_native" remote="pepito" revision="pepito-timeinstate" />
-
-  <!-- working branch: pepito-debloat — 1 commit: TARGET_EXCLUDES_{SECURE_ELEMENT,
-       WAPPUSH,ONS} guards in target/product/*.mk; lineage_Mi8937.mk sets all three.
-       The linkfiles mirror upstream's default.xml entry (envsetup.sh, core, …) and
-       must stay, or build/envsetup.sh vanishes.
-       NOTE: branch-pinned — no pepito-23.2-r1 tag on this fork yet; the next
-       release will tag it and the manifest regen re-pins to that tag. -->
+  <project path="frameworks/native" name="android_frameworks_native" remote="pepito" revision="pepito-24" groups="pdk,sysui-studio" />
+  <remove-project name="LineageOS/android_frameworks_opt_telephony" />
+  <project path="frameworks/opt/telephony" name="android_frameworks_opt_telephony" remote="pepito" revision="pepito-24" groups="pdk,sysui-studio" />
+  <remove-project name="LineageOS/android_vendor_lineage" />
+  <project path="vendor/lineage" name="android_vendor_lineage" remote="pepito" revision="pepito-24" />
+  <remove-project name="LineageOS/android_lineage-sdk" />
+  <project path="lineage-sdk" name="android_lineage-sdk" remote="pepito" revision="pepito-24" />
+  <remove-project name="LineageOS/android_packages_apps_LineageParts" />
+  <project path="packages/apps/LineageParts" name="android_packages_apps_LineageParts" remote="pepito" revision="pepito-24" />
+  <remove-project name="LineageOS/android_packages_apps_Launcher3" />
+  <project path="packages/apps/Launcher3" name="android_packages_apps_Launcher3" remote="pepito" revision="pepito-24" groups="pdk-fs,sysui-studio,pdk-cw-tvc" />
+  <remove-project name="LineageOS/android_bootable_recovery" />
+  <project path="bootable/recovery" name="android_bootable_recovery" remote="pepito" revision="pepito-24" groups="pdk" />
+  <remove-project name="LineageOS/android_hardware_interfaces" />
+  <project path="hardware/interfaces" name="android_hardware_interfaces" remote="pepito" revision="pepito-24" groups="pdk,sysui-studio" />
+  <remove-project name="LineageOS/android_hardware_lineage_interfaces" />
+  <project path="hardware/lineage/interfaces" name="android_hardware_lineage_interfaces" remote="pepito" revision="pepito-24" />
+  <remove-project name="platform/system/bpfprogs" />
+  <project path="system/bpfprogs" name="android_system_bpfprogs" remote="pepito" revision="pepito-24" groups="pdk" />
   <remove-project name="LineageOS/android_build" />
-  <project path="build/make" name="android_build" remote="pepito" revision="pepito-debloat" groups="pdk,sysui-studio" >
+  <project path="build/make" name="android_build" remote="pepito" revision="pepito-24" groups="pdk,sysui-studio" >
     <linkfile src="CleanSpec.mk" dest="build/CleanSpec.mk" />
     <linkfile src="buildspec.mk.default" dest="build/buildspec.mk.default" />
     <linkfile src="core" dest="build/core" />
@@ -64,70 +54,22 @@
     <linkfile src="tools" dest="build/tools" />
   </project>
 
-  <!-- working branch: pepito-taskbar — 1 commit: TaskbarManagerImpl honors
-       enableTaskbarOnPhones() so SystemUI's nav bar and the taskbar don't both
-       add a TYPE_NAVIGATION_BAR window (Trebuchet crash-loop). Needs the
-       vendor/lineage aconfig override. NOTE: branch-pinned, see above. -->
-  <remove-project name="LineageOS/android_packages_apps_Launcher3" />
-  <project path="packages/apps/Launcher3" name="android_packages_apps_Launcher3" remote="pepito" revision="pepito-taskbar" />
-
-  <!-- working branch: pepito-qs-volume-slider -->
-  <remove-project name="LineageOS/android_lineage-sdk" />
-  <project path="lineage-sdk" name="android_lineage-sdk" remote="pepito" revision="pepito-23.2-r1" />
-
-  <!-- working branch: pepito-lineageparts -->
-  <remove-project name="LineageOS/android_packages_apps_LineageParts" />
-  <project path="packages/apps/LineageParts" name="android_packages_apps_LineageParts" remote="pepito" revision="pepito-23.2-r1" />
-
-  <!-- working branch: pepito -->
-  <remove-project name="LineageOS/android_hardware_interfaces" />
-  <project path="hardware/interfaces" name="android_hardware_interfaces" remote="pepito" revision="pepito-23.2-r1" />
-
-  <!-- working branch: pepito — 3 commits: radio config wrapper exits instead of
-       aborting when the HIDL RIL dies (load-bearing), camera provider never serves
-       a failed HAL module, AIDL torch strength on legacy camera HALs (torch tile
-       slider). Forked 2026-10-06; before that these lived only on netbook4.
-       NOTE: branch-pinned until the next release tags it. -->
-  <remove-project name="LineageOS/android_hardware_lineage_interfaces" />
-  <project path="hardware/lineage/interfaces" name="android_hardware_lineage_interfaces" remote="pepito" revision="pepito" />
-
-  <!-- working branch: pepito — libbt-vendor Pronto/SMD on 4.19 + controller
-       BDADDR NVM write (VS 0xFC0B tag 2) at USERIAL_OPEN. -->
-  <remove-project name="LineageOS/android_hardware_qcom_bt" />
-  <project path="hardware/qcom-caf/bt" name="android_hardware_qcom_bt" remote="pepito" revision="pepito-23.2-r1" />
-
-  <!-- working branch: pepito — single commit (f2fs recovery log silencing). -->
-  <remove-project name="LineageOS/android_system_core" />
-  <project path="system/core" name="android_system_core" remote="pepito" revision="pepito-23.2-r1" />
-
-  <!-- working branch: pepito-sepolicy — allow pepito_gsfid to read the GMS
-       checkin prefs, backing the "Google Play certification" row in Pepito
-       Tweaks. Load-bearing under Enforcing: without it the row can't read the
-       GSF device ID. ⚠️ Also carries neverallow exemptions AOSP won't take —
-       re-apply after every upstream merge. -->
+  <!-- pepito_gsfid domain + its neverallow exemptions (Play-cert row); device sepolicy depends on the type -->
   <remove-project name="LineageOS/android_system_sepolicy" />
-  <project path="system/sepolicy" name="android_system_sepolicy" remote="pepito" revision="pepito-23.2-r1" groups="pdk" />
+  <project path="system/sepolicy" name="android_system_sepolicy" remote="pepito" revision="pepito-24" groups="pdk" />
 
-  <!-- working branch: pepito-timeinstate — 2 commits: revert CO-RE/BTF
-       tracepoint-defs support + build timeInState with -mcpu=v2 for the
-       pre-5.1 kernel BPF verifier. Other half of the zero-CPU-attribution fix.
-       ⚠️ Stock entry comes from the AOSP remote as name="platform/system/bpfprogs"
-       (NOT LineageOS/…), so the remove-project below MUST use that name.
-       Branch-pinned for the same reason as frameworks/native above. -->
-  <remove-project name="platform/system/bpfprogs" />
-  <project path="system/bpfprogs" name="android_system_bpfprogs" remote="pepito" revision="pepito-timeinstate" />
+  <!-- upstream dropped hardware/qcom-caf/bt from 24.0; our source-built libbt-vendor (23.2 branch, unchanged) -->
+  <project path="hardware/qcom-caf/bt" name="android_hardware_qcom_bt" remote="pepito" revision="pepito" />
 
-  <!-- working branch: pepito — aconfig flag disabling enable_taskbar_on_phones
-       for bp4a. Load-bearing: without it 3-button nav mis-insets over app
-       buttons; the frameworks/base patch alone crash-loops Trebuchet. -->
-  <remove-project name="LineageOS/android_vendor_lineage" />
-  <project path="vendor/lineage" name="android_vendor_lineage" remote="pepito" revision="pepito-23.2-r1" />
+  <!-- PRIVATE blobs (A15/A16 nightly set + pepito fixups); no 24.0 blobs exist -->
+  <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="pepito-ssh" revision="pepito-vendor" />
 
-  <!-- ── Palm-style launcher (public, standalone repo) ────────────────────── -->
-  <!-- working branch: master -->
-  <project path="packages/apps/PepitoLauncher2" name="PepitoLauncher2" remote="pepito" revision="pepito-23.2-r1" />
+  <remote name="crdroid-gitlab" fetch="https://gitlab.com/crdroidandroid/" />
+  <!-- Paranoid Sense face unlock app. 23.2 shipped crDroid 16.0; 17.0 = 16.0 + one app-only commit. -->
+  <project path="packages/apps/FaceUnlock" name="android_packages_apps_FaceUnlock" remote="crdroid-gitlab" revision="17.0" />
 
-  <!-- ── Private: proprietary blobs (see the warning in the header) ────────── -->
-  <!-- working branch: pepito-vendor -->
-  <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="pepito" revision="pepito-23.2-r1" />
+  <!-- OpenEUICC dropped for 24.0 (Mi8937 pepito-24 6c1fb8f1). -->
+  <project path="packages/apps/PepitoLauncher2" name="PepitoLauncher2" remote="pepito" revision="master" />
+
+  <!-- Upstream devicesettings pin dropped: mithorium-common pepito-24 855c9b7 carries the doze strings. -->
 </manifest>
