@@ -63,7 +63,8 @@ done
 # glob catches both the current date-coded tags (pepito-23.2-20260727) and the
 # legacy r1 tag, so the anchor keeps working across the r1 -> date transition.
 repo_last_tag() {
-    git -C "$1" describe --tags --abbrev=0 --match "${TAG_PREFIX}*" 2>/dev/null || true
+    # --exclude: pepito-23.2-pre24 is the A17-port rebase anchor, not a release.
+    git -C "$1" describe --tags --abbrev=0 --match "${TAG_PREFIX}*" --exclude "*-pre24" 2>/dev/null || true
 }
 
 # Releases are date-coded (UTC), matching the GitHub release tag, which
