@@ -1,100 +1,86 @@
 #!/usr/bin/env bash
-# release-all.sh — one command to cut a full pepito release from the netbook.
+# release-all.sh — one command to cut a full pepito LineageOS 24.0 release from
+# the netbook (lineageos24.0 branch).
 #
-#   1. generate the changelog across every pepito repo (scripts/gen-changelog.sh),
-#      commit + push CHANGELOG.md to the landing repo, and stage it as the
-#      release body (.release-notes.md);
-#   2. build the VANILLA variant remotely, then release it (OTA zip + pepito.json
-#      Updater feed + EDL bundle) with that changelog as the release body;
-#   3. build the GAPPS variant remotely, then release it the same way;
+#   1. generate the changelog across every pepito repo (scripts/gen-changelog.sh,
+#      which reads the tree repos on the build server), commit + push
+#      CHANGELOG.md to the landing repo, and stage it as the release body
+#      (.release-notes.md) — or use a hand-written body via --notes-file;
+#   2. build the VANILLA variant remotely (git-driven: build-lineage24-remotely.sh
+#      syncs what is pushed), then release it (OTA zip + pepito.json v2 Updater
+#      feed + EDL bundle) with that changelog as the release body;
+#   3. GAPPS variant the same way — only with --gapps, until 24.0 has a gapps
+#      build (vendor/pepito-gapps is not in the 24.0 manifest yet);
 #      (vanilla is UNOFFICIAL, gapps is SNAPSHOT — the two OTA channels in the
 #       shared pepito.json; the Updater offers each phone only its own channel)
-#   4. tag every pepito repo pepito-23.2-<version> and push the tags, so the next
-#      run's changelog anchors here;
+#   4. tag every pepito repo pepito-24.0-<version> and push the tags, so the next
+#      run's changelog anchors here. The tree repos are tagged ON THE BUILD
+#      SERVER, at exactly the commits that were built; the landing repo here;
 #   5. (best-effort) shell out to `claude` to turn the raw commit changelog into a
-#      friendly end-user BBCode bullet list (with a link to the releases page) for
-#      the XDA update post — printed at the end, saved to .release-xda-post.txt,
-#      followed by the XDA thread URL to paste it into. Skipped if claude is
-#      absent; never fails the release.
+#      friendly end-user BBCode bullet list for the XDA update post.
 #
 # The release notes are also embedded into each pepito.json entry ("changelog" /
-# "changelog_url" keys) for the Updater's "What's new" (plans/PLAN-ota-changelog.md).
+# "changelog_url" keys) for our Updater's "What's new" (plans/PLAN-ota-changelog.md).
 #
 # Vanilla is built+released BEFORE gapps is built, on purpose: the two variants
 # share out/target/product/Mi8937/ and each build's installclean wipes the
 # other's zip, so the release must happen while its zip still exists.
 #
-# IDEMPOTENT — safe to just re-run after an intermittent failure. Each step is
-# either a no-op or skipped when already done: the changelog replaces (not
-# duplicates) its dated section; a variant whose EDL bundle is already on the
-# GitHub release is skipped (build + upload); release upload uses --clobber; and
-# tagging skips tags that already exist. Runs unattended — no confirmation
-# prompt (release.sh is invoked with --yes).
+# IDEMPOTENT — safe to just re-run after an intermittent failure (see the 23.2
+# notes: changelog sections are replaced, released variants are skipped, uploads
+# use --clobber, existing tags are skipped). Pass the original --version when
+# resuming on a later day.
 #
-#   ./scripts/release-all.sh                    # version = today's UTC date code
-#   ./scripts/release-all.sh --version 20260727 # force the date code
-#   ./scripts/release-all.sh --dry-run          # changelog only; no build/release/tag
-#   ./scripts/release-all.sh --no-tag           # skip the repo-tagging step
+#   ./scripts/release-all.sh                      # version = today's date code
+#   ./scripts/release-all.sh --version 20261101   # force the date code
+#   ./scripts/release-all.sh --dry-run            # changelog only; no build/release/tag
+#   ./scripts/release-all.sh --no-tag             # skip the repo-tagging step
+#   ./scripts/release-all.sh --gapps              # also build + release the gapps variant
+#   ./scripts/release-all.sh --notes-file FILE    # hand-written release body (e.g. the
+#                                                 # first 24.0 release, which has no anchor)
 #
-# The date code (UTC YYYYMMDD) is the single release identity: the GitHub
-# release tag (forced via --tag), the CHANGELOG heading, and the source-repo
-# tags pepito-23.2-<date> all use it.
-#
-# Runs on the netbook (it drives the build server over ssh via the remote
-# helpers). Needs $GITHUB_TOKEN_PEPITO (or $GH_TOKEN_VAR) set — same as
-# release-remotely.sh — for the GitHub release.
+# Needs $GITHUB_TOKEN_PEPITO (or $GH_TOKEN_VAR) set, for the GitHub release.
 set -euo pipefail
 
 # Hardcoded (env-overridable), matching release-remotely.sh and gen-changelog.sh.
 # NOT derived from BASH_SOURCE: scripts/ is symlinked into the AOSP tree, so
-# invoking via that symlink (~/android/lineage-23/scripts/...) would resolve
+# invoking via that symlink (~/android/lineage-24/scripts/...) would resolve
 # LANDING_ROOT up to the tree root — which isn't a git repo — and misdirect the
 # notes file. Fixed paths make the script work from any cwd or symlink.
-LANDING_ROOT=${LANDING_ROOT:-/home/kyle/Projects/lineageos-pepito}
+LANDING_ROOT=${LANDING_ROOT:-/home/kyle/Projects/lineageos-pepito-24}
 SCRIPT_DIR="$LANDING_ROOT/scripts"
-TREE=${TREE:-/home/kyle/android/lineage-23}
-LAUNCHER=${LAUNCHER:-/home/kyle/Projects/PepitoLauncher2}
-TAG_PREFIX="pepito-23.2-"
+REMOTE_TREE=${REMOTE_TREE:-/home/kyle/android/lineage-24}
+TAG_PREFIX="pepito-24.0-"
 NOTES_FILE="$LANDING_ROOT/.release-notes.md"
 
 VERSION=""
 DRY_RUN=false
 DO_TAG=true
+DO_GAPPS=false
+CUSTOM_NOTES=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version) VERSION="$2"; shift 2 ;;
         --dry-run) DRY_RUN=true; shift ;;
         --no-tag)  DO_TAG=false; shift ;;
-        -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | cut -c3-; exit 0 ;;
+        --gapps)   DO_GAPPS=true; shift ;;
+        --notes-file) CUSTOM_NOTES="$2"; shift 2 ;;
+        -h|--help) sed -n '2,45p' "${BASH_SOURCE[0]}" | cut -c3-; exit 0 ;;
         *) echo "release-all.sh: unknown arg '$1'" >&2; exit 1 ;;
     esac
 done
+if [[ -n "$CUSTOM_NOTES" && ! -f "$CUSTOM_NOTES" ]]; then
+    echo "error: --notes-file not found: $CUSTOM_NOTES" >&2; exit 1
+fi
 
-# repos to tag at the end (path<TAB>preferred-remote). Changelog repo set lives
-# in gen-changelog.sh; this list is only for tagging/pushing.
-TAG_REPOS=(
-  "$TREE/kernel/xiaomi/msm8937	solarkennedy"
-  "$TREE/device/xiaomi/Mi8937	solarkennedy"
-  "$TREE/device/xiaomi/mithorium-common	solarkennedy"
-  "$TREE/vendor/xiaomi	origin"
-  "$TREE/bootable/recovery	solarkennedy"
-  "$TREE/frameworks/base	solarkennedy"
-  "$TREE/build/make	solarkennedy"
-  "$TREE/frameworks/native	solarkennedy"
-  "$TREE/frameworks/opt/telephony	solarkennedy"
-  "$TREE/lineage-sdk	solarkennedy"
-  "$TREE/packages/apps/LineageParts	solarkennedy"
-  "$TREE/packages/apps/Launcher3	solarkennedy"
-  "$TREE/packages/apps/Updater	solarkennedy"
-  "$TREE/hardware/interfaces	solarkennedy"
-  "$TREE/hardware/lineage/interfaces	solarkennedy"
-  "$TREE/hardware/qcom-caf/bt	solarkennedy"
-  "$TREE/system/core	solarkennedy"
-  "$TREE/system/sepolicy	solarkennedy"
-  "$TREE/system/bpfprogs	solarkennedy"
-  "$TREE/vendor/lineage	solarkennedy"
-  "$LAUNCHER	origin"
-  "$LANDING_ROOT	origin"
+# Tree repos to tag: every manifests/pepito.xml project on one of our remotes
+# (same set gen-changelog.sh reads). Tagged on the build server.
+mapfile -t TREE_TAG_PATHS < <(python3 - "$LANDING_ROOT/manifests/pepito.xml" <<'PY'
+import sys, xml.etree.ElementTree as ET
+for p in ET.parse(sys.argv[1]).getroot().iter("project"):
+    if p.get("remote") in ("pepito", "pepito-ssh"):
+        print(p.get("path"))
+PY
 )
 
 say() { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
@@ -135,7 +121,7 @@ variant_released() {
 # not UTC, so an evening build west of UTC stays "today"; override with --version.
 [[ -n "$VERSION" ]] || VERSION="$(date +%Y%m%d)"
 [[ "$VERSION" =~ ^[0-9]{8}$ ]] || { echo "error: --version must be YYYYMMDD (got '$VERSION')" >&2; exit 1; }
-export LINEAGE_BUILD_DATE="$VERSION"   # picked up by build-lineage23-remotely.sh → the build
+export LINEAGE_BUILD_DATE="$VERSION"   # picked up by build-lineage24-remotely.sh → the build
 
 # --- 1. changelog -----------------------------------------------------------
 say "Generating changelog"
@@ -157,6 +143,13 @@ fi
 
 # Real run: write CHANGELOG.md + the notes file (release body), pinned to $VERSION.
 "$SCRIPT_DIR/gen-changelog.sh" --version "$VERSION" --notes-file "$NOTES_FILE"
+# A hand-written body replaces the generated one as the release body + feed
+# changelog; CHANGELOG.md keeps the generated per-repo section.
+if [[ -n "$CUSTOM_NOTES" ]]; then
+    cp "$CUSTOM_NOTES" "$NOTES_FILE"
+    SECTION="$(cat "$NOTES_FILE")"
+    echo "Release body: $CUSTOM_NOTES (hand-written)"
+fi
 
 # commit the changelog before building so the remote build/rsync carries it
 if ! git -C "$LANDING_ROOT" diff --quiet -- CHANGELOG.md 2>/dev/null || \
@@ -173,39 +166,62 @@ if variant_released 'pepito-EDL\.tar\.xz$'; then
     say "Vanilla EDL already on release $VERSION — skipping build + release"
 else
     say "Building VANILLA remotely"
-    "$SCRIPT_DIR/build-lineage23-remotely.sh"
+    "$SCRIPT_DIR/build-lineage24-remotely.sh"
     say "Releasing VANILLA"
     "$SCRIPT_DIR/release-remotely.sh" --notes-file "$NOTES_FILE" --tag "$VERSION"
 fi
 
 # --- 3. gapps: build then release -------------------------------------------
-if variant_released 'pepito-gapps-EDL\.tar\.xz$'; then
+if ! $DO_GAPPS; then
+    say "GApps variant skipped (pass --gapps once 24.0 has a gapps build)"
+elif variant_released 'pepito-gapps-EDL\.tar\.xz$'; then
     say "GApps EDL already on release $VERSION — skipping build + release"
 else
     say "Building GAPPS remotely"
-    "$SCRIPT_DIR/build-lineage23-remotely.sh" --gapps
+    "$SCRIPT_DIR/build-lineage24-remotely.sh" --gapps
     say "Releasing GAPPS"
     "$SCRIPT_DIR/release-remotely.sh" --gapps --notes-file "$NOTES_FILE" --tag "$VERSION"
 fi
 
 # --- 4. tag every repo + push ----------------------------------------------
+# Tree repos are tagged on the build server, at the HEADs that were just built,
+# and pushed straight to the forks over SSH. The tagger identity is passed
+# explicitly: the server's global git identity is a work account, which must
+# not end up on these public tags.
 if $DO_TAG; then
     say "Tagging all repos $TAG"
-    for entry in "${TAG_REPOS[@]}"; do
-        path="${entry%%$'\t'*}"; remote="${entry##*$'\t'}"
-        [[ -d "$path/.git" ]] || { echo "  skip (not a repo): $path"; continue; }
-        # prefer the named remote; fall back to whatever single remote exists
-        if ! git -C "$path" remote | grep -qx "$remote"; then
-            remote="$(git -C "$path" remote | head -1)"
-        fi
-        if git -C "$path" rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "  $path: tag $TAG already exists, skipping create"
-        else
-            git -C "$path" tag -a "$TAG" -m "LineageOS 23.2 for pepito (Palm PVG100) — $VERSION"
-        fi
-        git -C "$path" push "$remote" "$TAG"
-        echo "  tagged + pushed: $path -> $remote"
-    done
+    TAGGER_NAME="$(git -C "$LANDING_ROOT" config user.name)"
+    TAGGER_EMAIL="$(git -C "$LANDING_ROOT" config user.email)"
+    MSG="LineageOS 24.0 for pepito (Palm PVG100) — $VERSION"
+    ssh "$TARGET" -- bash -s -- "$REMOTE_TREE" "$TAG" "$MSG" "$TAGGER_NAME" "$TAGGER_EMAIL" \
+        "${TREE_TAG_PATHS[@]}" <<'REMOTE'
+set -e
+tree=$1; tag=$2; msg=$3; name=$4; email=$5; shift 5
+for p in "$@"; do
+    d="$tree/$p"
+    remote=$(git -C "$d" remote | head -n1)
+    url=$(git -C "$d" remote get-url "$remote")
+    # https://github.com/OWNER/REPO -> git@github.com:OWNER/REPO.git (push over SSH)
+    case "$url" in
+        https://github.com/*) push_url="git@github.com:${url#https://github.com/}"; push_url="${push_url%.git}.git" ;;
+        *) push_url="$url" ;;
+    esac
+    if git -C "$d" rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+        echo "  $p: tag $tag already exists, skipping create"
+    else
+        git -C "$d" -c user.name="$name" -c user.email="$email" tag -a "$tag" -m "$msg"
+    fi
+    git -C "$d" push -q "$push_url" "refs/tags/$tag"
+    echo "  tagged + pushed: $p -> $push_url"
+done
+REMOTE
+    if git -C "$LANDING_ROOT" rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+        echo "  landing: tag $TAG already exists, skipping create"
+    else
+        git -C "$LANDING_ROOT" tag -a "$TAG" -m "LineageOS 24.0 for pepito (Palm PVG100) — $VERSION"
+    fi
+    git -C "$LANDING_ROOT" push origin "$TAG"
+    echo "  tagged + pushed: landing"
 fi
 
 # --- 5. XDA forum post (best-effort; the release is already done) ------------
@@ -214,12 +230,13 @@ fi
 # errors, we just skip it — the release itself has already succeeded.
 XDA_POST="$LANDING_ROOT/.release-xda-post.txt"
 RELEASES_URL="https://github.com/solarkennedy/lineageos-pepito/releases"
+# Still the 23.2 (A16) thread; swap in a 24.0 thread URL if one is opened.
 XDA_THREAD_URL="https://xdaforums.com/t/rom-unofficial-a16-lineageos-23-2-for-the-palm-pvg100.4795985/#"
 if command -v claude >/dev/null 2>&1; then
     say "Generating XDA changelog post (Claude)"
     read -r -d '' XDA_PROMPT <<PROMPT || true
 You are writing a short "release update" post for the XDA-Developers thread for
-LineageOS 23.2 (Android 16) on the Palm PVG100 ("pepito"), an obscure tiny phone.
+LineageOS 24.0 (Android 17) on the Palm PVG100 ("pepito"), an obscure tiny phone.
 The reader is an end user, not a developer.
 
 Below (on stdin) is the raw changelog for release $VERSION — git commit subjects
@@ -256,4 +273,4 @@ else
     echo "note: 'claude' not on PATH — skipping XDA post generation." >&2
 fi
 
-say "Done: $VERSION released (vanilla + gapps). Releases: https://github.com/solarkennedy/lineageos-pepito/releases"
+say "Done: $VERSION released ($($DO_GAPPS && echo "vanilla + gapps" || echo vanilla)). Releases: https://github.com/solarkennedy/lineageos-pepito/releases"

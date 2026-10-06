@@ -33,14 +33,14 @@
 # of them with flags if your filename doesn't match.
 #
 # The EDL bundle is read from --edl-dir (default: flash-staging/ in the
-# lineage-23 tree) and expects it already populated by prepare-flash.sh —
+# lineage-24 tree) and expects it already populated by prepare-flash.sh —
 # this script does not sign or desparsify images itself.
 #
 set -euo pipefail
 
 # --- defaults ---------------------------------------------------------------
 REPO="solarkennedy/lineageos-pepito"
-BRANCH="lineageos23.2"   # must match the branch lineage_updater_uri points at
+BRANCH="lineageos24.0"   # must match the branch lineage.updater.uri points at
 KEEP=5                   # entries to keep per romtype in the OTA JSON
 DEVICE=""
 VERSION=""
@@ -51,7 +51,7 @@ DRY_RUN=false
 ASSUME_YES=false
 SKIP_EDL=false
 EDL_ONLY=false           # publish only the EDL bundle: no OTA zip asset, no OTA JSON
-EDL_DIR="/home/kyle/android/lineage-23/flash-staging"
+EDL_DIR="/home/kyle/android/lineage-24/flash-staging"
 # config.bin is a 32 KB zero-fill (written by prepare-flash.sh) that clears a
 # stale FRP token so A15+ FRP can auto-deactivate after a wipe. userdata is
 # deliberately excluded — a release flash must not wipe /data as a side effect.
@@ -98,7 +98,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # ./scripts/release.sh`) $SCRIPT_DIR/.. resolves to the AOSP tree root — not a git
 # repo — and pepito.json gets written there and never committed. Hardcode the
 # landing repo (env-overridable), matching release-all.sh / release-remotely.sh.
-REPO_ROOT="${REPO_ROOT:-/home/kyle/Projects/lineageos-pepito}"
+REPO_ROOT="${REPO_ROOT:-/home/kyle/Projects/lineageos-pepito-24}"
 GEN_JSON="$SCRIPT_DIR/gen-ota-json.py"
 
 usage() { grep '^#' "${BASH_SOURCE[0]}" | sed -n '2,29p' | cut -c3-; exit 1; }
@@ -690,8 +690,10 @@ if ! $EDL_ONLY; then
     DATETIME_ARGS=(--datetime "$POST_TS")
 
     # Embed the release notes into this entry as optional "changelog" /
-    # "changelog_url" keys (ignored by the stock Updater, shown as "What's new"
-    # by ours). Applied to every variant of the day, even when the GitHub
+    # "changelog_url" keys, shown as "What's new" by our Updater fork. The feed
+    # is LineageOS API-v2 (gen-ota-json.py's default), the shape the 24.0
+    # Updater reads; the STOCK 24.0 Updater rejects these extra keys, ours
+    # accepts them. Applied to every variant of the day, even when the GitHub
     # release already existed and the body was left alone.
     CHANGELOG_ARGS=()
     NOTES_TMP=""

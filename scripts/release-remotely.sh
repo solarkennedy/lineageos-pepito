@@ -1,11 +1,11 @@
 #!/bin/bash
 # release-remotely.sh — run scripts/release.sh on the build server instead of
 # locally: the zip and flash-staging/ are already there after a remote build
-# (build-lineage23-remotely.sh fetches them down too, but release.sh's own
+# (build-lineage24-remotely.sh fetches them down too, but release.sh's own
 # xz compression of the EDL bundle is the slow part — better to run it on
 # the build server's CPU than the laptop's).
 #
-# The remote landing-repo mirror has no .git (build-lineage23-remotely.sh
+# The remote landing-repo mirror has no .git (build-lineage24-remotely.sh
 # excludes it), so release.sh degrades gracefully there: it still cuts the
 # GitHub release, but only writes <device>.json locally on the server. This
 # script fetches that file back and does the commit/push from here, where
@@ -20,7 +20,7 @@
 #
 # --gapps selects the lineage_Mi8937_gapps build instead of the vanilla one.
 # Both variants share out/target/product/Mi8937/ (same PRODUCT_DEVICE) and can
-# coexist there on the same day since build-lineage23.sh tags them with
+# coexist there on the same day since build-lineage24.sh tags them with
 # different RELEASE_TYPE values (embedded in the filename) specifically so
 # they don't collide — --gapps just picks which one to release when both are
 # present.
@@ -28,14 +28,14 @@
 #   ./scripts/release-remotely.sh                # full: OTA zip + JSON + EDL bundle
 #   ./scripts/release-remotely.sh --gapps        # the gapps variant
 #   ./scripts/release-remotely.sh --edl-only     # EDL bundle only (no OTA)
-#   ./scripts/release-remotely.sh --notes-file ~/Projects/lineageos-pepito/.release-notes.md
+#   ./scripts/release-remotely.sh --notes-file ~/Projects/lineageos-pepito-24/.release-notes.md
 #
 # --notes-file FILE sets the GitHub release body (must live under the landing
 # repo so it's rsynced to the server). Usually driven by release-all.sh.
 #
 set -euo pipefail
 # pipefail matters: the rsync calls below pipe through `tail` to keep output
-# volume down (see build-lineage23-remotely.sh for why); without pipefail a
+# volume down (see build-lineage24-remotely.sh for why); without pipefail a
 # real rsync failure would hide behind tail's always-zero exit status.
 
 GAPPS=false
@@ -53,8 +53,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 TARGET=${TARGET:-10.0.2.43}
-REMOTE_ROOT=${REMOTE_ROOT:-/home/kyle/android/lineage-23}
-LANDING_ROOT=/home/kyle/Projects/lineageos-pepito
+REMOTE_ROOT=${REMOTE_ROOT:-/home/kyle/android/lineage-24}
+LANDING_ROOT=/home/kyle/Projects/lineageos-pepito-24
 PRODUCT_OUT=out/target/product/Mi8937
 
 # The build server's own `gh` is logged into an internal host (git.netflix.net)
@@ -71,7 +71,7 @@ if [[ -z "$REMOTE_GH_TOKEN" ]]; then
     exit 1
 fi
 # Vanilla is UNOFFICIAL, gapps is SNAPSHOT (the OTA channel separator — see
-# build-lineage23.sh). The releasetype is in the zip filename, so it already
+# build-lineage24.sh). The releasetype is in the zip filename, so it already
 # isolates the variant's zip; the _gapps filter below is belt-and-suspenders.
 BUILDTYPE_TAG=UNOFFICIAL
 if $GAPPS; then
@@ -80,7 +80,7 @@ fi
 
 RSYNC_COMMON=(-aP --human-readable)
 
-# Same sleep-inhibit pattern as build-lineage23-remotely.sh: the xz pass over
+# Same sleep-inhibit pattern as build-lineage24-remotely.sh: the xz pass over
 # the EDL bundle alone can run several minutes, and Stellaris16 idle-suspends
 # regardless of ssh/rsync traffic.
 ssh -tt "$TARGET" -- systemd-inhibit --what=sleep:idle --who=release-remotely \
@@ -91,14 +91,14 @@ trap 'kill "$INHIBIT_SSH_PID" 2>/dev/null || true' EXIT
 # release.sh may have changed locally since the last remote build; make sure
 # the server has the current copy (still excluding .git — see header note).
 ssh "$TARGET" -- "mkdir -p '$LANDING_ROOT'"
-rsync "${RSYNC_COMMON[@]}" --exclude='/.git/' \
+rsync "${RSYNC_COMMON[@]}" --exclude='/.git/' --exclude='/.git' \
     "$LANDING_ROOT"/ "$TARGET:$LANDING_ROOT"/ | tail -20
 
 # Device-constant EDL inputs (firehose loaders + per-variant rawprogram XMLs).
 # prepare-flash.sh does not produce these and the build sync excludes
 # /flash-staging/ entirely, so push the current local copies — release.sh
 # requires both rawprogram XMLs since PVG100E support (2026-08-02).
-LOCAL_FLASH_DIR=${LOCAL_FLASH_DIR:-/home/kyle/android/lineage-23/flash-staging}
+LOCAL_FLASH_DIR=${LOCAL_FLASH_DIR:-/home/kyle/android/lineage-24/flash-staging}
 EDL_CONSTANTS=()
 for f in pvg100_firehose.elf pvg100e_firehose.elf rawprogram0.pvg100.xml rawprogram0.pvg100e.xml; do
     [[ -f "$LOCAL_FLASH_DIR/$f" ]] && EDL_CONSTANTS+=("$LOCAL_FLASH_DIR/$f")
