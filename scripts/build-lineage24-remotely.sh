@@ -55,9 +55,19 @@ STAGE_FILTERS=(
 )
 
 REMOTE_BUILD_ARGS=()
+BOOT_ONLY=0
 for arg in "$@"; do
     REMOTE_BUILD_ARGS+=("$(printf '%q' "$arg")")
+    [[ "$arg" == --boot-only || "$arg" == -b ]] && BOOT_ONLY=1
 done
+# --boot-only: stage and fetch only the boot images. Otherwise prepare-flash.sh
+# re-desparsifies system/vendor and the 3 GB system.bin is re-read across the
+# link for a kernel-only change.
+PREPARE_ARGS=""
+if (( BOOT_ONLY )); then
+    PREPARE_ARGS="--boot-only"
+    STAGE_FILTERS=(--include='boot.bin' --include='boot-magisk.bin' --exclude='*')
+fi
 REMOTE_BUILD_ARGS_STR="${REMOTE_BUILD_ARGS[*]:-}"
 
 ssh "$TARGET" -- "test -d '$REMOTE_ROOT/.repo'" || {
@@ -212,7 +222,7 @@ echo "==> Remote build succeeded."
 
 # 4. Flash images.
 echo "==> Staging flash images remotely (prepare-flash.sh)..."
-ssh "$TARGET" -- "cd '$REMOTE_ROOT' && ./scripts/prepare-flash.sh"
+ssh "$TARGET" -- "cd '$REMOTE_ROOT' && ./scripts/prepare-flash.sh $PREPARE_ARGS"
 
 echo "==> Fetching staged flash images to $LOCAL_FLASH_DIR..."
 mkdir -p "$LOCAL_FLASH_DIR"
