@@ -94,6 +94,15 @@ ssh -tt "$TARGET" -- systemd-inhibit --what=sleep:idle --who=build-lineage24-rem
 INHIBIT_SSH_PID=$!
 trap 'kill "$INHIBIT_SSH_PID" 2>/dev/null || true' EXIT
 
+# The pinned Magisk APK is gitignored (prebuilts/*.apk), so a fresh checkout of
+# this branch lacks it and prepare-flash.sh silently skips boot-magisk.bin.
+# Seed it from the 23.2 landing checkout before mirroring.
+if ! compgen -G "$LANDING_ROOT/prebuilts/Magisk-*.apk" >/dev/null; then
+    for apk in /home/kyle/Projects/lineageos-pepito/prebuilts/Magisk-*.apk; do
+        [[ -f "$apk" ]] && cp -p "$apk" "$LANDING_ROOT/prebuilts/" && echo "==> Seeded $(basename "$apk") into $LANDING_ROOT/prebuilts/"
+    done
+fi
+
 # 1. Landing repo: mirror this checkout (scripts, plans, manifest), then make it
 #    the tree's local manifest and its scripts/. A worktree's .git is a FILE,
 #    hence both excludes.
