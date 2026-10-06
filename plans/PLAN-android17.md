@@ -104,6 +104,8 @@ never `repo sync` the 23.2 tree's patched AOSP repos without the `pepito-*` bran
 
 **2026-10-06 progress:** `pepito-24` pushed for kernel (97/97 clean, 1172 upstream commits caught up, same clang r563880c as 23.2), Mi8937 (clean + `d5b345cb` camera.pepito displayservice), mithorium-common (5 sepolicy/mk unions + `855c9b7` doze strings). Builder `lineage-24` manifest switched to these + qcom-caf/bt `pepito` + vendor/xiaomi + PepitoLauncher2. AOSP-repo forks not rebased yet.
 
+**✅ 2026-10-06: first pepito A17 build GREEN** on the builder (`lineage-24.0-20261006-UNOFFICIAL-Mi8937.zip`, Palm/PVG100, release-keys, static partitions). Along the way: signing keys (`vendor/lineage-priv` + PepitoLauncher2 cert) copied builder-locally; FaceUnlock from crDroid `17.0`; OpenEUICC DROPPED (Mi8937 `6c1fb8f1`); `system/sepolicy` fork cherry-picked (`312f75078`, pepito_gsfid). Not flashed.
+
 Order = least-coupled first, device repos last (they are where the upstream port landed). For each:
 `git rebase --onto <upstream lineage-24.0> <tag pepito-23.2-pre24-base> pepito-24`, resolve, build.
 
