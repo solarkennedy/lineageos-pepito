@@ -180,6 +180,19 @@ because "works on DUT via accumulated modem NV" is a known trap (WFC field4). Ad
 
 ## 6. Phase 5 — Productize 24.0
 
+**Upgrade path decision (Kyle, 2026-10-06): in-place OTA via a FINAL 23.2 release**, cut only
+once 24.0 is stable and has gapps. That 23.2 release sets `lineage.updater.allow_major_upgrades=true`
+and moves `lineage.updater.uri` to the `lineageos24.0` branch.
+- ⚠️ Two feed formats: the 24.0 (A17) Updater parses LineageOS API-v2 (top-level array,
+  `files[]` with `os_sdk_level`/`os_patch_level`); the 23.2 Updater only parses the legacy
+  `{"response":[...]}` shape. So the 24.0 release tooling publishes BOTH on `lineageos24.0`:
+  `pepito.json` (v2, read by 24.0 phones) and `pepito-legacy.json` (legacy, same 24.0 builds,
+  read only by the final 23.2 release). Set `os_sdk_level: 37`.
+- romtype channels must carry over (vanilla UNOFFICIAL, gapps SNAPSHOT) so each variant is offered
+  its own 24.0 build.
+- Gate: a dirty-flash 23.2 → 24.0 (gapps over gapps) must pass on a bench unit first.
+- pepito-24 `device.mk` must point `lineage.updater.uri` at `lineageos24.0/pepito.json`.
+
 - [ ] Version sweep in the landing repo: `scripts/*` (12 files), `pepito.json` OTA feed (keep a 23.2
       channel and add 24.0, or one channel with the upgrade OTA), `manifests/pepito.xml` →
       `pepito-24.0-r1` tag set, `BUILD.md` lunch line, `CHANGELOG.md`, landing README table (branch
