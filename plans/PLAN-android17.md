@@ -189,10 +189,10 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   on the live legacy feed + a v2 sample). So 24.0 publishes only `lineageos24.0/pepito.json` (v2,
   `os_sdk_level: 37`), and the final 23.2 release points straight at it. Before shipping that
   release: put a v2 test entry in a scratch feed and confirm a 23.2 phone offers + installs it.
-- ⚠️ The A17 Updater decodes with strict kotlinx `Json` (no ignoreUnknownKeys): ANY extra key
-  (our `changelog`/`changelog_url`) fails the whole feed on 24.0 phones. Keep the v2 feed
-  schema-clean until the deferred 24.0 Updater changelog port adds those keys (and ideally
-  ignoreUnknownKeys).
+- (Corrected 2026-10-06: the A17 Updater's `NetworkUpdate` is `@JsonIgnoreUnknownKeys`, so extra
+  keys like `changelog` are safe even for a stock 24.0 Updater.) Our 24.0 Updater fork
+  (`pepito-24` `153249c`) shows them as "What's new" via a side `ChangelogStore` (no Room schema
+  change, so no collision with upstream's next migration).
 - romtype channels must carry over (vanilla UNOFFICIAL, gapps SNAPSHOT) so each variant is offered
   its own 24.0 build.
 - Gate: a dirty-flash 23.2 → 24.0 (gapps over gapps) must pass on a bench unit first.

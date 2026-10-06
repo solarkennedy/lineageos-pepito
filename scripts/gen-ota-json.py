@@ -30,9 +30,9 @@
 # other format (e.g. 23.2 builds inherited from the 23.2 branch) are dropped, so
 # a 24.0 phone is never offered them.
 #
-# ⚠️ The 24.0 Updater decodes the feed with kotlinx.serialization. Our fork of
-# it accepts the "changelog"/"changelog_url" keys below; the STOCK one rejects
-# unknown keys, so never point an unpatched 24.0 Updater at a feed with them.
+# The 24.0 Updater's NetworkUpdate is @JsonIgnoreUnknownKeys, so the optional
+# "changelog"/"changelog_url" keys below are safe even for a stock Updater; our
+# fork (packages/apps/Updater pepito-24) shows them as "What's new".
 #
 # Optional per-entry release notes: --changelog-file FILE embeds the (cleaned)
 # section as a "changelog" string and --changelog-url URL as "changelog_url".

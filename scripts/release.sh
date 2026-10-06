@@ -692,8 +692,7 @@ if ! $EDL_ONLY; then
     # Embed the release notes into this entry as optional "changelog" /
     # "changelog_url" keys, shown as "What's new" by our Updater fork. The feed
     # is LineageOS API-v2 (gen-ota-json.py's default), the shape the 24.0
-    # Updater reads; the STOCK 24.0 Updater rejects these extra keys, ours
-    # accepts them. Applied to every variant of the day, even when the GitHub
+    # Updater reads; it ignores unknown keys, so a stock Updater is unaffected. Applied to every variant of the day, even when the GitHub
     # release already existed and the body was left alone.
     CHANGELOG_ARGS=()
     NOTES_TMP=""
