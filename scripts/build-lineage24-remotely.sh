@@ -56,9 +56,11 @@ STAGE_FILTERS=(
 
 REMOTE_BUILD_ARGS=()
 BOOT_ONLY=0
+GAPPS=0
 for arg in "$@"; do
     REMOTE_BUILD_ARGS+=("$(printf '%q' "$arg")")
     [[ "$arg" == --boot-only || "$arg" == -b ]] && BOOT_ONLY=1
+    [[ "$arg" == --gapps ]] && GAPPS=1
 done
 # --boot-only: stage and fetch only the boot images. Otherwise prepare-flash.sh
 # re-desparsifies system/vendor and the 3 GB system.bin is re-read across the
@@ -219,6 +221,21 @@ notify "Build SUCCESS — $DEVICE_LABEL" \
 ${BUILD_ZIP:+artifact: $(basename "$BUILD_ZIP")
 }fetching product-out next"
 echo "==> Remote build succeeded."
+
+# GApps priv-apps vs the privapp allowlists, against this exact build. The tree
+# has ro.control_privapp_permissions=enforce: one missing grant stops the boot,
+# so refuse to stage images that would bootloop.
+if (( GAPPS )) && (( ! BOOT_ONLY )); then
+    echo "==> Auditing GApps privileged-permission allowlists..."
+    if AUDIT=$(ssh "$TARGET" -- "python3 '$REMOTE_ROOT/scripts/audit-privapp-permissions.py' --tree '$REMOTE_ROOT'" 2>&1); then
+        tail -n1 <<<"$AUDIT"
+    else
+        grep -E 'MISSING|missing privileged' <<<"$AUDIT" >&2 || tail -n 20 <<<"$AUDIT" >&2
+        echo "!! Privileged permissions missing from the allowlists (see above)." >&2
+        echo "   These images would not boot under enforce; not staging them." >&2
+        exit 1
+    fi
+fi
 
 # 4. Flash images.
 echo "==> Staging flash images remotely (prepare-flash.sh)..."
