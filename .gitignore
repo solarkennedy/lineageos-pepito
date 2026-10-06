@@ -25,3 +25,6 @@ vendor/
 # Magisk APK for scripts/make-magisk-boot.sh — upstream binary, not ours to vendor.
 # Kept in the working tree (rsync mirrors it to the build server), out of git.
 prebuilts/*.apk
+
+# Python bytecode (e.g. from a py_compile syntax check)
+__pycache__/
