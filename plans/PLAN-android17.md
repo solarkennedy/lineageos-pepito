@@ -77,7 +77,7 @@ never `repo sync` the 23.2 tree's patched AOSP repos without the `pepito-*` bran
 
 ## 2. Phase 1 — Stand up the 24.0 tree and prove upstream builds
 
-- [~] (2026-10-06: Launcher3 → `solarkennedy/android_packages_apps_Launcher3` `pepito-taskbar` `f3967a3bd7`; build/make → `solarkennedy/android_build` `pepito-debloat` `a597dfac73` (4 product-mk guards; envsetup.sh netbook4 guard left uncommitted = bench-only); both added to `manifests/pepito.xml`, `TAG_REPOS`, changelog `REPOS`. Left: PIF graft disposition, `pepito-23.2-pre24` tags, /release-sweep.) **Freeze 23.2 first.** Commit the uncommitted load-bearing bits so they exist as commits to carry:
+- [~] (2026-10-06: Launcher3 → `solarkennedy/android_packages_apps_Launcher3` `pepito-taskbar` `f3967a3bd7`; build/make → `solarkennedy/android_build` `pepito-debloat` `a597dfac73` (4 product-mk guards; envsetup.sh netbook4 guard left uncommitted = bench-only); both added to `manifests/pepito.xml`, `TAG_REPOS`, changelog `REPOS`. PIF graft DROPPED (Kyle 10-06). Left: `pepito-23.2-pre24` tags.) **Freeze 23.2 first.** Commit the uncommitted load-bearing bits so they exist as commits to carry:
       `packages/apps/Launcher3` TaskbarManagerImpl patch (branch `pepito-taskbar`, fork needed),
       audit `build/make` 5 dirty files (envsetup guard = bench-only; the 4 `target/product/*.mk`
       edits — what are they, do they ship?), PIF graft (memory says staged/uncommitted — find and commit
