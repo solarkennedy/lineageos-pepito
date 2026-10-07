@@ -180,9 +180,10 @@ because "works on DUT via accumulated modem NV" is a known trap (WFC field4). Ad
 - [ ] Battery: attribution non-zero (timeInState), health screen + ESR row, charging control, FULL-at-cap.
 - [ ] **Tethering — all three must work, NEEDS A SIM** (Kyle, 2026-10-07): **Wi-Fi hotspot**, **Bluetooth
       tethering (PAN)** and **USB tethering (NCM)**, each passing real traffic from a client over mobile data
-      (not just "enabled"), plus BPF tether offload active. First time on EITHER version: 23.2 validated hotspot +
-      USB NCM only with a Wi-Fi upstream, and never tested Bluetooth PAN or the cellular upstream (memory:
-      tethering-works-oob).
+      (not just "enabled"), plus BPF tether offload active. 23.2 validated hotspot + USB NCM (Wi-Fi upstream) and a
+      hotspot over LTE with BPF offload (Gold, 08-22); Bluetooth PAN was never tested (memory: tethering-works-oob).
+      **A17 2026-10-07: ✅ USB NCM over LTE** (netbook client via a policy-routed NM profile: carrier IPv4
+      174.231.x + native VZW IPv6, 10 MB @ ~335 KB/s at RSRP −105, BPF offload forwarding 10.4 MB on rmnet_data1).
 - [ ] USB webcam; OTG; wired Android Auto in-car.
 - [ ] Perf: zram lz4 default, interaction boost live, GPU floor toggle; idle floor ~3.3 mA airplane.
 - [ ] **Dirty-flash upgrade 23.2 → 24.0** (sideload OTA, no wipe): boots, FBE keys intact, settings kept,
