@@ -59,6 +59,11 @@ done
 # together (SystemUI's alone takes ~10 GB) OOM-killed two 24.0 gapps builds
 # on 2026-10-06/07. Only those jobs are serialized; the rest still runs at -j.
 export NINJA_HIGHMEM_NUM_JOBS="${NINJA_HIGHMEM_NUM_JOBS:-3}"
+# ...and overall parallelism. The highmem cap alone was not enough: the OOM
+# report for the third failure showed a dozen javac/kotlinc/metalava JVMs at
+# ~3 GB each plus siso at 3.4 GB (A17's Kotlin-heavy compile steps), with R8
+# only the victim. `m` defaults to ~nproc (24) jobs; 14 fits in 62 GB.
+PEPITO_JOBS="${PEPITO_JOBS:-14}"
 
 PEPITO_BUILD_DATE="${LINEAGE_BUILD_DATE:-${BUILD_NUMBER:-$(date -u +%Y%m%d)}}"
 export BUILD_NUMBER="$PEPITO_BUILD_DATE"
@@ -139,7 +144,7 @@ fi
 # (Skipped for boot/recovery-only builds, which don't touch the framework.)
 if [[ "$BOOT_ONLY" -eq 0 && "$RECOVERY_ONLY" -eq 0 ]]; then
     echo "[*] Regenerating api/lint baselines (update-api)..."
-    mka update-api
+    mka -j"$PEPITO_JOBS" update-api
     echo ""
 fi
 
@@ -148,7 +153,7 @@ echo "[*] Starting build..."
 echo "    Building: $BUILD_TARGETS"
 echo ""
 
-mka $BUILD_TARGETS
+mka -j"$PEPITO_JOBS" $BUILD_TARGETS
 
 echo ""
 echo "================================"
