@@ -180,6 +180,11 @@ because "works on DUT via accumulated modem NV" is a known trap (WFC field4). Ad
 
 ## 6. Phase 5 — Productize 24.0
 
+- [ ] **Decide the emergency-only watchdog before the 24.0 release** (Kyle, 2026-10-07): revert it from
+      23.2 + 24 if the root cause is found first. Pieces: mithorium-common `143e994`, LineageParts
+      `69219ab8`, the notification code carried in beacon commit `c0624c2`, and XiaomiParts'
+      POST_NOTIFICATIONS (verify no other XiaomiParts notifications first).
+
 **Upgrade path decision (Kyle, 2026-10-06): in-place OTA via a FINAL 23.2 release**, cut only
 once 24.0 is stable and has gapps. That 23.2 release sets `lineage.updater.allow_major_upgrades=true`
 and moves `lineage.updater.uri` to the `lineageos24.0` branch.
