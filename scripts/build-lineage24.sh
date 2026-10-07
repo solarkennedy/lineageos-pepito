@@ -54,6 +54,12 @@ done
 # (Why stamp at all: with BUILD_NUMBER unset AOSP falls back to eng.$USER, which
 # lands verbatim in ro.build.version.incremental / the fingerprint — an eng-build
 # smell we don't want in a release image.)
+# Cap Soong's "highmem" pool (R8, metalava, ...). It defaults to one job per
+# 8 GB of RAM, i.e. ~7 at once on the 62 GB build server, and several R8 runs
+# together (SystemUI's alone takes ~10 GB) OOM-killed two 24.0 gapps builds
+# on 2026-10-06/07. Only those jobs are serialized; the rest still runs at -j.
+export NINJA_HIGHMEM_NUM_JOBS="${NINJA_HIGHMEM_NUM_JOBS:-3}"
+
 PEPITO_BUILD_DATE="${LINEAGE_BUILD_DATE:-${BUILD_NUMBER:-$(date -u +%Y%m%d)}}"
 export BUILD_NUMBER="$PEPITO_BUILD_DATE"
 export LINEAGE_BUILD_DATE="$PEPITO_BUILD_DATE"
