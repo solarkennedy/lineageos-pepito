@@ -184,6 +184,12 @@ because "works on DUT via accumulated modem NV" is a known trap (WFC field4). Ad
       hotspot over LTE with BPF offload (Gold, 08-22); Bluetooth PAN was never tested (memory: tethering-works-oob).
       **A17 2026-10-07: ✅ USB NCM over LTE** (netbook client via a policy-routed NM profile: carrier IPv4
       174.231.x + native VZW IPv6, 10 MB @ ~335 KB/s at RSRP −105, BPF offload forwarding 10.4 MB on rmnet_data1).
+      **✅ Wi-Fi hotspot over LTE** (new2 client, 2.4 GHz: DHCP + DNS + its own app TCP/QUIC NATed via BPF on
+      rmnet_data1; ⚠️ ping loss 40% then 7% with up to ~1 s RTT vs 0% on USB — weak LTE (−105) vs 2.4 GHz vs
+      hotspot unknown, follow-up). **✅ Bluetooth PAN over LTE, IPv4** (netbook client, first-ever PAN test: carrier
+      IPv4, 0% ping loss, 2 MB @ ~48 KB/s). **❌ BT PAN IPv6:** prefix advertised but DUT1's ND for the client's
+      global address FAILS on bt-pan ⇒ no BPF IPv6 downstream rule ⇒ no replies (USB IPv6 fine) — likely multicast
+      ND not crossing BNEP (BlueZ filter?) rather than A17; follow-up. Also ✅ BT pairing (netbook ↔ DUT1).
 - [ ] USB webcam; OTG; wired Android Auto in-car.
 - [ ] Perf: zram lz4 default, interaction boost live, GPU floor toggle; idle floor ~3.3 mA airplane.
 - [ ] **Dirty-flash upgrade 23.2 → 24.0** (sideload OTA, no wipe): boots, FBE keys intact, settings kept,
