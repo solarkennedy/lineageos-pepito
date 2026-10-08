@@ -260,3 +260,24 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
 `build-and-vendor-notes`, `builder-tree-divergence`, `releases-on-build-server`,
 `navbar-taskbar-hosting`, `phase2-loadbearing-disguised-commits`, `selinux-enforcing-prep`,
 `bpf-timeinstate-core-btf`, `nikgapps-deskclock-bootloop`, `bt-bdaddr-controller-fix`.
+
+## Bench results 2026-10-08
+
+- **✅ Customer dirty flash (Gold, 23.2 `20260828` gapps + real account → 24.0 `20261007` gapps, userdata kept).**
+  Boot ~97 s, 0 crashes, account kept, all Play-updated Google apps kept their versions, Assistant + speech
+  roles held, face enrolment kept, GPU-floor default applied. Second-unit sweep on Gold: 20/20 sensors, 2
+  cameras, Enforcing with only the known denial set, verified boot green, FBE, zram lz4, CPU-attribution BPF
+  maps present, GNSS HAL + gps provider up, Widevine service running. Flash Gold with
+  `gold-adb reboot edl` + `flash-staging.sh --no-adb` (the script's own trigger is hard-wired to DUT1).
+- **✅ 23.2 Updater reads the v2 feed (Silver, Updater `6dd23de` installed as an app update, then removed).**
+  A v2 array feed parses; an older entry is filtered; the 24.0 entry lists; "What's new" shows the feed
+  changelog + Full changelog link. With defaults the button is **INFO** (major upgrade blocked); with
+  `lineage.updater.allow_major_upgrades=true` it becomes **DOWNLOAD**. ⇒ the final 23.2 release must ship
+  that prop AND the 24.0 feed URL. Tested by seeding the Updater's cached `updates.json` (cleartext HTTP is
+  blocked for the app, so a local test server cannot be used). **Not yet tested:** the real HTTPS fetch of
+  the 24.0 feed, and the actual recovery install of a 24.0 zip over 23.2.
+- **⚠️ Gold's replacement battery: ~0.52 Ω** by an active load step (62 mA @ 4.264 V vs 867 mA @ 3.844 V, full
+  charge, 26–30 °C) — not the 0.10–0.20 Ω hoped for, and no better than the old worn cell's 0.45 Ω.
+  Repeat at ~50 % charge before selling Gold.
+- **Deferred:** Bluetooth-tether IPv6 with a phone client — needs a cellular-upstream phone; Silver and new2
+  were running the stick-lane captures and DUT1 was off the bench.
