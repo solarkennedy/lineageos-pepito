@@ -133,7 +133,7 @@ Rebase hygiene: keep `pepito-rmnet` untouched as the 23.2 branch; new branches a
 (device/kernel) and `pepito-24-<topic>` for AOSP repos; push to the same `solarkennedy` forks; regen
 `manifests/pepito.xml` as `pepito-24.0-r1` with the extra `hardware/qcom-caf/bt` and Launcher3 overrides.
 
-- [ ] **TODO (Kyle, 2026-10-07): silence the recovery `libfs_mgr` f2fs `linear_lookup` error on 24.0.** It was
+- [x] **DONE 2026-10-09 (fork `android_system_fs_fs_mgr` `pepito-24` `46951e8`, in the manifest; unbuilt — needs a recovery rebuild + flash to confirm): silence the recovery `libfs_mgr` f2fs `linear_lookup` error on 24.0.** It was
       silenced on 23.2 by `system/core` `b85c87a728` (PERROR → PLOG(DEBUG): 4.19 has no
       /sys/fs/f2fs/features/linear_lookup, the fallback is normal). On A17 fs_mgr moved to its own project
       `system/fs/fs_mgr` (`LineageOS/android_system_fs_fs_mgr`), so this needs a new fork + one-line port + a

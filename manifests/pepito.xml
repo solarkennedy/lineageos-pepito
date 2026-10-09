@@ -61,6 +61,10 @@
   <remove-project name="LineageOS/android_system_sepolicy" />
   <project path="system/sepolicy" name="android_system_sepolicy" remote="pepito" revision="pepito-24" groups="pdk" />
 
+  <!-- recovery: f2fs linear_lookup "Failed to open" is a normal fallback on 4.19, demoted to debug -->
+  <remove-project name="LineageOS/android_system_fs_fs_mgr" />
+  <project path="system/fs/fs_mgr" name="android_system_fs_fs_mgr" remote="pepito" revision="pepito-24" groups="pdk" />
+
   <!-- upstream dropped hardware/qcom-caf/bt from 24.0; our source-built libbt-vendor (23.2 branch, unchanged) -->
   <project path="hardware/qcom-caf/bt" name="android_hardware_qcom_bt" remote="pepito" revision="pepito" />
 
