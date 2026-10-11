@@ -270,8 +270,8 @@ backup. If you're not 100% sure, check the label.
 - **You will lose your data.** Coming from stock (or any mismatched build) the
   first boot needs \`/data\` reformatted for file-based encryption. Save anything
   you care about.
-- **Disk space:** about 8 GB free for the extracted zip plus the converted
-  images, and another 7 GB for the backup.
+- **Disk space:** about 7 GB free for the zip, its extracted copy and the
+  converted images, and another 8 GB for the backup.
 - **Any of Linux, macOS or Windows works.** What each one uses:
 
   | | Converting | Flashing | Backup |
@@ -360,8 +360,16 @@ Open a terminal (PowerShell is fine) in the \`edl\` folder for the rest.
 
 ## Step 2 — Put the phone into EDL (9008) mode
 
-- If it still boots or reaches recovery:  \`adb reboot edl\`
-- Otherwise use the PVG100 hardware key method (see the project page above).
+- With adb: \`adb reboot edl\`, from Android (turn on USB debugging in
+  Developer options first) or from recovery.
+- From the recovery menu: hold the power button down through three restarts
+  until "Entering Recovery Mode" appears, then choose *Advanced → Reboot to
+  EDL* (LineageOS recovery) or *Emergency Download Mode* (stock recovery; a
+  short press moves down, a long press selects).
+- With an EDL cable, for a phone that will not start: with the phone off, hold
+  the cable's button, plug it in, and let go after a few seconds.
+
+The web flasher page above has videos of the last two.
 
 The screen stays black in EDL — that's expected. Confirm it arrived:
 
@@ -380,7 +388,7 @@ left in EDL afterwards, ready for step 4.
 
 A full dump is ~29 GB and slow (an hour or more). Add \`--exclude userdata\` to
 skip the data partition — it is encrypted and useless without the exact boot
-chain that created it — which shrinks the backup to ~7 GB.
+chain that created it — which shrinks the backup to about 8 GB (about 6 GB on a PVG100E).
 
 **Linux**
 

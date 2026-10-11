@@ -38,7 +38,7 @@
             <span data-os="linux macos"
               >Linux and macOS: <code>unzip lineage-24.0-*.zip -d lineage-pepito</code>.</span
             >
-            You need about 6 GB free.
+            You need about 7 GB free, counting the zip itself.
           </li>
           <li>
             Open the <code>edl</code> folder inside it and run the converter, <code>ota2raw</code>, for your computer.
@@ -277,14 +277,21 @@ chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
           <summary>Connection trouble</summary>
           <div data-os="linux">
             <p>
-              <b>Linux:</b> if Connect fails to claim the interface, the <code>qcserial</code> driver has taken the
-              phone. Release it with:
+              <b>Linux:</b> if Connect reports "Access denied", the browser is not allowed to open the phone. Add a
+              udev rule, then unplug the phone and plug it back in:
+            </p>
+            <pre>echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="05c6", ATTR{idProduct}=="9008", TAG+="uaccess"' | sudo tee /etc/udev/rules.d/70-qualcomm-edl.rules
+sudo udevadm control --reload-rules</pre>
+            <p>
+              If Connect fails to claim the interface instead, the <code>qcserial</code> driver has taken the phone.
+              Release it with:
             </p>
             <pre>for d in /sys/bus/usb/drivers/qcserial/*-*; do echo "${d##*/}" | sudo tee /sys/bus/usb/drivers/qcserial/unbind; done</pre>
           </div>
           <p data-os="windows">
             <b>Windows:</b> the phone must use the WinUSB driver, not the Qualcomm 9008 serial driver. Zadig can
-            switch it.
+            switch it. The command-line <code>qdl</code> method needs the serial driver instead, so switch it back
+            if you change methods.
           </p>
           <p>
             <b>Nothing in the list after pressing Connect:</b> the phone is not in EDL mode, or the cable carries
@@ -300,7 +307,7 @@ chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
         <p>
           Copies every partition except your personal data to a folder on this computer: the stock firmware, the
           bootloader and the modem calibration that is unique to this phone. It is the only way back to stock, so do
-          it once before the first flash. It needs up to 9 GB of disk space.
+          it once before the first flash. It needs about 8 GB of disk space.
         </p>
         <div class="row">
           <button id="backup-button" type="button" disabled>Back up to a folder</button>
