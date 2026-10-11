@@ -4,7 +4,8 @@ Everything that worked on 23.2 carries over: calls, VoLTE, Wi-Fi calling, mobile
 
 ## New in this release
 
-- **One download per flavor.** The zip is both the update package and the first-install kit. For a first install over EDL, extract it and run the bundled `ota2raw` converter (Linux, macOS, Windows) to rebuild the flashable images, then flash with `qdl`. The zip's `README.md` has the steps.
+- **Install from your browser.** The [web flasher](https://solarkennedy.github.io/lineageos-pepito/flasher/) backs up and flashes the phone over USB from Chrome or Edge, with no tools to install. It is now the recommended way to do a first install; `qdl` on the command line still works.
+- **One download per flavor.** The zip is both the update package and the first-install kit. For a first install, extract it and run the bundled `ota2raw` converter (Linux, macOS, Windows) to rebuild the flashable images, then flash. The web flasher and the zip's `README.md` both have the steps.
 - **Bluetooth tethering** now works, alongside Wi-Fi hotspot and USB.
 - **Pepito Tweaks** descriptions rewritten in plain language. New on the GApps build: "Let Play services sleep" (off by default).
 - **"Auto-recover Emergency calls only"** stays available in Pepito Tweaks, off by default.
@@ -19,7 +20,7 @@ Everything that worked on 23.2 carries over: calls, VoLTE, Wi-Fi calling, mobile
 - Install with `adb sideload` from recovery. The 23.2 Updater does not offer 24.0 yet; a final 23.2 update will turn that on.
 - Take an EDL backup first if you don't have one.
 
-Coming from stock Android 8.1 is a first install over EDL and wipes `/data`.
+Coming from stock Android 8.1 is a first install (web flasher or `qdl`) and wipes `/data`.
 
 ## Known issues
 

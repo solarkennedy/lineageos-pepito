@@ -113,6 +113,9 @@ MAGISK_VERSION="v30.7"   # keep in sync with prebuilts/Magisk-*.apk
 # rsync'd to the build server at ~/.local/bin/qdl; override with QDL_BIN.
 QDL_BIN="${QDL_BIN:-$HOME/.local/bin/qdl}"
 QDL_SRC_URL="https://github.com/linux-msm/qdl"
+# The web flasher (docs/flasher, served by GitHub Pages from this branch). The
+# bundled README sends first-time installers there; qdl is the fallback.
+FLASHER_URL="https://solarkennedy.github.io/lineageos-pepito/flasher/"
 # Release key the build signed the OTA with (PRODUCT_OTA_PUBLIC_KEYS in
 # vendor/lineage-priv/keys/keys.mk); the repackaged zip is re-signed with it.
 # Path without the .pk8 / .x509.pem suffix.
@@ -163,8 +166,19 @@ $ROMTYPE build \`$TAG\` ($DEVICE), file \`$FILENAME\`. This one zip is two thing
    recovery. You do not need anything below.
 2. **A first-install kit** for a phone that is still on stock Android 8.1, or
    that won't boot: this README plus the \`edl/\` folder. It writes the boot,
-   recovery, system and vendor partitions over **Qualcomm EDL (9008)** with
-   \`qdl\`.
+   recovery, system and vendor partitions over **Qualcomm EDL (9008)**.
+
+**The easy way to do a first install is the web flasher:**
+
+> **$FLASHER_URL**
+
+Open it in Chrome or Edge. It walks you through everything on this page —
+converting the images, EDL mode, the backup and the flash — with no tools to
+install, and it reads the phone's own partition table instead of trusting an
+XML file, so the wrong-variant mistake described below cannot happen. Use it
+unless you have a reason not to. The rest of this README is the command-line
+route with \`qdl\`, for when you can't use a Chromium browser or want to script
+the install.
 
 The partition images are not in the zip twice. For a first install you run the
 included converter, \`ota2raw\`, once: it rebuilds the raw images \`qdl\` needs
@@ -276,6 +290,10 @@ Everywhere below, **PVG100E owners substitute** \`pvg100e_firehose.elf\` and
 
 ## Step 1 — Extract the zip and convert the images
 
+This step is the same for the web flasher and for the command line. After it,
+web flasher users go back to the page and point it at the \`edl\` folder;
+everything from step 2 on is the command-line route.
+
 Every command from here on is run **inside the \`edl\` folder**.
 
 **Linux**
@@ -330,7 +348,9 @@ tools (\`xcode-select --install\`).
    HS-USB QDLoader 9008 (COMx)** under *Ports*. Windows often has this driver
    already; if the phone shows up as an unknown \`QUSB_BULK\` device instead,
    install the Qualcomm (or Quectel) QDLoader USB driver. **No Zadig / WinUSB
-   swap** — qdl talks to the COM port directly. Note the COM number for step 3.
+   swap** for this command-line route — qdl talks to the COM port directly.
+   (The web flasher is the opposite: it needs WinUSB. Its page explains; don't
+   mix the two setups.) Note the COM number for step 3.
 
 Open a terminal (PowerShell is fine) in the \`edl\` folder for the rest.
 

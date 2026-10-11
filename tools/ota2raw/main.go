@@ -55,6 +55,7 @@ var interactive = func() bool {
 }()
 
 const (
+	flasherURL   = "https://solarkennedy.github.io/lineageos-pepito/flasher/"
 	blockSize    = 4096
 	manifestPath = "edl/manifest.json"
 	kitDir       = "edl"
@@ -191,7 +192,8 @@ func run() error {
 	}
 
 	fmt.Printf("\nDone. The images are in %s, next to the loaders and partition XMLs.\n"+
-		"Continue with \"Put the phone into EDL mode\" in the README.\n", outDir)
+		"Next: flash from your browser at %s\n"+
+		"(choose this folder when it asks for the images), or follow the qdl steps in the README.\n", outDir, flasherURL)
 	return nil
 }
 
