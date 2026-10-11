@@ -1,5 +1,72 @@
-# Changelog — LineageOS 23.2 for pepito (Palm PVG100)
+# Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
+## 20261011 (2026-10-11)
+
+### device/Mi8937
+- (first tagged in 20261011 — no prior anchor)
+
+### device/mithorium-common
+- (first tagged in 20261011 — no prior anchor)
+
+### kernel (msm8937)
+- (first tagged in 20261011 — no prior anchor)
+
+### frameworks/base
+- (first tagged in 20261011 — no prior anchor)
+
+### frameworks/native
+- (first tagged in 20261011 — no prior anchor)
+
+### frameworks/opt/telephony
+- (first tagged in 20261011 — no prior anchor)
+
+### vendor/lineage
+- (first tagged in 20261011 — no prior anchor)
+
+### lineage-sdk
+- (first tagged in 20261011 — no prior anchor)
+
+### LineageParts
+- (first tagged in 20261011 — no prior anchor)
+
+### Launcher3
+- (first tagged in 20261011 — no prior anchor)
+
+### recovery
+- (first tagged in 20261011 — no prior anchor)
+
+### Updater
+- (first tagged in 20261011 — no prior anchor)
+
+### hardware/interfaces
+- (first tagged in 20261011 — no prior anchor)
+
+### hardware/lineage/interfaces
+- (first tagged in 20261011 — no prior anchor)
+
+### system/bpfprogs
+- (first tagged in 20261011 — no prior anchor)
+
+### build/make
+- (first tagged in 20261011 — no prior anchor)
+
+### system/sepolicy
+- (first tagged in 20261011 — no prior anchor)
+
+### system/fs/fs_mgr
+- (first tagged in 20261011 — no prior anchor)
+
+### hardware/qcom-caf/bt
+- (first tagged in 20261011 — no prior anchor)
+
+### vendor/xiaomi (blobs)
+- (first tagged in 20261011 — no prior anchor)
+
+### PepitoLauncher2
+- (first tagged in 20261011 — no prior anchor)
+
+### landing (docs/scripts)
+- (first tagged in 20261011 — no prior anchor)
 ## 20260921 (2026-09-21)
 
 ### kernel (msm8937) (since pepito-23.2-20260915)
