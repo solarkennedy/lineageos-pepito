@@ -1,65 +1,29 @@
-# Release notes — pepito-23.2-r1
+First release of **LineageOS 24.0 (Android 17)** for the Palm PVG100 / PVG100E.
 
-First public release of LineageOS 23.2 (Android 16) for the Palm PVG100 (pepito).
+Everything that worked on 23.2 carries over: calls, VoLTE, Wi-Fi calling, mobile data, GPS, both cameras, all sensors, face unlock, wired Android Auto, tethering, encryption. SELinux is Enforcing. Android 17 itself looks almost the same as 16 on a screen this small; the changes are under the hood.
 
-Source is pinned at tag **`pepito-23.2-r1`** across every repo; the build tree is
-described by [`manifests/pepito.xml`](../manifests/pepito.xml).
+## New in this release
 
-## What works
+- **One download per flavor.** The zip is both the update package and the first-install kit. For a first install over EDL, extract it and run the bundled `ota2raw` converter (Linux, macOS, Windows) to rebuild the flashable images, then flash with `qdl`. The zip's `README.md` has the steps.
+- **Bluetooth tethering** now works, alongside Wi-Fi hotspot and USB.
+- **Pepito Tweaks** descriptions rewritten in plain language. New on the GApps build: "Let Play services sleep" (off by default).
+- **"Auto-recover Emergency calls only"** stays available in Pepito Tweaks, off by default.
 
-Telephony (SIM, LTE, VoLTE, calls, SMS), mobile data, in-call audio, Wi-Fi,
-Bluetooth (incl. hands-free calling), GPS, both cameras, all sensors, hardware
-video encode/decode, wired Android Auto, FBE encryption, hardware Gatekeeper,
-TEE-backed keys. SELinux is **Enforcing**.
+## Removed
 
-See the [README](../README.md) for the full table and the pepito extras
-(Face Unlock, Life Mode, PepitoLauncher2, QS volume slider, power-key recovery).
+- **eSIM manager (OpenEUICC).** The modem firmware refuses profile switching, so the app could never work.
 
-## Known limitations
+## Upgrading from 23.2
 
-- **Single-SIM.**
-- **The Enhanced 4G / VoLTE toggle is cosmetic.** VoLTE itself works; the 2017
-  modem speaks an older IMS interface (v01) than the Android 16 framework drives
-  (v02), so the Settings switch doesn't move it.
-- **Audio DSP calibration (ACDB) is not fully tuned** — audio works on all paths,
-  quality isn't final.
-- **Metadata encryption is not enabled** (file-based encryption is).
-- **Occasional carrier re-registration drop.** Data/voice can silently drop
-  registration and camp on a roaming partner instead of your home network,
-  showing a `!` on the status bar even though it was working moments earlier.
-  Seen both right after a fresh flash and spontaneously during normal use. One
-  Airplane Mode toggle forces re-registration and fixes it every time. Not yet
-  fully root-caused.
+- Your data is kept. Stay on the same flavor: vanilla to vanilla, GApps to GApps.
+- Install with `adb sideload` from recovery. The 23.2 Updater does not offer 24.0 yet; a final 23.2 update will turn that on.
+- Take an EDL backup first if you don't have one.
 
-## Flashing notes
+Coming from stock Android 8.1 is a first install over EDL and wipes `/data`.
 
-- **No Fastboot.** First install is over Qualcomm EDL; later updates are a normal
-  `adb sideload` in recovery. **Take a full EDL backup first** — see the
-  [README](../README.md#installation).
-- **Coming from stock wipes `/data`** (the switch to file-based encryption). An
-  in-place update over this build keeps `/data`.
-- **First flash from a Google-signed-in stock phone:** this release ships the
-  `config` (FRP) partition zeroed, so you land in setup cleanly instead of a
-  bogus "factory reset" prompt on every boot.
-- **One-time factory-reset prompt when upgrading from an early test build.** If
-  you flash this over a pepito build from before 2026-07-22, the boot Root-of-Trust
-  changes once and Android will ask to factory reset (it can't unwrap the old
-  `/data` keys). Wipe and set up again; every flash after that is stable and never
-  re-wipes. Fresh installs from stock are unaffected.
+## Known issues
 
-## For tinkerers
-
-- **qmux escape hatch:** the modem runs on the legacy IPC-Router path by default
-  on pepito. Override with `persist.vendor.qmux.enable` (`1`/`0`) if you need to
-  force it on or off; unset falls back to the per-variant default.
-- **Boot verification:** the device is Verified Boot 1.0. Boot images ship green
-  via a keyless fail-open graft (no signing key, fixed Root-of-Trust across
-  builds); see `scripts/boot-signing/`.
-- **Recovery adb runs as root** (physical-access + advanced-menu gated; `/data`
-  stays encrypted regardless).
-
-## Source
-
-All 13 repos, branches, and forks are listed in the
-[README source table](../README.md#source-repos). Vendor blobs are extracted from
-your own device with `device/xiaomi/Mi8937/extract-files.py`.
+- Bluetooth tethering is IPv4 only.
+- "Enable low-RAM mode" in Pepito Tweaks makes Android Auto report the phone as incompatible. Leave it off if you use Android Auto.
+- "Emergency calls only" can still stick after a weak-signal spell. Toggle airplane mode, or turn on the auto-recover option above.
+- Carried over from 23.2: single SIM only, and the VoLTE switch in Settings is cosmetic (VoLTE itself works).

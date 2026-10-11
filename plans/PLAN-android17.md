@@ -198,7 +198,9 @@ because "works on DUT via accumulated modem NV" is a known trap (WFC field4). Ad
 
 ## 6. Phase 5 — Productize 24.0
 
-- [ ] **Decide the emergency-only watchdog before the 24.0 release** (Kyle, 2026-10-07): revert it from
+- [x] **Decide the emergency-only watchdog before the 24.0 release** — **DECIDED 2026-10-11 (Kyle): keep it,
+      off by default** (already the case: `go_tweaks_settings.xml` `defaultValue="false"`; no code change).
+      Original item (Kyle, 2026-10-07): revert it from
       23.2 + 24 if the root cause is found first. Pieces: mithorium-common `143e994`, LineageParts
       `69219ab8`, the notification code carried in beacon commit `c0624c2`, and XiaomiParts'
       POST_NOTIFICATIONS (verify no other XiaomiParts notifications first).
