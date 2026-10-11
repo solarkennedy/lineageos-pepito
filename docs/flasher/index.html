@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Palm PVG100 flasher</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Palm PVG100 flasher</h1>
+        <p>
+          Backs up and flashes a Palm PVG100 or PVG100E over USB, straight from this page. The steps below install
+          LineageOS 24 (Android 17); other ROMs work the same way. It needs Chrome, Edge or another Chromium browser
+          on a desktop computer; Firefox and Safari cannot talk to USB devices.
+        </p>
+      </header>
+
+      <p id="unsupported" class="notice bad" hidden></p>
+      <p id="os-note" class="muted" hidden>
+        Showing instructions for <b id="os-name"></b>. <button id="os-all" type="button" class="link">Show all systems</button>
+      </p>
+
+      <section id="build-card">
+        <h2><span class="num">1</span> Get the ROM</h2>
+        <ol class="steps">
+          <li>
+            <a href="https://github.com/solarkennedy/lineageos-pepito/releases" target="_blank" rel="noopener"
+              >Download the LineageOS 24 zip</a
+            >
+            from the releases page: the file named <code>lineage-24.0-…​.zip</code> (over 1 GB). Pick the one with
+            <code>gapps</code> in its name if you want Google apps.
+          </li>
+          <li>
+            Extract the zip to a folder.
+            <span data-os="windows">Windows: right-click it and choose <b>Extract All</b>.</span>
+            <span data-os="linux macos"
+              >Linux and macOS: <code>unzip lineage-24.0-*.zip -d lineage-pepito</code>.</span
+            >
+            You need about 6 GB free.
+          </li>
+          <li>
+            Open the <code>edl</code> folder inside it and run the converter, <code>ota2raw</code>, for your computer.
+            It builds the images this page flashes and takes a minute or two.
+            <span data-os="windows">Windows: double-click <code>ota2raw-windows-x86_64.exe</code>.</span>
+            <span data-os="linux">Linux: run <code>./<span data-ota2raw="linux">ota2raw-linux-x86_64</span></code> in a terminal.</span>
+            <span data-os="macos">macOS: run <code>./<span data-ota2raw="macos">ota2raw-macos-arm64</span></code> in Terminal.</span>
+            The exact commands are under "Running the converter" below.
+          </li>
+          <li>Press the button below and choose that <code>edl</code> folder.</li>
+        </ol>
+        <div class="row">
+          <button id="folder-button" type="button" class="primary">Choose the ROM folder</button>
+          <input id="folder-input" type="file" webkitdirectory multiple hidden />
+          <span id="folder-name" class="muted"></span>
+        </div>
+        <table id="file-table" class="files" hidden></table>
+        <p id="build-problem" class="notice bad" hidden></p>
+        <label class="check"><input id="root-check" type="checkbox" disabled /> Install with root (Magisk boot image)</label>
+        <details>
+          <summary>Running the converter (ota2raw)</summary>
+          <p>
+            The zip is an update package: it holds the system in a compressed form that only a running phone can
+            install. <code>ota2raw</code> turns that into the plain images a first install needs, and checks each one
+            against a known checksum. It prints <code>verified</code> for each image.
+          </p>
+          <p>The <code>edl</code> folder has one converter per kind of computer. Run the one that matches yours.</p>
+          <div data-os="windows">
+            <p><b>Windows</b></p>
+            <p>
+              Double-click <code>ota2raw-windows-x86_64.exe</code>. Windows may warn that it is an unrecognised app,
+              because it is not code-signed: choose <b>More info</b>, then <b>Run anyway</b>. Wait for
+              <code>Done</code>.
+            </p>
+          </div>
+          <div data-os="linux">
+            <p><b>Linux</b> <span data-arch-note>(use <code>ota2raw-linux-arm64</code> on an ARM machine)</span></p>
+            <pre>cd lineage-pepito/edl
+chmod +x <span data-ota2raw="linux">ota2raw-linux-x86_64</span>
+./<span data-ota2raw="linux">ota2raw-linux-x86_64</span></pre>
+          </div>
+          <div data-os="macos">
+            <p><b>macOS</b> <span data-arch-note>(use <code>ota2raw-macos-x86_64</code> on an Intel Mac)</span></p>
+            <pre>cd lineage-pepito/edl
+xattr -dr com.apple.quarantine .
+chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
+./<span data-ota2raw="macos">ota2raw-macos-arm64</span></pre>
+            <p>The <code>xattr</code> line clears the quarantine flag macOS puts on downloaded programs.</p>
+          </div>
+          <p>
+            Afterwards the <code>edl</code> folder contains <code>boot.bin</code>, <code>recovery.bin</code>,
+            <code>system.bin</code> and <code>vendor.bin</code> next to the two loaders
+            (<code>pvg100_firehose.elf</code>, <code>pvg100e_firehose.elf</code>). Those are the files this page
+            reads. The other files in the folder are for the command-line method and are ignored here.
+          </p>
+        </details>
+        <details>
+          <summary>Other ROMs and stock firmware</summary>
+          <p>
+            Every known firmware for this phone, stock and third-party, is listed in the
+            <a
+              href="https://xdaforums.com/t/palm-pvg100-pepito-all-stock-firmware-revisions-custom-rom-history.4804223/"
+              target="_blank"
+              rel="noopener"
+              >XDA firmware thread</a
+            >.
+          </p>
+          <p>
+            This page can flash any of them, within what it writes. The folder you choose must contain
+            <code>boot.bin</code>, <code>recovery.bin</code>, <code>system.bin</code> and <code>vendor.bin</code>,
+              with exactly those names. Rename <code>.img</code> files if needed.
+          </p>
+          <p>
+            The images must be raw, not Android "sparse" images. This page refuses a sparse image; convert it first
+            with <code>simg2img</code>.
+          </p>
+          <p>
+            Only those four partitions are written, and <code>config</code> is cleared. A stock firmware package also
+            carries the bootloader, modem and other firmware; this page leaves those as they are. To put a phone fully
+            back to stock, restore your own backup with the command-line tool (see step 3).
+          </p>
+        </details>
+        <details>
+          <summary>Which download?</summary>
+          <p>Each release has two zips. Take one, not both:</p>
+          <ul>
+            <li>the plain one: LineageOS with no Google apps;</li>
+            <li>the one with <code>gapps</code> in its name: the same build with Google apps and the Play Store.</li>
+          </ul>
+          <p>
+            The same zip is also the update package. A phone that already runs this LineageOS does not need this page:
+            its built-in Updater installs the zip directly.
+          </p>
+          <p>
+            To check the download is intact, fetch the matching <code>.sha256sum</code> file into the same folder and
+            run <code>sha256sum -c lineage-24.0-*.zip.sha256sum</code>.
+          </p>
+        </details>
+        <details>
+          <summary>About the root option</summary>
+          <p>
+            Ticking the box installs <code>boot-magisk.bin</code>, this build's boot image with Magisk already patched
+            in. Root is optional and unsupported.
+          </p>
+          <ul>
+            <li>
+              You cannot make your own by patching <code>boot.bin</code> in the Magisk app. The result is unsigned and
+              the phone hangs at the PALM logo.
+            </li>
+            <li>After the first boot, install the Magisk app and let it finish its "additional setup".</li>
+            <li>
+              Never use Magisk's <b>Direct Install</b> to update. It breaks the boot image, and the only fix is to
+              flash again from this page.
+            </li>
+            <li>Switching between rooted and unrooted later keeps your data: flash again with the box changed.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section id="phone-card">
+        <h2><span class="num">2</span> Connect the phone</h2>
+        <ol class="steps">
+          <li>
+            Put the phone in EDL mode, using one of the ways listed below. The screen goes black and stays black.
+          </li>
+          <li>Check the model below. PVG100 is the US model; PVG100E is the international one.</li>
+          <li>Press Connect and pick <b>QUSB_BULK</b> or <b>QHSUSB__BULK</b> from the list.</li>
+        </ol>
+        <div class="row">
+          <label
+            >Model
+            <select id="variant-select">
+              <option value="pvg100" selected>PVG100</option>
+              <option value="pvg100e">PVG100E</option>
+            </select>
+          </label>
+          <button id="connect-button" type="button" class="primary" disabled>Connect and check</button>
+          <button id="reboot-button" type="button" disabled>Restart the phone</button>
+        </div>
+        <p id="connect-needs" class="needs" hidden></p>
+        <p id="connect-result" class="notice" hidden></p>
+        <details>
+          <summary>Ways to get into EDL mode</summary>
+          <p>
+            EDL (emergency download, also called 9008 mode) is a mode built into the phone's chip. The screen is black
+            and the phone looks dead; that is normal. There are three ways in.
+          </p>
+          <p><b>1. From recovery</b></p>
+          <p>Hold the power button down through three restarts, until "Entering Recovery Mode" appears. Then:</p>
+          <ul>
+            <li>
+              <b>LineageOS recovery:</b> choose <b>Advanced</b>, then <b>Reboot to EDL</b>. The menu works by touch or
+              with the power button.
+            </li>
+            <li>
+              <b>Stock recovery:</b> choose <b>Emergency Download Mode</b> in the main menu. Use the power button: a
+              short press moves down, a long press selects.
+            </li>
+          </ul>
+          <div class="shots">
+            <figure>
+              <img src="img/entering-recovery.jpg" alt="Phone screen showing Entering Recovery Mode" loading="lazy" />
+              <figcaption>Keep holding until you see this</figcaption>
+            </figure>
+            <figure>
+              <img src="img/recovery-reboot-edl.jpg" alt="Recovery menu with Reboot to EDL highlighted" loading="lazy" />
+              <figcaption>Advanced, then Reboot to EDL</figcaption>
+            </figure>
+          </div>
+          <p>From stock recovery:</p>
+          <div class="video">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/s_fnORcszFg"
+              title="Entering EDL mode on a Palm PVG100 from stock recovery"
+              loading="lazy"
+              allow="encrypted-media; picture-in-picture; fullscreen"
+            ></iframe>
+          </div>
+          <p>
+            <a href="https://youtube.com/shorts/s_fnORcszFg" target="_blank" rel="noopener">Watch the video on YouTube</a>
+          </p>
+          <p><b>2. With adb</b></p>
+          <ol>
+            <li>Open Settings, About phone, and tap <b>Build number</b> seven times to unlock Developer options.</li>
+            <li>In Developer options, turn on <b>USB debugging</b>.</li>
+            <li>Plug the phone into the computer and accept the "Allow USB debugging?" prompt on the phone.</li>
+            <li>Run <code>adb reboot edl</code>.</li>
+          </ol>
+          <p>
+            <code>adb</code> comes with Google's
+            <a href="https://developer.android.com/tools/releases/platform-tools" target="_blank" rel="noopener"
+              >platform-tools</a
+            >. It works from Android and from recovery.
+          </p>
+          <p><b>3. With an EDL cable</b></p>
+          <p>
+            An EDL cable (also sold as a "deep flash cable") is a USB cable with a button on it. It works on a phone
+            that will not start at all.
+          </p>
+          <ol>
+            <li>Turn the phone off: hold the power button for about 15 seconds.</li>
+            <li>Hold the cable's button down and plug the cable into the phone.</li>
+            <li>Let go of the button after a few seconds.</li>
+          </ol>
+          <div class="video">
+            <iframe
+              src="https://www.youtube-nocookie.com/embed/8CjnYgh2rwg"
+              title="Entering EDL mode on a Palm PVG100 with an EDL cable"
+              loading="lazy"
+              allow="encrypted-media; picture-in-picture; fullscreen"
+            ></iframe>
+          </div>
+          <p>
+            <a href="https://youtube.com/shorts/8CjnYgh2rwg" target="_blank" rel="noopener">Watch the video on YouTube</a>
+          </p>
+          <p><b>Checking it worked</b></p>
+          <ul>
+            <li data-os="linux">Linux: <code>lsusb</code> lists a Qualcomm device with ID <code>05c6:9008</code>.</li>
+            <li data-os="macos">macOS: System Information, USB, shows <code>QUSB_BULK</code>.</li>
+            <li data-os="windows">Windows: Device Manager shows a Qualcomm 9008 device or <code>QUSB_BULK</code>.</li>
+          </ul>
+          <p><b>Getting out again</b></p>
+          <p>
+            Press "Restart the phone" once connected, or hold the power button for about 15 seconds. Leaving EDL without
+            flashing changes nothing on the phone.
+          </p>
+          <p>Use a plain USB cable plugged straight into the computer. Hubs and magnetic adapters drop connections.</p>
+        </details>
+        <details>
+          <summary>Which model do I have?</summary>
+          <ul>
+            <li><b>PVG100</b>: the US (Verizon) model.</li>
+            <li><b>PVG100E</b>: the international (Vodafone) model.</li>
+          </ul>
+          <p>
+            The model number is printed on the label on the back of the phone and on the box. Stock Android shows it
+            under Settings, System, About phone, Model.
+          </p>
+          <p>
+            Both models take the same build, but each only accepts its own loader and they lay out storage
+            differently. If you pick the wrong one the phone refuses the loader, or this page stops at the partition
+            check. Either way nothing is written.
+          </p>
+        </details>
+        <details>
+          <summary>Connection trouble</summary>
+          <div data-os="linux">
+            <p>
+              <b>Linux:</b> if Connect fails to claim the interface, the <code>qcserial</code> driver has taken the
+              phone. Release it with:
+            </p>
+            <pre>for d in /sys/bus/usb/drivers/qcserial/*-*; do echo "${d##*/}" | sudo tee /sys/bus/usb/drivers/qcserial/unbind; done</pre>
+          </div>
+          <p data-os="windows">
+            <b>Windows:</b> the phone must use the WinUSB driver, not the Qualcomm 9008 serial driver. Zadig can
+            switch it.
+          </p>
+          <p>
+            <b>Nothing in the list after pressing Connect:</b> the phone is not in EDL mode, or the cable carries
+            power only. Check with the steps under "Ways to get into EDL mode".
+          </p>
+          <p>If a step fails part-way, hold power for about 15 seconds, re-enter EDL mode and reload this page.</p>
+        </details>
+        <dl id="phone-info" hidden></dl>
+      </section>
+
+      <section id="backup-card">
+        <h2><span class="num">3</span> Back up the phone</h2>
+        <p>
+          Copies every partition except your personal data to a folder on this computer: the stock firmware, the
+          bootloader and the modem calibration that is unique to this phone. It is the only way back to stock, so do
+          it once before the first flash. It needs up to 9 GB of disk space.
+        </p>
+        <div class="row">
+          <button id="backup-button" type="button" disabled>Back up to a folder</button>
+          <span id="backup-note" class="muted"></span>
+        </div>
+        <p id="backup-needs" class="needs" hidden></p>
+        <p id="backup-result" class="notice" hidden></p>
+        <div id="backup-progress" hidden>
+          <progress id="backup-bar" max="1" value="0"></progress>
+          <p id="backup-text" class="progress-text"></p>
+        </div>
+        <details>
+          <summary>What is in a backup, and how to restore one</summary>
+          <p>
+            The backup is a new folder named <code>palm-&lt;model&gt;-backup-&lt;date&gt;</code> inside the folder you
+            choose. It contains:
+          </p>
+          <ul>
+            <li>one <code>.bin</code> file per partition, about 50 in all;</li>
+            <li><code>gpt-lun0.bin</code>, the partition table;</li>
+            <li><code>rawprogram_restore.xml</code>, the list a restore tool needs to put each file back.</li>
+          </ul>
+          <p>
+            Some of these files exist nowhere else. <code>modemst1</code>, <code>modemst2</code>, <code>fsg</code>,
+            <code>persist</code>, <code>sec</code> and <code>traceability</code> hold this phone's own radio
+            calibration and identity. Without them a phone cannot be returned to working stock firmware.
+          </p>
+          <p>
+            Your personal data (<code>userdata</code>) is left out. It is most of the storage, it is encrypted, and it
+            cannot be read back on a phone that has been reflashed.
+          </p>
+          <p>
+            <b>Restoring</b> is not done from this page, because it rewrites the bootloader and modem. Use the
+            <a href="https://github.com/linux-msm/qdl" target="_blank" rel="noopener">qdl</a> command-line tool with
+            the phone in EDL mode, from the folder that holds the loader:
+          </p>
+          <pre>qdl --storage emmc --include palm-pvg100-backup-DATE pvg100_firehose.elf palm-pvg100-backup-DATE/rawprogram_restore.xml</pre>
+          <p>On a PVG100E use <code>pvg100e_firehose.elf</code>.</p>
+          <p>Copy the finished folder somewhere safe.</p>
+        </details>
+      </section>
+
+      <section id="flash-card">
+        <h2><span class="num">4</span> Flash</h2>
+        <p>Writes <b>boot</b>, <b>recovery</b>, <b>system</b> and <b>vendor</b>, and clears <b>config</b>.</p>
+        <table id="plan-table" class="files" hidden></table>
+        <div class="row">
+          <button id="flash-button" type="button" class="primary" disabled>Flash</button>
+          <span class="muted">The phone restarts when the flash finishes.</span>
+        </div>
+        <p id="flash-needs" class="needs" hidden></p>
+        <div id="progress" hidden>
+          <progress id="progress-bar" max="1" value="0"></progress>
+          <p id="progress-text" class="progress-text"></p>
+        </div>
+        <p id="result" class="notice" hidden></p>
+        <details>
+          <summary>If the flash or the first boot goes wrong</summary>
+          <p>The first boot takes a few minutes. Leave the phone alone while the boot logo animates.</p>
+          <p>
+            <b>Black screen for more than five minutes:</b> put the phone back into EDL mode and flash again. Flashing
+            twice does no harm.
+          </p>
+          <p>
+            <b>The flash stopped part-way:</b> leave the phone connected and press Flash again. If the page lost the
+            connection, hold power for about 15 seconds, re-enter EDL mode, reload this page and choose the folder
+            again.
+          </p>
+        </details>
+      </section>
+
+      <section id="erase-card">
+        <h2><span class="num">5</span> Erase data <span class="muted">(optional)</span></h2>
+        <p>
+          Only needed after a major change: coming from stock firmware, switching to a different ROM, or a major
+          version upgrade. Skip it when updating to a newer build of the ROM already on the phone. <b>It erases
+          everything on the phone.</b>
+        </p>
+        <ol class="steps">
+          <li>
+            Hold the power button down through three restarts, until "Entering Recovery Mode" appears. The recovery
+            menu works by touch.
+          </li>
+          <li>Choose <b>Factory reset</b>, then <b>Format data</b>.</li>
+          <li>Choose <b>Reboot system now</b>.</li>
+        </ol>
+        <div class="shots">
+          <figure>
+            <img src="img/entering-recovery.jpg" alt="Phone screen showing Entering Recovery Mode" loading="lazy" />
+            <figcaption>Keep holding until you see this</figcaption>
+          </figure>
+          <figure>
+            <img src="img/recovery-format-data.jpg" alt="Recovery menu with Format data highlighted" loading="lazy" />
+            <figcaption>Factory reset, then Format data</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section>
+        <h2>Log <button id="copy-log" type="button" class="small">Copy</button></h2>
+        <pre id="log" aria-live="polite"></pre>
+      </section>
+    </main>
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

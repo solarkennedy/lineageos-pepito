@@ -74,7 +74,7 @@ PepitoLauncher2: the interlocking three-column drawer with the lens-zoom effect 
 ## Installation
 
 > The PVG100 has **no Fastboot**.
-> First, take a FULL EDL backup (step 3 below; or the manual [XDA guide](https://xdaforums.com/t/guide-using-edl-to-backup-a-palm-pvg-100-pepito-on-linux.4719549/))!
+> First, take a FULL EDL backup (the web flasher's step 3, or step 3 of the command-line procedure below; or the manual [XDA guide](https://xdaforums.com/t/guide-using-edl-to-backup-a-palm-pvg-100-pepito-on-linux.4719549/))!
 > There is a risk that your phone is not like mine and has a different partition layout.
 
 DO NOT FLASH UNLESS YOU HAVE A BACKUP FIRST!!!
@@ -85,7 +85,24 @@ partition XML for each; check the model number on the back of your phone and use
 the matching one. **Flashing with the other variant's XML writes over the wrong
 partitions, including stock firmware** — the zip's `README.md` spells this out.
 
-### Procedure
+### Web flasher (start here)
+
+**<https://solarkennedy.github.io/lineageos-pepito/flasher/>**
+
+A web page that backs up and flashes the phone over USB from Chrome or Edge, with no tools to install. It walks through the whole install:
+
+1. download the release zip, extract it and run the bundled converter (`ota2raw`);
+2. put the phone in EDL mode and connect, choosing PVG100 or PVG100E;
+3. back up every partition except your data to a folder on your computer;
+4. flash.
+
+It is harder to get wrong than the command line. It uses neither partition XML: it reads the phone's own partition table, refuses to continue unless that matches the model you chose, and can only write boot, recovery, system, vendor and `config`. Backups come out in the same format as the command-line tools below, so they restore the same way.
+
+Limits: it needs a Chromium browser on a desktop computer; on Windows the phone must be switched to the WinUSB driver (the page explains); and it cannot *restore* a backup, which stays a command-line job. Source: [`docs/flasher`](docs/flasher).
+
+### Command-line procedure
+
+The same install with `qdl`, for when the web flasher is not an option, and for restoring a backup.
 
 Works from **Linux, macOS or Windows**. There is one download per flavor: the same zip is the update package (Updater, `adb sideload`) and, with the `edl/` folder inside it, the first-install kit used here. Its own `README.md` has the same steps in more detail, plus troubleshooting.
 PVG100E owners: use `pvg100e_firehose.elf` and `rawprogram0.pvg100e.xml` wherever the PVG100 names appear below.
