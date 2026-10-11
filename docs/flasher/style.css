@@ -292,31 +292,6 @@ button.link {
   font-size: 0.9rem;
 }
 
-.shots {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin: 0.75rem 0;
-}
-
-.shots figure {
-  margin: 0;
-  width: 10rem;
-}
-
-.shots img {
-  display: block;
-  width: 100%;
-  border-radius: 8px;
-  border: 1px solid var(--line);
-}
-
-.shots figcaption {
-  margin-top: 0.3rem;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
 .video {
   width: 15rem;
   max-width: 100%;
