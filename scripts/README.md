@@ -64,6 +64,18 @@ differently-signed image and getting the "decryption unsuccessful" prompt. So:
 - The flip side: **changing the key on an existing install forces a wipe.** It is
   a pre-ship decision, not a later tweak.
 
-> **lineageos24.0 branch:** the release scripts (`release-all.sh`, `release-remotely.sh`,
-> `release.sh`, `gen-changelog.sh`, `gen-ota-json.py`) are still the 23.2 versions and are
-> not ported yet. They still call `build-lineage23-remotely.sh` and use the 23.2 paths and tags.
+## Release flow (lineageos24.0)
+
+One zip per flavor is published. It is the OTA zip from the build with our README
+and the EDL flashing kit (`edl/`) packed in and the whole file re-signed, so the
+same download updates a phone (Updater, `adb sideload`) and first-installs one
+over EDL. The raw partition images are not shipped: users rebuild them from the
+OTA payload with `ota2raw` ([`tools/ota2raw`](../tools/ota2raw), a small Go
+program cross-compiled for Linux, macOS and Windows and bundled in `edl/`).
+
+| Script | What it does |
+|---|---|
+| `release-all.sh` | from netbook4: changelog, build + release each flavor, tag every repo |
+| `release-remotely.sh` | from netbook4: run `release.sh` on the build server for one flavor, fetch + commit `pepito.json` |
+| `release.sh` | on the build server: stage the kit, add it to the zip, re-sign (`signapk -w`, release key), verify (signature, payload unchanged, `ota2raw` output byte-identical to the build's target-files images), upload, update the Updater feed. `--package-only` stops after verify, for a test flash |
+| `gen-changelog.sh`, `gen-ota-json.py` | changelog across the pepito repos; the `pepito.json` Updater feed |

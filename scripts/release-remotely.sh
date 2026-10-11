@@ -1,9 +1,8 @@
 #!/bin/bash
 # release-remotely.sh — run scripts/release.sh on the build server instead of
-# locally: the zip and flash-staging/ are already there after a remote build
-# (build-lineage24-remotely.sh fetches them down too, but release.sh's own
-# xz compression of the EDL bundle is the slow part — better to run it on
-# the build server's CPU than the laptop's).
+# locally: the zip, flash-staging/, the build's target-files images, the release
+# key and signapk are all there after a remote build, and release.sh needs every
+# one of them to pack the EDL kit into the zip and re-sign it.
 #
 # The remote landing-repo mirror has no .git (build-lineage24-remotely.sh
 # excludes it), so release.sh degrades gracefully there: it still cuts the
@@ -25,9 +24,9 @@
 # they don't collide — --gapps just picks which one to release when both are
 # present.
 #
-#   ./scripts/release-remotely.sh                # full: OTA zip + JSON + EDL bundle
+#   ./scripts/release-remotely.sh                # the zip (OTA + EDL kit) + JSON feed
 #   ./scripts/release-remotely.sh --gapps        # the gapps variant
-#   ./scripts/release-remotely.sh --edl-only     # EDL bundle only (no OTA)
+#   ./scripts/release-remotely.sh --no-feed      # publish the zip, leave the Updater feed alone
 #   ./scripts/release-remotely.sh --notes-file ~/Projects/lineageos-pepito-24/.release-notes.md
 #
 # --notes-file FILE sets the GitHub release body (must live under the landing
@@ -41,14 +40,14 @@ set -euo pipefail
 GAPPS=false
 NOTES_FILE=""
 TAG_OVERRIDE=""
-EDL_ONLY=false          # default: full release (OTA zip + JSON feed + EDL bundle)
+NO_FEED=false           # default: full release (the zip + the JSON Updater feed)
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --gapps) GAPPS=true; shift ;;
         --notes-file) NOTES_FILE="$2"; shift 2 ;;
         --tag) TAG_OVERRIDE="$2"; shift 2 ;;
-        --edl-only) EDL_ONLY=true; shift ;;
-        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE, --tag TAG, --edl-only)" >&2; exit 1 ;;
+        --no-feed) NO_FEED=true; shift ;;
+        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE, --tag TAG, --no-feed)" >&2; exit 1 ;;
     esac
 done
 
@@ -80,8 +79,8 @@ fi
 
 RSYNC_COMMON=(-aP --human-readable)
 
-# Same sleep-inhibit pattern as build-lineage24-remotely.sh: the xz pass over
-# the EDL bundle alone can run several minutes, and Stellaris16 idle-suspends
+# Same sleep-inhibit pattern as build-lineage24-remotely.sh: the upload of a
+# ~1.5 GB zip can run several minutes, and Stellaris16 idle-suspends
 # regardless of ssh/rsync traffic.
 ssh -tt "$TARGET" -- systemd-inhibit --what=sleep:idle --who=release-remotely \
     --why='remote release in progress' sleep 3600 >/dev/null 2>&1 &
@@ -157,9 +156,9 @@ echo "Using remote zip: $ZIP"
 # — acceptable for a single-user LAN build server. `export` (not a var prefix)
 # so they cover the whole `cd && release.sh` chain; %q-quote the token for
 # safe transport.
-# Mode: by default this is a FULL release — release.sh publishes the OTA zip,
-# the pepito.json OTA feed, and the EDL bundle. --edl-only drops the OTA zip and
-# JSON (EDL bundle only). In full mode release.sh writes pepito.json on the
+# Mode: by default this is a FULL release — release.sh publishes the zip and
+# the pepito.json OTA feed. --no-feed publishes the zip only, so the Updater
+# does not offer it. In full mode release.sh writes pepito.json on the
 # server (which has no .git), so we fetch it back and commit it here afterward.
 #
 # --notes-file: optional path to the release-body markdown. It must live under
@@ -184,16 +183,16 @@ fi
 TAG_ARG=""
 [[ -n "$TAG_OVERRIDE" ]] && TAG_ARG="--tag $(printf '%q' "$TAG_OVERRIDE")"
 
-EDL_ONLY_ARG=""
-$EDL_ONLY && EDL_ONLY_ARG="--edl-only"
+NO_FEED_ARG=""
+$NO_FEED && NO_FEED_ARG="--no-feed"
 
 ssh "$TARGET" -- \
-    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh $EDL_ONLY_ARG --yes $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"
+    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh $NO_FEED_ARG --yes $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"
 
 # In full mode release.sh regenerated pepito.json on the server, where the
 # landing mirror has no .git. Fetch it back and commit it from here, where the
 # real clone lives, so the Updater feed the device polls is actually updated.
-if ! $EDL_ONLY; then
+if ! $NO_FEED; then
     echo "==> Fetching regenerated OTA JSON from the server..."
     rsync "${RSYNC_COMMON[@]}" --include='*.json' --exclude='*' \
         "$TARGET:$LANDING_ROOT"/ "$LANDING_ROOT"/ | tail -20

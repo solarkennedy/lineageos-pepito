@@ -7,8 +7,9 @@
 #      CHANGELOG.md to the landing repo, and stage it as the release body
 #      (.release-notes.md) — or use a hand-written body via --notes-file;
 #   2. build the VANILLA variant remotely (git-driven: build-lineage24-remotely.sh
-#      syncs what is pushed), then release it (OTA zip + pepito.json v2 Updater
-#      feed + EDL bundle) with that changelog as the release body;
+#      syncs what is pushed), then release it with that changelog as the
+#      release body: ONE zip (the OTA, with our README and the EDL flashing kit
+#      packed in and re-signed — see release.sh) + the pepito.json v2 Updater feed;
 #   3. GAPPS variant the same way — only with --gapps, until 24.0 has a gapps
 #      build (vendor/pepito-gapps is not in the 24.0 manifest yet);
 #      (vanilla is UNOFFICIAL, gapps is SNAPSHOT — the two OTA channels in the
@@ -162,8 +163,10 @@ else
 fi
 
 # --- 2. vanilla: build then release -----------------------------------------
-if variant_released 'pepito-EDL\.tar\.xz$'; then
-    say "Vanilla EDL already on release $VERSION — skipping build + release"
+# "Released" = the zip's .sha256sum sidecar is on the release: release.sh uploads
+# it after the zip, so its presence means the variant's upload completed.
+if variant_released '-Mi8937\.zip\.sha256sum$'; then
+    say "Vanilla zip already on release $VERSION — skipping build + release"
 else
     say "Building VANILLA remotely"
     "$SCRIPT_DIR/build-lineage24-remotely.sh"
@@ -174,8 +177,8 @@ fi
 # --- 3. gapps: build then release -------------------------------------------
 if ! $DO_GAPPS; then
     say "GApps variant skipped (pass --gapps once 24.0 has a gapps build)"
-elif variant_released 'pepito-gapps-EDL\.tar\.xz$'; then
-    say "GApps EDL already on release $VERSION — skipping build + release"
+elif variant_released '-Mi8937_gapps\.zip\.sha256sum$'; then
+    say "GApps zip already on release $VERSION — skipping build + release"
 else
     say "Building GAPPS remotely"
     "$SCRIPT_DIR/build-lineage24-remotely.sh" --gapps

@@ -80,29 +80,40 @@ PepitoLauncher2: the interlocking three-column drawer with the lens-zoom effect 
 DO NOT FLASH UNLESS YOU HAVE A BACKUP FIRST!!!
 
 **Both hardware variants are supported** — the US **PVG100** and the international
-**PVG100E** (same images, different partition layout). The EDL package contains a
+**PVG100E** (same images, different partition layout). The release zip contains a
 partition XML for each; check the model number on the back of your phone and use
 the matching one. **Flashing with the other variant's XML writes over the wrong
-partitions, including stock firmware** — the bundle's `README.md` spells this out.
+partitions, including stock firmware** — the zip's `README.md` spells this out.
 
 ### Procedure
 
-Works from **Linux, macOS or Windows**. The EDL package's own `README.md` has the same steps in more detail, plus troubleshooting.
+Works from **Linux, macOS or Windows**. There is one download per flavor: the same zip is the update package (Updater, `adb sideload`) and, with the `edl/` folder inside it, the first-install kit used here. Its own `README.md` has the same steps in more detail, plus troubleshooting.
 PVG100E owners: use `pvg100e_firehose.elf` and `rawprogram0.pvg100e.xml` wherever the PVG100 names appear below.
 
-| | Flashing | Backup | Status |
-|---|---|---|---|
-| **Linux** (x86-64) | bundled `./qdl` | bundled `./qdl-dump.sh` | tested every release |
-| **macOS** | [upstream `qdl`](https://github.com/linux-msm/qdl/releases) | bundled `./qdl-dump.sh` | same USB path as Linux, but no run reported yet — [tell us](https://github.com/solarkennedy/lineageos-pepito/issues) |
-| **Windows** | [upstream `qdl.exe`](https://github.com/linux-msm/qdl/releases) | bundled `fh_dump.py` | user-reported working, Windows 11 |
+| | Converting | Flashing | Backup | Status |
+|---|---|---|---|---|
+| **Linux** (x86-64) | bundled `ota2raw` | bundled `./qdl` | bundled `./qdl-dump.sh` | tested every release |
+| **macOS** | bundled `ota2raw` | [upstream `qdl`](https://github.com/linux-msm/qdl/releases) | bundled `./qdl-dump.sh` | same USB path as Linux, but no run reported yet — [tell us](https://github.com/solarkennedy/lineageos-pepito/issues) |
+| **Windows** | bundled `ota2raw` | [upstream `qdl.exe`](https://github.com/linux-msm/qdl/releases) | bundled `fh_dump.py` | flashing user-reported working, Windows 11 |
 
-#### 1. Get the package and the tools
+#### 1. Get the zip, convert the images, get the tools
 
-Download the EDL package from the [releases page](https://github.com/solarkennedy/lineageos-pepito/releases) — **vanilla** or **GApps**, not both — and extract it (`tar xf …tar.xz`; on Windows use 7-Zip, twice).
+Download the zip from the [releases page](https://github.com/solarkennedy/lineageos-pepito/releases) — **vanilla** or **GApps**, not both — and extract it. Everything from here on happens in its `edl` folder.
 
-- **Linux:** nothing else to install beyond `xz-utils` and `python3`. The bundled `./qdl` is x86-64; on other CPUs grab `qdl-binary-ubuntu-*` from the upstream releases. USB access needs `sudo` or a udev rule for `05c6:9008`.
+The zip stores the system as an update payload, not as flashable images. Run the bundled converter, [`ota2raw`](tools/ota2raw), once: it rebuilds `boot.bin`, `recovery.bin`, `system.bin`, `vendor.bin` and `config.bin` next to the loaders and checks each against a checksum recorded at release time. Allow about 8 GB of disk.
+
+```sh
+# Linux (ota2raw-linux-arm64 on ARM)
+cd edl && chmod +x ota2raw-linux-x86_64 && ./ota2raw-linux-x86_64
+# macOS (ota2raw-macos-x86_64 on Intel)
+cd edl && xattr -dr com.apple.quarantine . && chmod +x ota2raw-macos-arm64 && ./ota2raw-macos-arm64
+```
+
+On Windows, double-click `ota2raw-windows-x86_64.exe` in the `edl` folder (unsigned: *More info* → *Run anyway*).
+
+- **Linux:** nothing else to install beyond `python3`. The bundled `./qdl` is x86-64; on other CPUs grab `qdl-binary-ubuntu-*` from the upstream releases. USB access needs `sudo` or a udev rule for `05c6:9008`.
 - **macOS:** download `qdl-binary-macos-arm64-*.zip` (Apple Silicon) or `-intel-` from the [qdl releases](https://github.com/linux-msm/qdl/releases) (v2.8+), copy its `qdl` over the bundled Linux one, and clear the download quarantine: `xattr -dr com.apple.quarantine ./qdl`. No `sudo`, no driver. `python3` comes with `xcode-select --install`.
-- **Windows:** unzip `qdl-binary-windows-x64-*.zip` (v2.8+) from the [qdl releases](https://github.com/linux-msm/qdl/releases) into the extracted folder. For the backup, install [Python 3](https://www.python.org/downloads/) and run `pip install pyserial`. With the phone in EDL, Device Manager must list **Qualcomm HS-USB QDLoader 9008 (COMx)** under *Ports* — install the Qualcomm/Quectel QDLoader driver if it shows as `QUSB_BULK` instead. **No Zadig.**
+- **Windows:** unzip `qdl-binary-windows-x64-*.zip` (v2.8+) from the [qdl releases](https://github.com/linux-msm/qdl/releases) into the `edl` folder. For the backup, install [Python 3](https://www.python.org/downloads/) and run `pip install pyserial`. With the phone in EDL, Device Manager must list **Qualcomm HS-USB QDLoader 9008 (COMx)** under *Ports* — install the Qualcomm/Quectel QDLoader driver if it shows as `QUSB_BULK` instead. **No Zadig.**
 
 #### 2. Enter EDL
 
@@ -138,7 +149,7 @@ sudo ./qdl --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100
 .\qdl.exe --storage emmc --allow-missing pvg100_firehose.elf rawprogram0.pvg100.xml     # Windows
 ```
 
-This writes boot, recovery, system and vendor only — never the bootloader, modem or other firmware. On Windows one `failed to read sector data` line at the start is harmless.
+This writes boot, recovery, system, vendor and the small `config` partition only — never the bootloader, modem or other firmware. On Windows one `failed to read sector data` line at the start is harmless.
 
 #### 5. First boot
 

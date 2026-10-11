@@ -29,7 +29,7 @@
 # must name the exact version shipped and link upstream.
 #
 # Wired into prepare-flash.sh (runs on every build), rsynced back by
-# build-lineage24-remotely.sh, and shipped in the EDL bundle by release.sh.
+# build-lineage24-remotely.sh, and shipped in the release zip's edl/ folder by release.sh.
 
 set -euo pipefail
 

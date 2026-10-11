@@ -15,6 +15,9 @@
 *.jks
 *.keystore
 vendor/
+# ...except ota2raw's vendored Go dependency (source only; the build server's
+# Go proxy setting points at an unreachable internal host).
+!/tools/ota2raw/vendor/
 
 # Editor/OS noise
 *.swp
