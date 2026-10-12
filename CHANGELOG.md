@@ -1,6 +1,6 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
-## 20261011 (2026-10-11)
+## 20261011 (2026-10-12)
 
 ### device/Mi8937
 - (first tagged in 20261011 — no prior anchor)
