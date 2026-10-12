@@ -235,8 +235,7 @@ fi
 # errors, we just skip it — the release itself has already succeeded.
 XDA_POST="$LANDING_ROOT/.release-xda-post.txt"
 RELEASES_URL="https://github.com/solarkennedy/lineageos-pepito/releases"
-# Still the 23.2 (A16) thread; swap in a 24.0 thread URL if one is opened.
-XDA_THREAD_URL="https://xdaforums.com/t/rom-unofficial-a16-lineageos-23-2-for-the-palm-pvg100.4795985/#"
+XDA_THREAD_URL="https://xdaforums.com/t/rom-unofficial-a17-lineageos-24-0-for-the-palm-pvg100-pvg100e-pepito.4804726/"
 if command -v claude >/dev/null 2>&1; then
     say "Generating XDA changelog post (Claude)"
     read -r -d '' XDA_PROMPT <<PROMPT || true
@@ -277,5 +276,9 @@ PROMPT
 else
     echo "note: 'claude' not on PATH — skipping XDA post generation." >&2
 fi
+
+# Always shown, even when no post was generated: the thread is updated by hand.
+say "REMINDER: post the $VERSION update to the XDA thread (and bump 'Latest build' in its first post):"
+echo "  $XDA_THREAD_URL"
 
 say "Done: $VERSION released ($($DO_GAPPS && echo "vanilla + gapps" || echo vanilla)). Releases: https://github.com/solarkennedy/lineageos-pepito/releases"
