@@ -196,8 +196,10 @@ if $DO_TAG; then
     TAGGER_NAME="$(git -C "$LANDING_ROOT" config user.name)"
     TAGGER_EMAIL="$(git -C "$LANDING_ROOT" config user.email)"
     MSG="LineageOS 24.0 for pepito (Palm PVG100) — $VERSION"
-    ssh "$TARGET" -- bash -s -- "$REMOTE_TREE" "$TAG" "$MSG" "$TAGGER_NAME" "$TAGGER_EMAIL" \
-        "${TREE_TAG_PATHS[@]}" <<'REMOTE'
+    # ssh joins its arguments with spaces and the remote shell parses the result
+    # again, so each one is %q-quoted: the message has spaces and parentheses.
+    REMOTE_ARGS="$(printf '%q ' "$REMOTE_TREE" "$TAG" "$MSG" "$TAGGER_NAME" "$TAGGER_EMAIL" "${TREE_TAG_PATHS[@]}")"
+    ssh "$TARGET" -- "bash -s -- $REMOTE_ARGS" <<'REMOTE'
 set -e
 tree=$1; tag=$2; msg=$3; name=$4; email=$5; shift 5
 for p in "$@"; do
