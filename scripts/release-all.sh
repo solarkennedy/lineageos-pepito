@@ -110,7 +110,7 @@ variant_released() {
         "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$TOKEN"); \
          $GH_REMOTE_BIN release view $(printf '%q' "$VERSION") --repo $(printf '%q' "$REPO") \
          --json assets --jq '.assets[].name' 2>/dev/null" 2>/dev/null)" || return 1
-    grep -qE "$1" <<<"$names"
+    grep -qE -e "$1" <<<"$names"   # -e: the patterns start with "-"
 }
 
 # --- 0. date is chosen ONCE, here ------------------------------------------
