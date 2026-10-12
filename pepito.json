@@ -1,108 +1,19 @@
-{
-  "response": [
-    {
-      "datetime": 1790020289,
-      "filename": "lineage-23.2-20260921-SNAPSHOT-Mi8937_gapps.zip",
-      "id": "638af7ffc75d98ec4565a608e2fd604f153868ebc91f52d5a232a324399b9166",
-      "sha256": "638af7ffc75d98ec4565a608e2fd604f153868ebc91f52d5a232a324399b9166",
-      "romtype": "SNAPSHOT",
-      "size": 1604465125,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260921/lineage-23.2-20260921-SNAPSHOT-Mi8937_gapps.zip",
-      "version": "23.2",
-      "changelog": "### kernel (msm8937)\n- misc: bhy: stop the MCU monitor from racing system suspend\n\n### device/Mi8937\n- Mi8937: bhy-wrapper: Q14 quaternion resolution; note the dead hals.conf\n- Mi8937: wrap the BHy HAL to fix its advertised range/resolution\n- Mi8937: create the BHy calibration dir from a system_ext rc\n- Mi8937: point the Updater's \"Show changelog\" at the pepito changelog\n\n### device/mithorium-common\n- XiaomiParts: add emergency-only recovery watchdog (experimental, off)\n- mithorium-common: load the BHy HAL through its pepito wrapper\n- mithorium-common: drop the BHy calibration mkdir from init.target.rc\n- thermal: pepito skin config - SEVERE at 60 C, not the Xiaomi 50 C\n- thermal: arm trip_point_0 when a zone has no trip_point_1\n\n### LineageParts\n- GoTweaks: add emergency-only recovery toggle (experimental, off)",
-      "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20260921"
-    },
-    {
-      "datetime": 1790017096,
-      "filename": "lineage-23.2-20260921-UNOFFICIAL-Mi8937.zip",
-      "id": "606c58d92da67fe41985b697bc2d2a81879e5c747fc1a46aaeb9d9abcd084525",
-      "sha256": "606c58d92da67fe41985b697bc2d2a81879e5c747fc1a46aaeb9d9abcd084525",
-      "romtype": "UNOFFICIAL",
-      "size": 1164621870,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260921/lineage-23.2-20260921-UNOFFICIAL-Mi8937.zip",
-      "version": "23.2",
-      "changelog": "### kernel (msm8937)\n- misc: bhy: stop the MCU monitor from racing system suspend\n\n### device/Mi8937\n- Mi8937: bhy-wrapper: Q14 quaternion resolution; note the dead hals.conf\n- Mi8937: wrap the BHy HAL to fix its advertised range/resolution\n- Mi8937: create the BHy calibration dir from a system_ext rc\n- Mi8937: point the Updater's \"Show changelog\" at the pepito changelog\n\n### device/mithorium-common\n- XiaomiParts: add emergency-only recovery watchdog (experimental, off)\n- mithorium-common: load the BHy HAL through its pepito wrapper\n- mithorium-common: drop the BHy calibration mkdir from init.target.rc\n- thermal: pepito skin config - SEVERE at 60 C, not the Xiaomi 50 C\n- thermal: arm trip_point_0 when a zone has no trip_point_1\n\n### LineageParts\n- GoTweaks: add emergency-only recovery toggle (experimental, off)",
-      "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20260921"
-    },
-    {
-      "datetime": 1789497508,
-      "filename": "lineage-23.2-20260915-SNAPSHOT-Mi8937_gapps.zip",
-      "id": "4190fd0154d6edaa2c60b7dcce0deb2444e6756049144d100e9ad791f78027fc",
-      "sha256": "4190fd0154d6edaa2c60b7dcce0deb2444e6756049144d100e9ad791f78027fc",
-      "romtype": "SNAPSHOT",
-      "size": 1605019640,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260915/lineage-23.2-20260915-SNAPSHOT-Mi8937_gapps.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1789493985,
-      "filename": "lineage-23.2-20260915-UNOFFICIAL-Mi8937.zip",
-      "id": "9fd5e0b57cb6c9796a501cd545bf401952d5c76d983a6a314765ec5eed914b4d",
-      "sha256": "9fd5e0b57cb6c9796a501cd545bf401952d5c76d983a6a314765ec5eed914b4d",
-      "romtype": "UNOFFICIAL",
-      "size": 1164486379,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260915/lineage-23.2-20260915-UNOFFICIAL-Mi8937.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1789071683,
-      "filename": "lineage-23.2-20260910-SNAPSHOT-Mi8937_gapps.zip",
-      "id": "cc2c0b2f24d9fbe979ceb94388cbb4d7644411b54e08607b0ba05e6ab27f190b",
-      "sha256": "cc2c0b2f24d9fbe979ceb94388cbb4d7644411b54e08607b0ba05e6ab27f190b",
-      "romtype": "SNAPSHOT",
-      "size": 1604695297,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260910/lineage-23.2-20260910-SNAPSHOT-Mi8937_gapps.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1789069138,
-      "filename": "lineage-23.2-20260910-UNOFFICIAL-Mi8937.zip",
-      "id": "076d0aa4292a47fc4039a7fddf292aaab9345df0671e1da9d2336a1218626647",
-      "sha256": "076d0aa4292a47fc4039a7fddf292aaab9345df0671e1da9d2336a1218626647",
-      "romtype": "UNOFFICIAL",
-      "size": 1164427190,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260910/lineage-23.2-20260910-UNOFFICIAL-Mi8937.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1788735700,
-      "filename": "lineage-23.2-20260906-SNAPSHOT-Mi8937_gapps.zip",
-      "id": "98cb76ef3bed75e376423fe31fc73db7c3c10bd15b8de0651e4c9355ab126459",
-      "sha256": "98cb76ef3bed75e376423fe31fc73db7c3c10bd15b8de0651e4c9355ab126459",
-      "romtype": "SNAPSHOT",
-      "size": 1604848851,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260906/lineage-23.2-20260906-SNAPSHOT-Mi8937_gapps.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1788732774,
-      "filename": "lineage-23.2-20260906-UNOFFICIAL-Mi8937.zip",
-      "id": "7711d7f226bddcb38d425db6998175ffccc0123389c0fc7a1e99f8a71baa19fa",
-      "sha256": "7711d7f226bddcb38d425db6998175ffccc0123389c0fc7a1e99f8a71baa19fa",
-      "romtype": "UNOFFICIAL",
-      "size": 1164315040,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260906/lineage-23.2-20260906-UNOFFICIAL-Mi8937.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1788490398,
-      "filename": "lineage-23.2-20260903-SNAPSHOT-Mi8937_gapps.zip",
-      "id": "441141297de8617f7526cb9c4e7f513b0f38d36c2681b875ffc609242455e086",
-      "sha256": "441141297de8617f7526cb9c4e7f513b0f38d36c2681b875ffc609242455e086",
-      "romtype": "SNAPSHOT",
-      "size": 1604878419,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260903/lineage-23.2-20260903-SNAPSHOT-Mi8937_gapps.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1788488957,
-      "filename": "lineage-23.2-20260903-UNOFFICIAL-Mi8937.zip",
-      "id": "11339fa2d221ad3cffcd81230825e54ddbf4a58d48a719d5af4b9dd7a7e2e41b",
-      "sha256": "11339fa2d221ad3cffcd81230825e54ddbf4a58d48a719d5af4b9dd7a7e2e41b",
-      "romtype": "UNOFFICIAL",
-      "size": 1164387831,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260903/lineage-23.2-20260903-UNOFFICIAL-Mi8937.zip",
-      "version": "23.2"
-    }
-  ]
-}
+[
+  {
+    "datetime": 1791763517,
+    "type": "UNOFFICIAL",
+    "version": "24.0",
+    "files": [
+      {
+        "filename": "lineage-24.0-20261011-UNOFFICIAL-Mi8937.zip",
+        "sha256": "0d9cc355beff77c6a0bf437209ee86a7a175064e9a50ceaf48c176559bd4935b",
+        "size": 1232799737,
+        "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261011/lineage-24.0-20261011-UNOFFICIAL-Mi8937.zip",
+        "os_sdk_level": 37,
+        "os_patch_level": "2026-10-01",
+        "ota_property_files": "metadata:69:352,metadata.pb:489:258"
+      }
+    ],
+    "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261011"
+  }
+]
