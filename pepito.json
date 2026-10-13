@@ -1,6 +1,18 @@
 {
   "response": [
     {
+      "datetime": 1791885288,
+      "filename": "lineage-23.2-20261013-UNOFFICIAL-Mi8937.zip",
+      "id": "20da53bea4269cdc8f450d89e9728e06ff04144f37cea3bf3df53a5b4f6f51d4",
+      "sha256": "20da53bea4269cdc8f450d89e9728e06ff04144f37cea3bf3df53a5b4f6f51d4",
+      "romtype": "UNOFFICIAL",
+      "size": 1164507752,
+      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261013/lineage-23.2-20261013-UNOFFICIAL-Mi8937.zip",
+      "version": "23.2",
+      "changelog": "### device/Mi8937\n- Mi8937: Updater offers LineageOS 24.0 (final 23.2 release)\n- Revert \"BeaconNotifier: ordinary-UID app that posts BLE-beacon notifications\"\n- Revert \"BeaconNotifier: sign with releasekey so its channels are actually editable\"\n- BeaconNotifier: sign with releasekey so its channels are actually editable\n- BeaconNotifier: ordinary-UID app that posts BLE-beacon notifications\n\n### device/mithorium-common\n- mithorium-common: ship the gpu_perf_floor default from system_ext\n- parts: remove the experimental BLE-beacon notifications\n- parts: beacon de-dupe per (txid, seq), 12-hour window\n- parts: beacon - delete the per-severity channels older builds created\n- parts: beacon format v1 final - drop the status/version byte\n- parts: beacon notifications are silent by design\n- Revert \"parts: beacon notifications posted by BeaconNotifier, not from the system UID\"\n- parts: beacon notifications posted by BeaconNotifier, not from the system UID\n- parts: beacon solo mode (persist.gotweak.ble_beacon_solo) - own batch scan\n- mithorium: privapp allowlist for XiaomiParts' DUMP (fixes bootloop)\n- parts: beacon scanner only joins a batch scan somebody else is running\n- Revert \"parts: beacon scanner becomes an opportunistic batch client (zero radio cost)\"\n- parts: beacon scanner becomes an opportunistic batch client (zero radio cost)\n- parts: beacon batch report delay 5 -> 20 min to match Find My Device's flush\n- parts: beacon scanner rides the shared batch scan instead of its own regular scan\n- parts: BLE-beacon push notifications (BeaconNotifyController)\n\n### LineageParts\n- Pepito Tweaks: rewrite setting descriptions in plain language\n- Pepito Tweaks: remove the BLE-beacon notifications toggle\n- Pepito Tweaks: send the beacon poke as the current user\n- Pepito Tweaks: \"Beacon notifications\" toggle (persist.gotweak.ble_beacon)\n\n### Updater\n- Updater: also read LineageOS API-v2 feeds",
+      "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261013"
+    },
+    {
       "datetime": 1790020289,
       "filename": "lineage-23.2-20260921-SNAPSHOT-Mi8937_gapps.zip",
       "id": "638af7ffc75d98ec4565a608e2fd604f153868ebc91f52d5a232a324399b9166",
@@ -92,16 +104,6 @@
       "romtype": "SNAPSHOT",
       "size": 1604878419,
       "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260903/lineage-23.2-20260903-SNAPSHOT-Mi8937_gapps.zip",
-      "version": "23.2"
-    },
-    {
-      "datetime": 1788488957,
-      "filename": "lineage-23.2-20260903-UNOFFICIAL-Mi8937.zip",
-      "id": "11339fa2d221ad3cffcd81230825e54ddbf4a58d48a719d5af4b9dd7a7e2e41b",
-      "sha256": "11339fa2d221ad3cffcd81230825e54ddbf4a58d48a719d5af4b9dd7a7e2e41b",
-      "romtype": "UNOFFICIAL",
-      "size": 1164387831,
-      "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20260903/lineage-23.2-20260903-UNOFFICIAL-Mi8937.zip",
       "version": "23.2"
     }
   ]
