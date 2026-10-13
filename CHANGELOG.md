@@ -1,5 +1,70 @@
 # Changelog — LineageOS 23.2 for pepito (Palm PVG100)
 
+## 20261013 (2026-10-13)
+
+### device/Mi8937 (since pepito-23.2-20260921)
+- Mi8937: Updater offers LineageOS 24.0 (final 23.2 release)
+- Revert "BeaconNotifier: ordinary-UID app that posts BLE-beacon notifications"
+- Revert "BeaconNotifier: sign with releasekey so its channels are actually editable"
+- BeaconNotifier: sign with releasekey so its channels are actually editable
+- BeaconNotifier: ordinary-UID app that posts BLE-beacon notifications
+
+### device/mithorium-common (since pepito-23.2-20260921)
+- mithorium-common: ship the gpu_perf_floor default from system_ext
+- parts: remove the experimental BLE-beacon notifications
+- parts: beacon de-dupe per (txid, seq), 12-hour window
+- parts: beacon - delete the per-severity channels older builds created
+- parts: beacon format v1 final - drop the status/version byte
+- parts: beacon notifications are silent by design
+- Revert "parts: beacon notifications posted by BeaconNotifier, not from the system UID"
+- parts: beacon notifications posted by BeaconNotifier, not from the system UID
+- parts: beacon solo mode (persist.gotweak.ble_beacon_solo) - own batch scan
+- mithorium: privapp allowlist for XiaomiParts' DUMP (fixes bootloop)
+- parts: beacon scanner only joins a batch scan somebody else is running
+- Revert "parts: beacon scanner becomes an opportunistic batch client (zero radio cost)"
+- parts: beacon scanner becomes an opportunistic batch client (zero radio cost)
+- parts: beacon batch report delay 5 -> 20 min to match Find My Device's flush
+- parts: beacon scanner rides the shared batch scan instead of its own regular scan
+- parts: BLE-beacon push notifications (BeaconNotifyController)
+
+### build/make
+- (first tagged in 20261013 — no prior anchor)
+
+### LineageParts (since pepito-23.2-20260921)
+- Pepito Tweaks: rewrite setting descriptions in plain language
+- Pepito Tweaks: remove the BLE-beacon notifications toggle
+- Pepito Tweaks: send the beacon poke as the current user
+- Pepito Tweaks: "Beacon notifications" toggle (persist.gotweak.ble_beacon)
+
+### Launcher3
+- (first tagged in 20261013 — no prior anchor)
+
+### Updater (since pepito-23.2-20260921)
+- Updater: also read LineageOS API-v2 feeds
+
+### hardware/lineage/interfaces
+- (first tagged in 20261013 — no prior anchor)
+
+### landing (docs/scripts) (since pepito-23.2-20260921)
+- changelog: 20261012
+- A17 plan: fs_mgr linear_lookup fix ported
+- A17 plan: 10-08 bench results — Gold dirty flash, 23.2 Updater v2 feed, Gold cell ESR
+- A17 plan: tethering results — hotspot + BT PAN IPv4 pass, BT PAN IPv6 open
+- A17 plan: USB tethering over LTE passes; correct 23.2 tethering history
+- A17 plan: TODO silence recovery fs_mgr linear_lookup error
+- A17 plan: tethering — cellular upstream and BT PAN untested on 23.2 too
+- A17 plan: tethering = hotspot + Bluetooth PAN + USB, SIM-gated
+- A17 plan: decide the emergency watchdog before the 24.0 release
+- A17 plan: correct the strict-JSON note (24.0 Updater ignores unknown keys)
+- A17 plan: one v2 feed; 23.2 Updater reads v2 (6dd23de)
+- A17 plan: upgrade path = final 23.2 release with major upgrades + dual feed
+- manifest: carry hardware/lineage/interfaces (new fork; 3 load-bearing commits were netbook-only)
+- A17 plan: first pepito 24.0 build green
+- A17 plan: kernel + device repos rebased to pepito-24
+- gen-changelog: skip the pepito-23.2-pre24 rebase-anchor tag when finding the last release
+- A17 plan: freeze done, PIF graft dropped
+- manifest: carry build/make (pepito-debloat) + Launcher3 (pepito-taskbar) forks; A17 plan: stock 24.0 build green
+- docs: optional microG add-on zip (one-time release microg-addon-1); build: memory preflight
 ## 20261012 (2026-10-13)
 
 ### device/Mi8937 (since pepito-23.2-20260921)
