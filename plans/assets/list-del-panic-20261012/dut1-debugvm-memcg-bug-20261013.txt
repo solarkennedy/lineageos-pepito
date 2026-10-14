@@ -1,0 +1,81 @@
+09:30:27.848856 [   29.756894] servicemanager: Caller(pid=1020,uid=1041,sid=u:r:audioserver:s0) Could not find android.hardware.audio.effect.IFactory/default in the VINTF manifest. No alternative instances declared in VINTF.
+09:30:27.849210 [   29.756917] init: Control message: Processed ctl.start for 'vendor.sensors.qti' from pid: 1029 (start vendor.sensors.qti)
+09:30:27.849325 [   29.772302] servicemanager: Caller(pid=1020,uid=1041,sid=u:r:audioserver:s0) Could not find android.hardware.audio.core.IModule/default in the VINTF manifest. No alternative instances declared in VINTF.
+09:30:27.869280 [   29.784141] page:ffffffbf01a756c0 count:1 mapcount:1 mapping:ffffffc08439d461 index:0x2127
+09:30:27.869564 [   29.784150] flags: 0x80034(uptodate|lru|active|swapbacked)
+09:30:28.332610 [   29.784157] raw: 0000000000080034 ffffffbf01ade108 ffffffc04ebcc810 ffffffc08439d461
+09:30:28.332918 [   29.784161] raw: 0000000000002127 0000000000000000 0000000100000000 0000000000000000
+09:30:28.332995 [   29.784163] page dumped because: VM_BUG_ON_PAGE(PageLRU(page) && !lrucare)
+09:30:28.333066 [   29.784169] page allocated via order 0, migratetype Movable, gfp_mask 0x6200ca(GFP_HIGHUSER_MOVABLE), pid 995, ts 29784117798 ns
+09:30:28.333135 [   29.784181]  prep_new_page+0x16c/0x198
+09:30:28.333201 [   29.784185]  get_page_from_freelist+0xd64/0xe70
+09:30:28.375720 [   29.784189]  __alloc_pages_nodemask+0x17c/0x1038
+09:30:28.376010 [   29.784194]  mcopy_atomic+0x20c/0x66c
+09:30:28.376104 [   29.784199]  userfaultfd_ioctl+0x4b4/0x15bc
+09:30:28.376189 [   29.784203]  do_vfs_ioctl+0x6e4/0xf8c
+09:30:28.376271 [   29.784206]  __arm64_sys_ioctl+0x70/0x98
+09:30:28.376351 [   29.784211]  el0_svc_common+0x94/0x160
+09:30:28.376431 [   29.784215]  el0_svc_handler+0x64/0x7c
+09:30:28.376568 [   29.784218]  el0_svc+0x8/0x4c0
+09:30:28.376651 [   29.784245] ------------[ cut here ]------------
+09:30:28.376731 [   29.784248] kernel BUG at mm/memcontrol.c:6104!
+09:30:28.418670 [   29.784255] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP
+09:30:28.418888 [   29.784259] Modules linked in:
+09:30:28.418942 [   29.784264] Process HeapTaskDaemon (pid: 995, stack limit = 0x0000000059fdfdd8)
+09:30:28.418988 [   29.784270] CPU: 3 PID: 995 Comm: HeapTaskDaemon Tainted: G        W         4.19.325-cip135-st19-perf-00002-gcdbfe31dac58 #4
+09:30:28.419032 [   29.784272] Hardware name: Qualcomm Technologies, Inc. MSM8940-PMI8950 Palm PVG100 (DT)
+09:30:28.419076 [   29.784276] pstate: 60400005 (nZCv daif +PAN -UAO)
+09:30:28.419120 [   29.784281] pc : mem_cgroup_commit_charge+0x210/0x214
+09:30:28.462452 [   29.784285] lr : mem_cgroup_commit_charge+0x210/0x214
+09:30:28.462767 [   29.784286] sp : ffffff8019cabc00
+09:30:28.462822 [   29.784288] x29: ffffff8019cabc00 x28: ffffffc0923e9880 
+09:30:28.462867 [   29.784292] x27: 0000000000000000 x26: ffffffbf01a756c0 
+09:30:28.462910 [   29.784296] x25: ffffffc084457ea0 x24: 0000000002127000 
+09:30:28.462953 [   29.784299] x23: 0000000000000001 x22: ffffffc072fe8000 
+09:30:28.462996 [   29.784302] x21: 0000000000000000 x20: ffffffc084971000 
+09:30:28.463039 [   29.784306] x19: ffffffbf01a756c0 x18: 00000000000bd4a8 
+09:30:28.463083 [   29.784309] x17: 00000000000bd4a8 x16: 0000000000000000 
+09:30:28.504946 [   29.784312] x15: ffffff80127ee000 x14: 0000000000000012 
+09:30:28.505186 [   29.784316] x13: 0000000000000004 x12: 0000000000000000 
+09:30:28.505289 [   29.784319] x11: 0000000000000001 x10: 0000000000000007 
+09:30:28.505339 [   29.784322] x9 : fe30606c6ac99400 x8 : fe30606c6ac99400 
+09:30:28.505383 [   29.784326] x7 : 0000000000000000 x6 : ffffffc0b3742b7a 
+09:30:28.505426 [   29.784329] x5 : 0000000000000000 x4 : 0000000000000000 
+09:30:28.505529 [   29.784332] x3 : 0000000000003063 x2 : 0000000000000002 
+09:30:28.505614 [   29.784335] x1 : 0000000000000000 x0 : 0000000000000012 
+09:30:28.548103 [   29.784339] Call trace:
+09:30:28.548356 [   29.784343]  mem_cgroup_commit_charge+0x210/0x214
+09:30:28.548413 [   29.784346]  mcopy_atomic+0x3b0/0x66c
+09:30:28.548509 [   29.784350]  userfaultfd_ioctl+0x4b4/0x15bc
+09:30:28.548564 [   29.784353]  do_vfs_ioctl+0x6e4/0xf8c
+09:30:28.548623 [   29.784355]  __arm64_sys_ioctl+0x70/0x98
+09:30:28.548693 [   29.784359]  el0_svc_common+0x94/0x160
+09:30:28.548750 [   29.784362]  el0_svc_handler+0x64/0x7c
+09:30:28.548795 [   29.784365]  el0_svc+0x8/0x4c0
+09:30:28.548838 [   29.784371] Code: f000e661 911eb821 aa1303e0 97ff2d3d (d4210000) 
+09:30:28.548882 [   29.784374] ---[ end trace c9755a9514011277 ]---
+09:30:28.591740 [   29.791620] init: Control message: Could not find 'lineage.hardware.radio.config@1.0::IRadioConfig/default' for ctl.interface_start from pid: 510 (/system/system_ext/bin/hwservicemanager)
+09:30:28.591996 [   29.791627] page:ffffffbf01a7a440 count:1 mapcount:1 mapping:ffffffc08439d461 index:0x214e
+09:30:28.592052 [   29.792692] init: Service 'vendor-sensor-sh' (pid 1018) exited with status 0 oneshot service took 0.388000 seconds in background
+09:30:28.633944 [   29.792717] init: Sending SIGKILL to service 'vendor-sensor-sh' (pid 1018) process group...
+09:30:28.634245 [   29.793140] libprocessgroup: Removed cgroup /sys/fs/cgroup/system/uid_0/pid_1018
+09:30:28.634336 [   29.801321] init: Command 'chmod 0755 /system/bin/ip' action=boot (/vendor/etc/init/hw/init.qcom.rc:146) took 0ms and failed: fchmodat() failed: Read-only file system
+09:30:28.634414 [   29.815792] flags: 0x80034(uptodate|lru|active|swapbacked)
+09:30:28.634534 [   29.820666] Kernel panic - not syncing: Fatal exception
+09:30:28.634591 [   29.820673] SMP: stopping secondary CPUs
+09:30:28.634636 [   29.820690] CPU1: stopping
+09:30:28.676985 [   29.820697] CPU: 1 PID: 0 Comm: swapper/1 Tainted: G      D W         4.19.325-cip135-st19-perf-00002-gcdbfe31dac58 #4
+09:30:28.677294 [   29.820699] Hardware name: Qualcomm Technologies, Inc. MSM8940-PMI8950 Palm PVG100 (DT)
+09:30:28.677388 [   29.820703] pstate: a0400005 (NzCv daif +PAN -UAO)
+09:30:28.677502 [   29.820713] pc : lpm_cpuidle_enter+0x4c8/0x500
+09:30:28.677585 [   29.820716] lr : lpm_cpuidle_enter+0x46c/0x500
+09:30:28.677660 [   29.820718] sp : ffffff8012cdbe70
+09:30:28.677720 [   29.820720] x29: ffffff8012cdbe70 x28: ffffff801240e2a8 
+09:30:28.720068 [   29.820724] x27: ffffffc0be9dad70 x26: ffffffc0b28add00 
+09:30:28.720300 [   29.820728] x25: 0000000000005699 x24: 0000000000000000 
+09:30:28.720356 [   29.820731] x23: ffffff801253f000 x22: ffffff80122efdd0 
+09:30:28.720401 [   29.820734] x21: ffffffc09340e080 x20: ffffffc093fc0c80 
+09:30:28.720444 [   29.820738] x19: 0000000000000000 x18: 00000000000000bc 
+09:30:28.720537 [   29.820741] x17: 0000000000000000 x16: 0000000005f5e100 
+09:30:28.720582 [   29.820744] x15: 000000000000007b x14: 0000000000000000 
+09:30:28.720626 [   29.820747] x13: 00000000000015b2 x12: 0000000000000018 

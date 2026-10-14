@@ -1,0 +1,126 @@
+10:48:15.376454 [ 4009.525787] load.sh (4690): drop_caches: 2
+10:48:25.696584 [ 4019.845568] stress-dev.sh (4636): drop_caches: 3
+10:48:33.350598 [ 4027.496490] healthd: battery l=8 v=3514 t=55.0 h=3 st=3 c=-536648 fc=522000 cc=45 chg=u
+10:48:34.870661 [ 4029.028690] load.sh (4690): drop_caches: 2
+10:48:44.219083 [ 4038.362207] oom_reaper: reaped process 4363 (chbox:googleapp), now anon-rss:0kB, file-rss:0kB, shmem-rss:764kB
+10:48:46.059364 [ 4040.214856] load.sh (4690): drop_caches: 2
+10:48:54.775257 [ 4048.920438] healthd: battery l=8 v=3512 t=54.5 h=3 st=3 c=-531002 fc=522000 cc=45 chg=u
+10:48:56.647095 [ 4050.805307] load.sh (4690): drop_caches: 2
+10:49:05.063070 [ 4059.217147] load.sh (4690): drop_caches: 2
+10:49:07.702426 [ 4061.852377] stress-dev.sh (4636): drop_caches: 3
+10:49:14.858336 [ 4068.992202] servicemanager: Caller(pid=29925,uid=10119,sid=u:r:untrusted_app_34:s0:c119,c256,c512,c768) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+10:49:15.727124 [ 4069.871407] [I]BHY<bhy_store_sensor_conf>< 2802>sensor: 1, enable: 5
+10:49:15.758175 [ 4069.903265] alloc_contig_range: 7 callbacks suppressed
+10:49:15.758444 [ 4069.903271] alloc_contig_range: [ff060, ff068) PFNs busy
+10:49:15.806285 [ 4069.963530] alloc_contig_range: [ff070, ff078) PFNs busy
+10:49:18.846081 [ 4072.996178] load.sh (4690): drop_caches: 2
+10:49:22.730868 [ 4076.875819] healthd: battery l=6 v=3503 t=55.0 h=3 st=3 c=-552822 fc=522000 cc=45 chg=u
+10:49:24.906833 [ 4079.036048] servicemanager: Caller(pid=32515,uid=10119,sid=u:r:untrusted_app_34:s0:c119,c256,c512,c768) Could not find android.hardware.graphics.allocator.IAllocator/default in the VINTF manifest. No alternative instances declared in VINTF.
+10:49:25.586651 [ 4079.712070] alloc_contig_range: [ff050, ff058) PFNs busy
+10:49:25.586882 [ 4079.721770] [I]BHY<bhy_store_sensor_conf>< 2802>sensor: 1, enable: 5
+10:49:25.586941 [ 4079.731970] alloc_contig_range: [ff068, ff070) PFNs busy
+10:49:30.866447 [ 4085.020527] load.sh (4690): drop_caches: 2
+10:49:41.970453 [ 4096.126588] load.sh (4690): drop_caches: 2
+10:49:49.649285 [ 4103.802846] stress-dev.sh (4636): drop_caches: 3
+10:49:51.521441 [ 4105.665181] legacy_msm_pm_qos_update_request: update request 100
+10:49:51.521772 [ 4105.665217] msm_pm_qos_add_request: add request
+10:49:51.647186 [ 4105.760217] msm_csid_init: CSID_VERSION = 0x30040002
+10:49:51.647553 [ 4105.760741] msm_csid 1b30000.qcom,csid: Linked as a consumer to regulator.13
+10:49:51.647675 [ 4105.776329] msm_csid_irq CSID0_IRQ_STATUS_ADDR = 0x800
+10:49:51.647776 [ 4105.785642] MSM-CPP cpp_init_hardware:1012 CPP HW Version: 0x40030002
+10:49:51.647870 [ 4105.785701] MSM-CPP cpp_init_hardware:1030 stream_cnt:0
+10:49:51.647967 [ 4105.797988] qcom,camera 1b0c000.qcom,cci:qcom,camera@0: Linked as a consumer to regulator.32
+10:49:51.673038 [ 4105.801165] qcom,camera 1b0c000.qcom,cci:qcom,camera@0: Linked as a consumer to regulator.17
+10:49:51.673341 [ 4105.809572] qcom,camera 1b0c000.qcom,cci:qcom,camera@0: Linked as a consumer to regulator.29
+10:49:51.689047 [ 4105.847024] msm_cci_init:1453: hw_version = 0x10020004
+10:49:51.731107 [ 4105.865240] platform 1b0c000.qcom,cci:qcom,actuator@0: Linked as a consumer to regulator.29
+10:49:51.731327 [ 4105.868722] legacy_msm_pm_qos_update_request: update request -1
+10:49:51.731380 [ 4105.874212] msm_pm_qos_add_request: add request
+10:49:51.939219 [ 4106.085745] [I]BHY<bhy_store_sensor_conf>< 2802>sensor: 1, enable: 5
+10:49:52.922118 [ 4107.030236] msm_csid 1b30000.qcom,csid: Dropping the link to regulator.13
+10:49:52.922352 [ 4107.031584] platform 1b0c000.qcom,cci:qcom,actuator@0: Dropping the link to regulator.29
+10:49:52.922408 [ 4107.052736] qcom,camera 1b0c000.qcom,cci:qcom,camera@0: Dropping the link to regulator.17
+10:49:52.922452 [ 4107.057854] qcom,camera 1b0c000.qcom,cci:qcom,camera@0: Dropping the link to regulator.32
+10:49:52.922545 [ 4107.062420] qcom,camera 1b0c000.qcom,cci:qcom,camera@0: Dropping the link to regulator.29
+10:49:54.775966 [ 4108.920077] healthd: battery l=6 v=3469 t=54.7 h=3 st=3 c=-672908 fc=522000 cc=45 chg=u
+10:49:58.392195 [ 4112.548524] load.sh (4690): drop_caches: 2
+10:50:08.935290 [ 4123.088182] load.sh (4690): drop_caches: 2
+10:50:15.103887 [ 4129.247336] healthd: battery l=5 v=3469 t=54.7 h=3 st=3 c=-672908 fc=522000 cc=45 chg=u
+10:50:18.464383 [ 4132.613960] load.sh (4690): drop_caches: 2
+10:50:19.496611 [ 4133.630983] binder: 1256:21206 ioctl 400c620e 769e0d6d8c returned -11
+10:50:19.497254 [ 4133.641293] binder: 1256:21206 ioctl 400c620e 769e0d6d8c returned -11
+10:50:19.946542 [ 4134.072018] binder_cleanup_transaction: 2 callbacks suppressed
+10:50:19.946767 [ 4134.072027] binder: undelivered transaction 1500638, process died.
+10:50:19.946819 [ 4134.078921] binder: undelivered transaction 1500579, process died.
+10:50:19.946866 [ 4134.092560] [I]BHY<bhy_store_sensor_conf>< 2802>sensor: 1, enable: 5
+10:50:26.298272 [ 4140.443546] load.sh (4690): drop_caches: 2
+10:50:31.529902 [ 4145.676772] stress-dev.sh (4636): drop_caches: 3
+10:50:39.565823 [ 4153.686344] list_del corruption, ffffffbf0210a448->next is LIST_POISON1 (dead000000000100)
+10:50:39.566101 [ 4153.686433] ------------[ cut here ]------------
+10:50:39.566166 [ 4153.693494] kernel BUG at lib/list_debug.c:55!
+10:50:39.566219 [ 4153.698269] Internal error: Oops - BUG: 0 [#1] PREEMPT SMP
+10:50:39.566270 [ 4153.702523] Modules linked in:
+10:50:39.566320 [ 4153.707987] Process stat (pid: 18034, stack limit = 0x0000000020cfb6a3)
+10:50:39.566371 [ 4153.711036] CPU: 0 PID: 18034 Comm: stat Tainted: G        W         4.19.325-cip135-st19-perf-00003-ga2980325eb5d #5
+10:50:39.608376 [ 4153.717549] Hardware name: Qualcomm Technologies, Inc. MSM8940-PMI8950 Palm PVG100 (DT)
+10:50:39.608679 [ 4153.728310] pstate: 60400085 (nZCv daIf +PAN -UAO)
+10:50:39.608742 [ 4153.736123] pc : __list_del_entry_valid+0x90/0xc4
+10:50:39.608794 [ 4153.740977] lr : __list_del_entry_valid+0x90/0xc4
+10:50:39.608845 [ 4153.745748] sp : ffffff802642b440
+10:50:39.608895 [ 4153.750433] x29: ffffff802642b440 x28: 000000000000a440 
+10:50:39.608946 [ 4153.753736] x27: 00000000f0000080 x26: 00000000f0000000 
+10:50:39.608996 [ 4153.759118] x25: ffffffbf0210ffc0 x24: ffffff8012159000 
+10:50:39.651647 [ 4153.764413] x23: ffffff80126c75e0 x22: ffffffbf0210a440 
+10:50:39.651947 [ 4153.769709] x21: ffffffbf0210a448 x20: ffffffbf02100000 
+10:50:39.652032 [ 4153.775003] x19: ffffff802642b4e4 x18: 0000000000040028 
+10:50:39.652107 [ 4153.780299] x17: 0000000000000000 x16: 000000000000000a 
+10:50:39.652184 [ 4153.785593] x15: 00000000000a0d29 x14: 0000000000000003 
+10:50:39.652261 [ 4153.790889] x13: 00000000000a615e x12: 0000000000000000 
+10:50:39.652335 [ 4153.796183] x11: 0000000000000000 x10: 0000000000000000 
+10:50:39.652412 [ 4153.801480] x9 : f668dd7b5bc7b400 x8 : f668dd7b5bc7b400 
+10:50:39.694229 [ 4153.806774] x7 : 74707572726f6320 x6 : ffffff80127ee562 
+10:50:39.694604 [ 4153.812069] x5 : 0000000000000000 x4 : 0000000000000008 
+10:50:39.694701 [ 4153.817364] x3 : 0000000000000001 x2 : ffffffc0be9c02c0 
+10:50:39.694777 [ 4153.822659] x1 : ffffffc0be9b6ed8 x0 : 000000000000004e 
+10:50:39.694845 [ 4153.827955] Call trace:
+10:50:39.694921 [ 4153.833247]  __list_del_entry_valid+0x90/0xc4
+10:50:39.694996 [ 4153.835422]  move_freepages_block+0x194/0x220
+10:50:39.695074 [ 4153.839935]  steal_suitable_fallback+0x290/0x384
+10:50:39.695149 [ 4153.844274]  get_page_from_freelist+0x39c/0xe70
+10:50:39.737342 [ 4153.848961]  __alloc_pages_nodemask+0x17c/0x1038
+10:50:39.737615 [ 4153.853216]  new_slab+0xc8/0x4b0
+10:50:39.737674 [ 4153.858075]  ___slab_alloc+0x540/0x73c
+10:50:39.737719 [ 4153.861286]  kmem_cache_alloc+0x2b4/0x330
+10:50:39.737763 [ 4153.864849]  f2fs_alloc_inode+0x2c/0x15c
+10:50:39.737806 [ 4153.868927]  iget_locked+0xc4/0x2a8
+10:50:39.737849 [ 4153.872919]  f2fs_iget+0x2c/0x14a4
+10:50:39.737892 [ 4153.876129]  f2fs_lookup+0x1a0/0x510
+10:50:39.737934 [ 4153.879604]  __lookup_slow+0xc8/0x158
+10:50:39.737977 [ 4153.883334]  lookup_slow+0x38/0x58
+10:50:39.738020 [ 4153.886893]  walk_component+0x174/0x290
+10:50:39.738063 [ 4153.890192]  path_lookupat+0x70/0x110
+10:50:39.785483 [ 4153.893926]  filename_lookup+0xc4/0x1cc
+10:50:39.785786 [ 4153.897744]  user_path_at_empty+0x44/0x54
+10:50:39.785881 [ 4153.901390]  vfs_statx+0x88/0x130
+10:50:39.785966 [ 4153.905556]  __arm64_sys_newfstatat+0x60/0x9c
+10:50:39.786048 [ 4153.908859]  el0_svc_common+0x94/0x160
+10:50:39.786130 [ 4153.913195]  el0_svc_handler+0x64/0x7c
+10:50:39.786211 [ 4153.916843]  el0_svc+0x8/0x4c0
+10:50:39.786292 [ 4153.920575] Code: 9000c8a0 9138f800 f2fbd5a2 94401116 (d4210000) 
+10:50:39.786377 [ 4153.923618] ---[ end trace a8f59733a26aa38e ]---
+10:50:39.892549 [ 4154.036282] Kernel panic - not syncing: Fatal exception
+10:50:39.892846 [ 4154.036313] SMP: stopping secondary CPUs
+10:50:40.955305 [ 4155.088126] SMP: failed to stop secondary CPUs 0-7
+10:50:40.955571 [ 4155.088632] clock_panic_callback: a53_bc_clk frequency: 1344000000 Hz
+10:50:40.955628 [ 4155.091800] clock_panic_callback: a53_lc_clk frequency:  998400000 Hz
+10:50:41.392554 [ 4155.498383] cpr_panic_callback: apc_corner: [corner:5, fuse_corner:3] = 1225000 uV
+10:50:41.392812 [ 4155.498416] ipa ipa2_active_clients_panic_notifier:304 
+10:50:41.392866 [ 4155.498416] ---- Active Clients Table ----
+10:50:41.392911 [ 4155.498416] IPA_CLIENT_APPS_WAN_CONS                 7   ENDPOINT
+10:50:41.392955 [ 4155.498416] SPS_RESOURCE                             -7  SPECIAL
+10:50:41.392999 [ 4155.498416] 
+10:50:41.393043 [ 4155.498416] Total active clients count: 0
+10:50:41.393086 [ 4155.509603] Kernel Offset: disabled
+10:50:41.393130 [ 4155.531824] CPU features: 0x00000000,20002004
+10:50:41.393173 [ 4155.535036] Memory Limit: none
+10:50:41.489138 [ 4155.646424] Rebooting in 30 seconds..
