@@ -223,6 +223,12 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
 - Gate: a dirty-flash 23.2 → 24.0 (gapps over gapps) must pass on a bench unit first.
 - pepito-24 `device.mk` must point `lineage.updater.uri` at `lineageos24.0/pepito.json`.
 
+- [ ] **Gate for the next 24.0 release (Kyle, 2026-10-14): fix the emergency-calls-only stick first**
+      (`PLAN-emergency-only.md`) and ship it in that release. The release must also be dated after the
+      final 23.2 (`20261013`) or the 23.2 Updater will not offer it; kernel `pepito-24` `50c36c782d89`
+      (list_del panic fix, `PLAN-list-del-panic.md`) rides along.
+- [x] 23.2's fate: **final release `20261013` cut 2026-10-13**, points its Updater at the 24.0 feed with
+      `allow_major_upgrades`. No further 23.2 releases; the tree stays for reference.
 - [ ] Version sweep in the landing repo: `scripts/*` (12 files), `pepito.json` OTA feed (keep a 23.2
       channel and add 24.0, or one channel with the upgrade OTA), `manifests/pepito.xml` →
       `pepito-24.0-r1` tag set, `BUILD.md` lunch line, `CHANGELOG.md`, landing README table (branch
