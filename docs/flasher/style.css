@@ -85,12 +85,17 @@ h2 {
   display: flex;
   gap: 0.25rem;
   margin: 0 0 1rem;
-  border-bottom: 1px solid var(--line);
+  /* Scrolls sideways on a narrow screen. The line under the tabs is a shadow,
+     not a border, so the active tab's underline can cover it without overflowing. */
+  overflow-x: auto;
+  overflow-y: hidden;
+  box-shadow: inset 0 -1px var(--line);
 }
 
 .tabs button {
-  margin-bottom: -1px;
-  padding: 0.5rem 1rem;
+  flex: none;
+  white-space: nowrap;
+  padding: 0.5rem 0.65rem;
   border: 0;
   border-bottom: 3px solid transparent;
   border-radius: 0;
@@ -218,6 +223,42 @@ table.files td.n {
 
 table.files th.l {
   text-align: left;
+}
+
+h3 {
+  margin: 1.25rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+table.partitions td {
+  vertical-align: top;
+}
+
+table.partitions td.name {
+  font: 0.85rem/1.6 ui-monospace, monospace;
+}
+
+table.partitions td.n {
+  white-space: nowrap;
+}
+
+table.partitions td.unique {
+  font-weight: 600;
+}
+
+table.partitions td:last-child {
+  width: 7.5rem;
+  font-size: 0.85rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
 }
 
 .scroll {

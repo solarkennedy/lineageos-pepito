@@ -1,9 +1,22 @@
 // Page logic: wires the build picker, the phone connection and the flash run
 // to the DOM. All protocol work lives in flash.js.
 
-import { BUILD_IMAGES, VARIANTS } from "./device.js";
-import { backup, backupPlan, buildPlan, connect, flash, imageFile, isSparse, restorePlan } from "./flash.js";
+import { BUILD_IMAGES, VARIANTS, WRITES } from "./device.js";
+import {
+  backup,
+  backupPlan,
+  buildPlan,
+  connect,
+  flash,
+  imageFile,
+  imagePlan,
+  isSparse,
+  PER_PHONE,
+  restorePlan,
+} from "./flash.js";
+import { LAYOUTS } from "./layouts.js";
 import { tailorInstructions } from "./os.js";
+import { BOOT_CHAIN, PARTITION_GROUPS, UNIQUENESS } from "./partitions.js";
 import { FileSource } from "./sources.js";
 import { EDL_FILTERS, UsbTransport } from "./usb.js";
 
@@ -16,6 +29,8 @@ const state = {
   source: null,
   backup: null,
   restoreRows: null,
+  image: null, // { source, file } for the Flash (advanced) tab
+  imagePlan: null,
   usb: null,
   session: null,
   busy: false,
@@ -42,6 +57,12 @@ function table(element, head, rows) {
       if (cell && typeof cell === "object") {
         td.textContent = cell.text;
         td.className = cell.className;
+        for (const tag of cell.tags ?? []) {
+          const span = document.createElement("span");
+          span.className = "tag";
+          span.textContent = tag;
+          td.append(" ", span);
+        }
       } else {
         td.textContent = cell;
       }
@@ -98,6 +119,13 @@ function refresh() {
   $("folder-button").disabled = state.busy;
   $("restore-button").disabled = state.busy || nothingToRestore;
   $("restore-folder-button").disabled = state.busy;
+  needs("write-needs", [...(state.image ? [] : ["an image file"]), ...noPhone]);
+  $("write-button").disabled = state.busy || !state.imagePlan;
+  $("image-button").disabled = state.busy;
+  $("partition-select").disabled = state.busy || noPhone.length > 0;
+  needs("read-needs", noPhone, window.showSaveFilePicker ? "" : NO_FOLDER_SAVE);
+  $("read-select").disabled = state.busy || noPhone.length > 0;
+  $("read-button").disabled = state.busy || noPhone.length > 0 || !$("read-select").value;
 }
 
 // --- 1. build ---------------------------------------------------------------
@@ -175,6 +203,19 @@ function showPhone(session) {
     dl.append(dt, dd);
   }
   dl.hidden = false;
+
+  const option = (p) =>
+    new Option(`${p.name} (${formatBytes(p.sectors * 512)}${PER_PHONE.includes(p.name) ? ", this phone only" : ""})`, p.name);
+  $("partition-select").replaceChildren(new Option("Choose a partition", ""), ...session.gpt.partitions.map(option));
+  // Reads start from the backup plan, which also covers the partition table.
+  $("read-select").replaceChildren(
+    new Option("Choose a partition", ""),
+    ...backupPlan(session, { exclude: [] }).map((step) =>
+      step.name === "PrimaryGPT" ? new Option(`Partition table (${step.file})`, step.name) : option(step),
+    ),
+  );
+  pickPartitionFor(state.image?.file);
+  showImagePlan();
 }
 
 function showPlan() {
@@ -221,6 +262,9 @@ async function dropConnection() {
   $("phone-info").hidden = true;
   $("plan-table").hidden = true;
   clearRestore();
+  $("partition-select").replaceChildren(new Option("Connect the phone first", ""));
+  $("read-select").replaceChildren(new Option("Connect the phone first", ""));
+  showImagePlan();
 }
 
 /**
@@ -375,12 +419,182 @@ $("flash-button").onclick = () =>
     showResult("Flash complete. The first boot takes a few minutes. After a major change, erase data next (Erase data, below).");
   });
 
+// --- 6. back up (advanced) -------------------------------------------------
+
+$("read-select").onchange = refresh;
+
+$("read-button").onclick = () =>
+  run(
+    "Read",
+    async () => {
+      if (!window.showSaveFilePicker) throw new Error(NO_FOLDER_SAVE);
+      const step = backupPlan(state.session, { exclude: [] }).find((s) => s.name === $("read-select").value);
+      let handle;
+      try {
+        handle = await window.showSaveFilePicker({ suggestedName: step.file });
+      } catch (e) {
+        if (e.name === "AbortError") return; // picker dismissed
+        throw e;
+      }
+      const out = await handle.createWritable();
+      $("read-progress").hidden = false;
+      const started = performance.now();
+      const total = step.sectors * 512;
+      log(`Reading ${step.name} to ${handle.name}`);
+      try {
+        await guarded(() =>
+          state.session.firehose.readStream(
+            step.start,
+            step.sectors,
+            (chunk) => out.write(chunk),
+            (read) => {
+              $("read-bar").value = read / total;
+              $("read-text").textContent = progressLine(step.name, read, total, started);
+            },
+          ),
+        );
+      } catch (e) {
+        await out.abort().catch(() => {});
+        throw e;
+      }
+      await out.close();
+      const seconds = ((performance.now() - started) / 1000).toFixed(0);
+      log(`Saved ${step.name} in ${seconds} s`);
+      $("read-text").textContent = `Done in ${seconds} s`;
+      showResult(`Saved ${step.name} to ${handle.name}. The phone is still in EDL mode.`, false, "read-result");
+    },
+    "read-result",
+  );
+
+// --- 7. flash (advanced) ----------------------------------------------------
+
+/** Choose the partition an image is named after, as in aboot.img or modemst1.bin. */
+function pickPartitionFor(file) {
+  const name = file?.replace(/\.(bin|img)$/, "");
+  if ([...$("partition-select").options].some((option) => option.value === name)) $("partition-select").value = name;
+}
+
+/** Check the chosen image against the chosen partition and say what writing it would risk. */
+async function showImagePlan() {
+  state.imagePlan = null;
+  const partition = $("partition-select").value;
+  const warn = (message) => {
+    $("image-warning").textContent = message;
+    $("image-warning").hidden = !message;
+  };
+  warn("");
+  if (state.image && state.session && partition) {
+    try {
+      state.imagePlan = await imagePlan(state.session, state.image.source, state.image.file, partition);
+      if (PER_PHONE.includes(partition)) {
+        warn(`${partition} holds this phone's own identity or calibration. Only write a copy taken from this same phone.`);
+      } else if (BOOT_CHAIN.includes(partition)) {
+        warn(`${partition} is part of the bootloader. A wrong image stops the phone from starting until it is rewritten from EDL mode.`);
+      } else if (partition === "userdata") {
+        warn("Writing userdata replaces all personal data on the phone.");
+      }
+    } catch (e) {
+      warn(e.message);
+    }
+  }
+  refresh();
+}
+
+$("image-button").onclick = () => $("image-input").click();
+$("image-input").onchange = (event) => {
+  const [file] = event.target.files;
+  if (!file) return;
+  state.image = { source: new FileSource([file], file.name, () => true), file: file.name };
+  $("image-name").textContent = `${file.name}, ${formatBytes(file.size)}`;
+  pickPartitionFor(file.name);
+  showImagePlan();
+};
+$("partition-select").onchange = showImagePlan;
+
+$("write-button").onclick = () =>
+  run(
+    "Write",
+    async () => {
+      const [step] = state.imagePlan;
+      const variant = VARIANTS[state.session.variant].name;
+      if (PER_PHONE.includes(step.partition)) {
+        const typed = prompt(
+          `${step.partition} holds this phone's own identity or calibration. Writing another phone's copy clones that phone onto this one.\n\n` +
+            `Type ${step.partition} to write ${step.file} to it.`,
+        );
+        if (typed?.trim() !== step.partition) return;
+      } else if (!confirm(`Write ${step.file} to ${step.partition} on this ${variant}?\n\nDo not unplug the phone until it finishes.`)) {
+        return;
+      }
+
+      $("write-progress").hidden = false;
+      const started = performance.now();
+      log(`Writing ${step.file} to ${step.partition}`);
+      await guarded(() =>
+        flash(state.session, state.imagePlan, state.image.source, ({ written, total }) => {
+          $("write-bar").value = written / total;
+          $("write-text").textContent = progressLine(step.partition, written, total, started);
+        }),
+      );
+      const seconds = ((performance.now() - started) / 1000).toFixed(0);
+      log(`Wrote ${step.partition} in ${seconds} s`);
+      $("write-text").textContent = `Done in ${seconds} s`;
+      showResult(
+        `Wrote ${step.file} to ${step.partition}. The phone is still in EDL mode: write another image, or press Restart the phone.`,
+        false,
+        "write-result",
+      );
+    },
+    "write-result",
+  );
+
+// --- 8. partitions ---------------------------------------------------------
+
+/** Size of a partition on one model, or null if that model has none. The last one fills the rest of the storage. */
+function partitionSize(variant, name) {
+  const layout = LAYOUTS[variant];
+  const i = layout.findIndex(([label]) => label === name);
+  if (i < 0) return null;
+  return i === layout.length - 1 ? "rest of storage" : formatBytes(layout[i][2] * 512);
+}
+
+function showPartitions() {
+  const container = $("partition-groups");
+  for (const group of PARTITION_GROUPS) {
+    const heading = document.createElement("h3");
+    heading.textContent = group.title;
+    const intro = document.createElement("p");
+    intro.className = "muted";
+    intro.textContent = group.intro;
+    const t = document.createElement("table");
+    t.className = "files partitions";
+    table(
+      t,
+      ["Partition", "Size", { text: "What it holds", className: "l" }, { text: "Unique", className: "l" }],
+      group.partitions.map(([name, text, uniqueness]) => {
+        const sizes = [partitionSize("pvg100", name) ?? "none", partitionSize("pvg100e", name) ?? "none"];
+        const tags = [
+          WRITES.some((w) => w.partition === name) && (name === "config" ? "Flash clears" : "Flash writes"),
+          BOOT_CHAIN.includes(name.replace(/bak$/, "")) && "Bootloader",
+        ].filter(Boolean);
+        return [
+          { text: name, className: "name" },
+          { text: sizes[0] === sizes[1] ? sizes[0] : sizes.join(" / "), className: "n" },
+          { text, className: "", tags },
+          { text: UNIQUENESS[uniqueness], className: uniqueness.startsWith("unit") ? "unique" : "muted" },
+        ];
+      }),
+    );
+    container.append(heading, intro, t);
+  }
+}
+
 // --- tabs -------------------------------------------------------------------
 
 // Each tab is one task. Elements carry data-tabs listing the tabs they appear
 // on; the phone connection is shared, so it survives a switch. Steps are
 // numbered per tab.
-const TABS = ["backup", "flash", "restore"];
+const TABS = ["backup", "flash", "restore", "backup-advanced", "flash-advanced", "partitions"];
 
 function showTab() {
   const hash = location.hash.slice(1);
@@ -411,9 +625,6 @@ const RESTORE_STATUS = {
 };
 
 const RESTORE_ORDER = ["write", "unverified", "no-file", "never"];
-
-// The partitions a phone needs to start; a restore that touches them is called out.
-const BOOT_CHAIN = ["sbl1", "rpm", "tz", "aboot", "devcfg", "cmnlib", "cmnlib64", "keymaster"];
 
 function clearRestore() {
   state.restoreRows = null;
@@ -532,6 +743,7 @@ if (!navigator.usb) {
 
 $("copy-log").onclick = () => navigator.clipboard.writeText($("log").textContent);
 
+showPartitions();
 showTab();
 refresh();
 tailorInstructions();

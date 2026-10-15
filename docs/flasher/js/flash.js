@@ -212,9 +212,11 @@ export function restoreManifest(plan) {
 const IDENTITY_PARTITION = "traceability";
 
 // Partitions that belong to one phone: the factory record, the modem's
-// identity and calibration, sensor calibration, memory training. A restore
-// writes them only from a folder proven to come from this phone.
-export const PER_PHONE = ["traceability", "modemst1", "modemst2", "fsg", "persist", "tunning", "simlock", "DDR"];
+// identity, calibration and keys, sensor calibration, memory training. A
+// restore writes them only from a folder proven to come from this phone. The
+// Partitions tab marks the same ones unique (js/partitions.js); a test keeps
+// the two in step.
+export const PER_PHONE = ["traceability", "modemst1", "modemst2", "fsg", "ssd", "persist", "tunning", "simlock", "DDR"];
 
 // Android sparse images start with this magic. Written as-is they would
 // produce a corrupt partition.
@@ -306,6 +308,25 @@ export async function restorePlan(session, source) {
     );
   }
   return rows;
+}
+
+/**
+ * Plan writing one image to one partition the user picked. Checks only that
+ * the partition exists and the image is raw, not empty and fits; which
+ * partition an image belongs in is the user's call.
+ * @returns {Promise<{partition: string, file: string, start: number, sectors: number, bytes: number}[]>}
+ */
+export async function imagePlan(session, source, file, partitionName) {
+  const part = session.gpt.partitions.find((p) => p.name === partitionName);
+  if (!part) throw new FlashError(`No ${partitionName} partition on this phone`);
+  const bytes = source.size(file);
+  const capacity = part.sectors * SECTOR_SIZE;
+  if (bytes === 0) throw new FlashError(`${file} is empty.`);
+  if (bytes > capacity) throw new FlashError(`${file} (${bytes} bytes) does not fit in ${part.name} (${capacity} bytes).`);
+  if (isSparse(await source.head(file, 4))) {
+    throw new FlashError(`${file} is an Android sparse image, which this page cannot write. Convert it to a raw image with simg2img first.`);
+  }
+  return [{ partition: part.name, file, start: part.start, sectors: Math.ceil(bytes / SECTOR_SIZE), bytes }];
 }
 
 /**

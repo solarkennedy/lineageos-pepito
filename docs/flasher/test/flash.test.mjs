@@ -4,9 +4,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import zlib from "node:zlib";
-import { backup, backupPlan, buildPlan, connect, flash, FlashError, restorePlan } from "../js/flash.js";
+import { backup, backupPlan, buildPlan, connect, flash, FlashError, imagePlan, PER_PHONE, restorePlan } from "../js/flash.js";
 import { crc32 } from "../js/gpt.js";
 import { LAYOUTS } from "../js/layouts.js";
+import { PARTITION_GROUPS } from "../js/partitions.js";
 import { UsbTransport } from "../js/usb.js";
 import { MockPhone } from "./mock-device.mjs";
 
@@ -409,4 +410,49 @@ test("restore of a folder with no matching files writes nothing", async () => {
   const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
   const rows = await restorePlan(session, memorySource({ "notes.bin": bytes(10, 1) }));
   assert.equal(writes(rows).length, 0);
+});
+
+// --- advanced -----------------------------------------------------------------
+
+test("one image goes to the partition picked for it, whatever its name", async () => {
+  const phone = phoneFor("pvg100");
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const source = memorySource({ "my-recovery.img": FILES["recovery.bin"] });
+  const plan = await imagePlan(session, source, "my-recovery.img", "recovery");
+  assert.equal(phone.writes.length, 0, "planning must not write");
+  await flash(session, plan, source);
+  assertOnDisk(phone, "pvg100", "recovery", FILES["recovery.bin"]);
+  assert.equal(phone.writes.length, 1);
+});
+
+test("one image is refused when it does not fit, is empty, is sparse or names no partition", async () => {
+  const phone = phoneFor("pvg100");
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const source = memorySource({
+    "big.img": { length: 64 * 512 + 1 },
+    "empty.img": new Uint8Array(0),
+    "sparse.img": Uint8Array.of(0x3a, 0xff, 0x26, 0xed, 0, 0, 0, 0),
+  });
+  await assert.rejects(imagePlan(session, source, "big.img", "config"), /does not fit in config/);
+  await assert.rejects(imagePlan(session, source, "empty.img", "config"), /is empty/);
+  await assert.rejects(imagePlan(session, source, "sparse.img", "system"), /sparse image/);
+  await assert.rejects(imagePlan(session, source, "sparse.img", "nonesuch"), /No nonesuch partition/);
+  assert.equal(phone.writes.length, 0);
+});
+
+// --- partitions tab -----------------------------------------------------------
+
+test("every partition of both models is described, once", () => {
+  const described = PARTITION_GROUPS.flatMap((group) => group.partitions.map(([name]) => name));
+  assert.equal(new Set(described).size, described.length, "no partition described twice");
+  const inLayouts = new Set([...LAYOUTS.pvg100, ...LAYOUTS.pvg100e].map(([name]) => name));
+  assert.deepEqual([...inLayouts].filter((name) => !described.includes(name)), [], "undescribed partitions");
+  assert.deepEqual(described.filter((name) => !inLayouts.has(name)), [], "described partitions no layout has");
+});
+
+test("the partitions restore treats as per-phone are the ones the Partitions tab calls unique", () => {
+  const unique = PARTITION_GROUPS.flatMap((group) => group.partitions)
+    .filter(([, , uniqueness]) => uniqueness.startsWith("unit"))
+    .map(([name]) => name);
+  assert.deepEqual([...unique].sort(), [...PER_PHONE].sort());
 });

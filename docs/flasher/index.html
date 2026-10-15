@@ -26,6 +26,9 @@
         <button type="button" role="tab" data-tab="backup">Back up</button>
         <button type="button" role="tab" data-tab="flash">Flash</button>
         <button type="button" role="tab" data-tab="restore">Restore</button>
+        <button type="button" role="tab" data-tab="backup-advanced">Back up (advanced)</button>
+        <button type="button" role="tab" data-tab="flash-advanced">Flash (advanced)</button>
+        <button type="button" role="tab" data-tab="partitions">Partitions</button>
       </nav>
 
       <p class="notice" data-tabs="flash">
@@ -169,7 +172,7 @@ chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
         </details>
       </section>
 
-      <section id="phone-card" data-tabs="backup flash restore">
+      <section id="phone-card" data-tabs="backup flash restore backup-advanced flash-advanced">
         <h2><span class="num"></span> Connect the phone</h2>
         <ol class="steps">
           <li>
@@ -361,6 +364,41 @@ sudo udevadm control --reload-rules</pre>
         </details>
       </section>
 
+      <section id="read-card" data-tabs="backup-advanced">
+        <h2><span class="num"></span> Back up one partition</h2>
+        <p>
+          Reads a single partition from the phone and saves it as a file on this computer. Nothing on the phone is
+          changed.
+        </p>
+        <div class="row">
+          <label
+            >Partition
+            <select id="read-select" disabled>
+              <option value="">Connect the phone first</option>
+            </select>
+          </label>
+          <button id="read-button" type="button" class="primary" disabled>Save to a file</button>
+        </div>
+        <p id="read-needs" class="needs" hidden></p>
+        <div id="read-progress" hidden>
+          <progress id="read-bar" max="1" value="0"></progress>
+          <p id="read-text" class="progress-text"></p>
+        </div>
+        <p id="read-result" class="notice" hidden></p>
+        <details>
+          <summary>What the file holds</summary>
+          <p>
+            The whole partition, byte for byte, in a file named after it, such as <code>modemst1.bin</code>. That is
+            the same file a full backup holds, so the Restore and Flash (advanced) tabs take it back as it is.
+            "Partition table" saves <code>gpt-lun0.bin</code>, the first 34 sectors of the storage.
+          </p>
+          <p>
+            <code>userdata</code> is most of the storage, over 20 GB, and encrypted: a copy cannot be read on another
+            phone, or on this one once it has been reflashed.
+          </p>
+        </details>
+      </section>
+
       <section id="restore-card" data-tabs="restore">
         <h2><span class="num"></span> Restore a backup</h2>
         <p>
@@ -419,9 +457,63 @@ sudo udevadm control --reload-rules</pre>
           </p>
           <p>
             <b>Why some partitions need proof:</b> <code>traceability</code>, <code>modemst1</code>,
-            <code>modemst2</code>, <code>fsg</code>, <code>persist</code>, <code>tunning</code>, <code>simlock</code>
-            and <code>DDR</code> belong to one phone: its identity, radio and sensor calibration. Writing another
+            <code>modemst2</code>, <code>fsg</code>, <code>ssd</code>, <code>persist</code>, <code>tunning</code>,
+            <code>simlock</code> and <code>DDR</code> belong to one phone: its identity, radio and sensor calibration. Writing another
             phone's would give this one the other's identity and a radio tuned for different hardware.
+          </p>
+        </details>
+      </section>
+
+      <section id="single-card" data-tabs="flash-advanced">
+        <h2><span class="num"></span> Write one image</h2>
+        <p>
+          Writes a single image file to the partition you choose. The page checks only that the file is a raw image
+          that fits; it cannot tell whether the image belongs in that partition, or on this phone. Use it when you
+          know exactly which file goes where, and <a href="#backup">back up</a> first.
+        </p>
+        <div class="row">
+          <button id="image-button" type="button">Choose an image file</button>
+          <input id="image-input" type="file" hidden />
+          <span id="image-name" class="muted"></span>
+        </div>
+        <div class="row">
+          <label
+            >Partition
+            <select id="partition-select" disabled>
+              <option value="">Connect the phone first</option>
+            </select>
+          </label>
+        </div>
+        <p id="image-warning" class="notice bad" hidden></p>
+        <div class="row">
+          <button id="write-button" type="button" class="primary" disabled>Write</button>
+          <span class="muted">The phone stays in EDL mode, so more images can follow. Restart it when done.</span>
+        </div>
+        <p id="write-needs" class="needs" hidden></p>
+        <div id="write-progress" hidden>
+          <progress id="write-bar" max="1" value="0"></progress>
+          <p id="write-text" class="progress-text"></p>
+        </div>
+        <p id="write-result" class="notice" hidden></p>
+        <details>
+          <summary>What this writes, and the risks</summary>
+          <p>
+            The file is written from the start of the partition. A file smaller than the partition leaves the rest of
+            it as it was. Nothing else on the phone is touched. Images may be named anything; if the name matches a
+            partition, such as <code>aboot.img</code> or <code>modemst1.bin</code>, that partition is chosen for you.
+          </p>
+          <p>
+            <b>Bootloader partitions</b> (<code>sbl1</code>, <code>aboot</code>, <code>rpm</code>, <code>tz</code>
+            and others): a wrong image stops the phone from starting. It then goes into EDL mode on its own, or with an
+            EDL cable, so it can be rewritten here.
+          </p>
+          <p>
+            <b>Per-phone partitions</b> (<code>traceability</code>, <code>modemst1</code>, <code>modemst2</code>,
+            <code>fsg</code>, <code>ssd</code>, <code>persist</code>, <code>tunning</code>, <code>simlock</code>,
+            <code>DDR</code>) hold this phone's own identity and calibration. Only write a copy taken from this same phone. Another
+            phone's copy gives this one its identity and a radio tuned for different hardware. The page asks you to
+            type the partition's name before writing one. The Restore tab can check a whole backup's origin; this tab
+            cannot.
           </p>
         </details>
       </section>
@@ -472,7 +564,23 @@ sudo udevadm control --reload-rules</pre>
         </ol>
       </section>
 
-      <section>
+      <section id="partitions-card" data-tabs="partitions">
+        <h2>What each partition holds</h2>
+        <p>
+          The phone's storage is divided into partitions, each with one job. Sizes are for the PVG100, then the
+          PVG100E where it differs. The tags say which partitions the Flash tab writes and which are part of the
+          bootloader.
+        </p>
+        <p>
+          "Unique" says whether a partition's contents differ from one phone to the next, found by comparing the
+          backups of eight phones. The unique ones exist only in your phone and in your backup of it: no download or
+          other phone can replace them. "Per firmware" partitions are the same on every phone with the same stock
+          firmware version, and "per ROM" ones on every phone with the same ROM installed.
+        </p>
+        <div id="partition-groups"></div>
+      </section>
+
+      <section data-tabs="backup flash restore backup-advanced flash-advanced">
         <h2>Log <button id="copy-log" type="button" class="small">Copy</button></h2>
         <pre id="log" aria-live="polite"></pre>
       </section>
