@@ -9,16 +9,23 @@ export const VARIANTS = {
 
 // The only partitions this flasher will ever write, in order. Nothing in a
 // build directory can add to this list.
+// Images are named without an extension: see IMAGE_EXTENSIONS.
 export const WRITES = [
-  { partition: "boot", file: "boot.bin", rootFile: "boot-magisk.bin" },
-  { partition: "recovery", file: "recovery.bin" },
-  { partition: "system", file: "system.bin" },
-  { partition: "vendor", file: "vendor.bin" },
+  { partition: "boot", image: "boot", rootImage: "boot-magisk" },
+  { partition: "recovery", image: "recovery" },
+  { partition: "system", image: "system" },
+  { partition: "vendor", image: "vendor" },
   // Zero-filled so factory reset protection state cannot outlive the install.
   { partition: "config", zero: true },
 ];
 
+// An image file is <image>.bin, as ota2raw and backups name them, or
+// <image>.img, as firmware packages do.
+export const IMAGE_EXTENSIONS = [".bin", ".img"];
+
+export const BUILD_IMAGES = WRITES.flatMap((w) => [w.image, w.rootImage]).filter(Boolean);
+
 export const BUILD_FILES = [
   ...Object.values(VARIANTS).map((v) => v.loader),
-  ...WRITES.flatMap((w) => [w.file, w.rootFile]).filter(Boolean),
+  ...BUILD_IMAGES.flatMap((image) => IMAGE_EXTENSIONS.map((ext) => image + ext)),
 ];

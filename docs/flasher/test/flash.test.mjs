@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import zlib from "node:zlib";
-import { backup, backupPlan, buildPlan, connect, flash, FlashError } from "../js/flash.js";
+import { backup, backupPlan, buildPlan, connect, flash, FlashError, restorePlan } from "../js/flash.js";
 import { crc32 } from "../js/gpt.js";
 import { LAYOUTS } from "../js/layouts.js";
 import { UsbTransport } from "../js/usb.js";
@@ -36,6 +36,8 @@ function memorySource(files = FILES) {
     has: (name) => name in files,
     size: (name) => files[name].length,
     bytes: async (name) => files[name],
+    // Size-only stand-ins have no bytes; they read as zeros.
+    head: async (name, length) => files[name].subarray?.(0, length) ?? new Uint8Array(length),
     // Deliver in odd-sized pieces, as a network stream would.
     stream: async (name) =>
       new ReadableStream({
@@ -110,6 +112,25 @@ test("root option swaps in the Magisk boot image", async () => {
   const session = await connect(await open(phone), source, { variant: "pvg100" });
   await flash(session, buildPlan(session, source, { root: true }), source);
   assertOnDisk(phone, "pvg100", "boot", FILES["boot-magisk.bin"]);
+});
+
+test("a build may name its images .img", async () => {
+  const phone = phoneFor("pvg100");
+  const { "boot.bin": boot, "system.bin": system, ...rest } = FILES;
+  const source = memorySource({ ...rest, "boot.img": boot, "system.img": system });
+  const session = await connect(await open(phone), source, { variant: "pvg100" });
+  const plan = buildPlan(session, source);
+  assert.deepEqual(plan.map((step) => step.file), ["boot.img", "recovery.bin", "system.img", "vendor.bin", null]);
+  await flash(session, plan, source);
+  assertOnDisk(phone, "pvg100", "boot", FILES["boot.bin"]);
+  assertOnDisk(phone, "pvg100", "system", FILES["system.bin"]);
+});
+
+test("a build with both boot.bin and boot.img is refused at planning", async () => {
+  const phone = phoneFor("pvg100");
+  const source = memorySource({ ...FILES, "boot.img": FILES["boot.bin"] });
+  const session = await connect(await open(phone), source, { variant: "pvg100" });
+  assert.throws(() => buildPlan(session, source), /both boot.bin and boot.img/);
 });
 
 test("no variant chosen is refused before talking to the phone", async () => {
@@ -245,4 +266,147 @@ test("resumes when the running programmer speaks before we do", async () => {
   const phone = phoneFor("pvg100", { inFirehose: true, chatty: true });
   const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
   assert.equal(session.variant, "pvg100");
+});
+
+// --- restore ------------------------------------------------------------------
+
+/** A phone whose factory record holds `seed`, as every real unit's differs. */
+function phoneWithIdentity(variant, seed) {
+  const phone = phoneFor(variant);
+  phone.writeDisk(partition(variant, "traceability").start, bytes(4096, seed));
+  return phone;
+}
+
+/**
+ * The backup folder a phone would produce. Only the files a test actually
+ * restores carry data; the rest are stand-ins of the right size.
+ */
+function backupOf(phone, variant, overrides = {}) {
+  const files = { "gpt-lun0.bin": phone.readDisk(0, 34) };
+  for (const [name, start, sectors] of LAYOUTS[variant]) {
+    if (name === "userdata") continue;
+    files[`${name}.bin`] = ["traceability", "modemst1", "sec", "config"].includes(name)
+      ? phone.readDisk(start, sectors)
+      : { length: sectors * 512 };
+  }
+  return memorySource({ ...files, ...overrides });
+}
+
+const actions = (rows) => Object.fromEntries(rows.map((row) => [row.partition, row.action]));
+const writes = (rows) => rows.filter((row) => row.action === "write");
+
+test("restore of a whole backup of the same phone writes every partition but userdata", async () => {
+  const phone = phoneWithIdentity("pvg100", 11);
+  const modemst1 = partition("pvg100", "modemst1");
+  phone.writeDisk(modemst1.start, bytes(modemst1.sectors * 512, 12));
+  const source = backupOf(phone, "pvg100");
+  // What the phone holds now differs from the backup, as it would after flashing.
+  phone.writeDisk(modemst1.start, bytes(modemst1.sectors * 512, 13));
+
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const rows = await restorePlan(session, source);
+  assert.equal(phone.writes.length, 0, "planning must not write");
+  assert.equal(rows.length, LAYOUTS.pvg100.length, "one row per partition");
+  assert.equal(writes(rows).length, LAYOUTS.pvg100.length - 1);
+  assert.equal(actions(rows).userdata, "never");
+  assert.equal(actions(rows).modemst1, "write");
+
+  const small = writes(rows).filter((row) => ["modemst1", "sec", "config"].includes(row.partition));
+  await flash(session, small, source);
+  assert.deepEqual(phone.readDisk(modemst1.start, modemst1.sectors), bytes(modemst1.sectors * 512, 12));
+});
+
+test("restore of a folder with only boot.bin writes just boot", async () => {
+  const phone = phoneFor("pvg100");
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const source = memorySource({ "boot.bin": FILES["boot.bin"] });
+  const rows = await restorePlan(session, source);
+  assert.deepEqual(writes(rows).map((row) => row.partition), ["boot"]);
+  assert.equal(actions(rows).system, "no-file");
+
+  await flash(session, writes(rows), source);
+  assertOnDisk(phone, "pvg100", "boot", FILES["boot.bin"]);
+  assert.equal(phone.writes.length, 1);
+});
+
+test("restore takes .img files as well as .bin, but not both for one partition", async () => {
+  const phone = phoneWithIdentity("pvg100", 61);
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const traceability = partition("pvg100", "traceability");
+  const source = memorySource({
+    "boot.img": FILES["boot.bin"],
+    "recovery.bin": FILES["recovery.bin"],
+    // A firmware package's name for the factory record still proves the folder's origin.
+    "traceability.img": phone.readDisk(traceability.start, traceability.sectors),
+    "modemst1.img": bytes(partition("pvg100", "modemst1").sectors * 512, 62),
+  });
+  const rows = await restorePlan(session, source);
+  assert.deepEqual(
+    writes(rows).map((row) => [row.partition, row.file]),
+    [
+      ["modemst1", "modemst1.img"],
+      ["traceability", "traceability.img"],
+      ["boot", "boot.img"],
+      ["recovery", "recovery.bin"],
+    ].sort((a, b) => partition("pvg100", a[0]).start - partition("pvg100", b[0]).start),
+  );
+  await flash(session, writes(rows).filter((row) => row.partition === "boot"), source);
+  assertOnDisk(phone, "pvg100", "boot", FILES["boot.bin"]);
+
+  const both = memorySource({ "boot.img": FILES["boot.bin"], "boot.bin": FILES["boot.bin"] });
+  await assert.rejects(restorePlan(session, both), /both boot.bin and boot.img/);
+});
+
+test("restore skips per-phone partitions when nothing proves the folder is from this phone", async () => {
+  const phone = phoneWithIdentity("pvg100", 51);
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const modemst1 = partition("pvg100", "modemst1");
+  const rows = await restorePlan(
+    session,
+    memorySource({ "boot.bin": FILES["boot.bin"], "modemst1.bin": bytes(modemst1.sectors * 512, 52) }),
+  );
+  assert.equal(actions(rows).modemst1, "unverified");
+  assert.deepEqual(writes(rows).map((row) => row.partition), ["boot"]);
+
+  // A blank factory record proves nothing either.
+  const blank = await restorePlan(
+    session,
+    memorySource({ "modemst1.bin": bytes(modemst1.sectors * 512, 52), "traceability.bin": new Uint8Array(1048576) }),
+  );
+  assert.equal(actions(blank).modemst1, "unverified");
+  assert.equal(actions(blank).traceability, "unverified");
+});
+
+test("restore refuses a backup of a different phone", async () => {
+  const source = backupOf(phoneWithIdentity("pvg100", 21), "pvg100");
+  const phone = phoneWithIdentity("pvg100", 22);
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  await assert.rejects(restorePlan(session, source), /backup of a different phone/);
+  assert.equal(phone.writes.length, 0);
+});
+
+test("restore refuses a backup of the other model", async () => {
+  const source = backupOf(phoneWithIdentity("pvg100e", 31), "pvg100e");
+  const phone = phoneWithIdentity("pvg100", 31);
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  await assert.rejects(restorePlan(session, source), /another phone or model/);
+  assert.equal(phone.writes.length, 0);
+});
+
+test("restore refuses an image too large, empty or sparse", async () => {
+  const phone = phoneFor("pvg100");
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const big = memorySource({ "recovery.bin": { length: 131072 * 512 + 1 } });
+  await assert.rejects(restorePlan(session, big), /does not fit in recovery/);
+  await assert.rejects(restorePlan(session, memorySource({ "boot.bin": new Uint8Array(0) })), /boot.bin is empty/);
+  const sparse = memorySource({ "system.bin": Uint8Array.of(0x3a, 0xff, 0x26, 0xed, 0, 0, 0, 0) });
+  await assert.rejects(restorePlan(session, sparse), /system.bin is an Android sparse image/);
+  assert.equal(phone.writes.length, 0);
+});
+
+test("restore of a folder with no matching files writes nothing", async () => {
+  const phone = phoneFor("pvg100");
+  const session = await connect(await open(phone), memorySource(), { variant: "pvg100" });
+  const rows = await restorePlan(session, memorySource({ "notes.bin": bytes(10, 1) }));
+  assert.equal(writes(rows).length, 0);
 });

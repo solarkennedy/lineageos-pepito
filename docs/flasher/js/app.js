@@ -1,8 +1,8 @@
 // Page logic: wires the build picker, the phone connection and the flash run
 // to the DOM. All protocol work lives in flash.js.
 
-import { BUILD_FILES, VARIANTS } from "./device.js";
-import { backup, backupPlan, buildPlan, connect, flash } from "./flash.js";
+import { BUILD_IMAGES, VARIANTS } from "./device.js";
+import { backup, backupPlan, buildPlan, connect, flash, imageFile, isSparse, restorePlan } from "./flash.js";
 import { tailorInstructions } from "./os.js";
 import { FileSource } from "./sources.js";
 import { EDL_FILTERS, UsbTransport } from "./usb.js";
@@ -10,10 +10,12 @@ import { EDL_FILTERS, UsbTransport } from "./usb.js";
 const $ = (id) => document.getElementById(id);
 
 // A folder needs the four images; only the loader for the chosen model is needed, and connect() checks that.
-const REQUIRED_FILES = ["boot.bin", "recovery.bin", "system.bin", "vendor.bin"];
+const REQUIRED_IMAGES = ["boot", "recovery", "system", "vendor"];
 
 const state = {
   source: null,
+  backup: null,
+  restoreRows: null,
   usb: null,
   session: null,
   busy: false,
@@ -77,12 +79,15 @@ function refresh() {
   const noUsb = navigator.usb
     ? []
     : [window.isSecureContext ? "a Chromium browser (Chrome or Edge)" : "this page opened from https:// or http://localhost"];
-  const noPhone = state.session ? [] : ["a connected phone (step 2)"];
-  const noRom = state.source ? [] : ["a ROM folder with all four images (step 1)"];
+  const noPhone = state.session ? [] : ["a connected phone (Connect the phone)"];
+  const noRom = state.source ? [] : ["a ROM folder with all four images (Get the ROM)"];
 
   needs("connect-needs", noUsb);
   needs("backup-needs", noPhone, window.showDirectoryPicker ? "" : NO_FOLDER_SAVE);
   needs("flash-needs", [...noRom, ...noPhone]);
+  const noBackup = state.backup ? [] : ["a folder of partition images"];
+  needs("restore-needs", [...noBackup, ...noPhone]);
+  const nothingToRestore = !state.restoreRows?.some((row) => row.action === "write");
 
   // Connecting needs no ROM folder: it is also how to check the phone is in
   // EDL mode, and a backup needs only the loader shipped with this page.
@@ -91,38 +96,40 @@ function refresh() {
   $("reboot-button").disabled = state.busy || noPhone.length > 0;
   $("backup-button").disabled = state.busy || noPhone.length > 0;
   $("folder-button").disabled = state.busy;
+  $("restore-button").disabled = state.busy || nothingToRestore;
+  $("restore-folder-button").disabled = state.busy;
 }
 
 // --- 1. build ---------------------------------------------------------------
 
-// Android sparse images start with this magic. Written as-is they would
-// produce a corrupt partition, so such a build is refused outright.
-const SPARSE_MAGIC = [0x3a, 0xff, 0x26, 0xed];
-
-async function sparseImages(source) {
-  const sparse = [];
-  for (const name of BUILD_FILES.filter((file) => file.endsWith(".bin") && source.has(file))) {
-    const head = await source.head(name, 4);
-    if (SPARSE_MAGIC.every((byte, i) => head[i] === byte)) sparse.push(name);
-  }
-  return sparse;
-}
-
 async function showSource(source) {
   state.source = null;
+  $("file-table").hidden = true;
   refresh();
+  // Each image's file, .bin or .img. A folder with both for one image is refused.
+  let files;
+  try {
+    files = new Map(BUILD_IMAGES.map((image) => [image, imageFile(source, image)]));
+  } catch (e) {
+    $("build-problem").textContent = e.message;
+    $("build-problem").hidden = false;
+    return;
+  }
   table(
     $("file-table"),
     ["File", "Size"],
-    BUILD_FILES.filter((name) => name.endsWith(".bin")).map((name) => [
-      name,
-      source.has(name)
-        ? { text: formatBytes(source.size(name)), className: "n" }
-        : { text: REQUIRED_FILES.includes(name) ? "missing" : "not in this folder", className: "n missing" },
+    BUILD_IMAGES.map((image) => [
+      files.get(image) ?? `${image}.bin`,
+      files.get(image)
+        ? { text: formatBytes(source.size(files.get(image))), className: "n" }
+        : { text: REQUIRED_IMAGES.includes(image) ? "missing" : "not in this folder", className: "n missing" },
     ]),
   );
-  const missing = REQUIRED_FILES.filter((name) => !source.has(name));
-  const sparse = await sparseImages(source);
+  const missing = REQUIRED_IMAGES.filter((image) => !files.get(image)).map((image) => `${image}.bin`);
+  const sparse = [];
+  for (const file of files.values()) {
+    if (file && isSparse(await source.head(file, 4))) sparse.push(file);
+  }
   $("build-problem").hidden = missing.length === 0 && sparse.length === 0;
   if (sparse.length) {
     $("build-problem").textContent =
@@ -133,7 +140,7 @@ async function showSource(source) {
     `This folder is missing ${missing.join(", ")}. Choose the edl folder from the extracted zip, and run ota2raw in it first: that is what creates the .bin images.`;
   if (missing.length) return;
   state.source = source;
-  $("root-check").disabled = !source.has("boot-magisk.bin");
+  $("root-check").disabled = !files.get("boot-magisk");
   if ($("root-check").disabled) $("root-check").checked = false;
   log(`Build: ${source.label}`);
   showPlan();
@@ -213,6 +220,7 @@ async function dropConnection() {
   state.session = null;
   $("phone-info").hidden = true;
   $("plan-table").hidden = true;
+  clearRestore();
 }
 
 /**
@@ -254,11 +262,9 @@ $("connect-button").onclick = () =>
       }
       state.usb = usb;
       showPhone(state.session);
-      say(
-        showPlan()
-          ? "Phone checked and ready to back up or flash. Nothing has been written."
-          : "Phone checked and ready to back up. To flash, choose a ROM folder in step 1.",
-      );
+      showPlan();
+      await showRestore().catch((e) => showResult(e.message, true, "restore-problem"));
+      say("Phone checked and ready. Nothing has been written.");
     },
     "connect-result",
   );
@@ -366,8 +372,148 @@ $("flash-button").onclick = () =>
     log(`Flash complete in ${minutes} min`);
     $("progress-text").textContent = `Done in ${minutes} min`;
     await reboot();
-    showResult("Flash complete. The first boot takes a few minutes. After a major change, erase data next (step 5).");
+    showResult("Flash complete. The first boot takes a few minutes. After a major change, erase data next (Erase data, below).");
   });
+
+// --- tabs -------------------------------------------------------------------
+
+// Each tab is one task. Elements carry data-tabs listing the tabs they appear
+// on; the phone connection is shared, so it survives a switch. Steps are
+// numbered per tab.
+const TABS = ["backup", "flash", "restore"];
+
+function showTab() {
+  const hash = location.hash.slice(1);
+  const tab = TABS.includes(hash) ? hash : "backup";
+  let step = 0;
+  for (const element of document.querySelectorAll("[data-tabs]")) {
+    element.hidden = !element.dataset.tabs.split(" ").includes(tab);
+    const num = element.querySelector(".num");
+    if (num && !element.hidden) num.textContent = ++step;
+  }
+  for (const button of document.querySelectorAll("[role=tab]")) {
+    button.setAttribute("aria-selected", button.dataset.tab === tab);
+  }
+}
+
+for (const button of document.querySelectorAll("[role=tab]")) {
+  button.onclick = () => (location.hash = button.dataset.tab);
+}
+window.addEventListener("hashchange", showTab);
+
+// --- 5. restore -------------------------------------------------------------
+
+const RESTORE_STATUS = {
+  write: "restore",
+  "no-file": "no file, left as it is",
+  unverified: "skipped: no traceability.bin proves this file is from this phone",
+  never: "never restored",
+};
+
+const RESTORE_ORDER = ["write", "unverified", "no-file", "never"];
+
+// The partitions a phone needs to start; a restore that touches them is called out.
+const BOOT_CHAIN = ["sbl1", "rpm", "tz", "aboot", "devcfg", "cmnlib", "cmnlib64", "keymaster"];
+
+function clearRestore() {
+  state.restoreRows = null;
+  $("restore-list").hidden = true;
+  $("restore-summary").hidden = true;
+  $("restore-problem").hidden = true;
+}
+
+/** Match the chosen folder against the phone and show what a restore would write. Reads from the phone. */
+async function showRestore() {
+  clearRestore();
+  if (!state.backup || !state.session) return;
+  const rows = await restorePlan(state.session, state.backup);
+  state.restoreRows = rows;
+  table(
+    $("restore-table"),
+    ["Partition", { text: "Status", className: "l" }, "Size"],
+    // Partitions with a file first, so a folder of a few images is not lost in the list.
+    [...rows]
+      .sort((a, b) => RESTORE_ORDER.indexOf(a.action) - RESTORE_ORDER.indexOf(b.action))
+      .map((row) => [
+        row.partition,
+        { text: RESTORE_STATUS[row.action], className: row.action === "write" ? "good" : "muted" },
+        { text: row.bytes ? formatBytes(row.bytes) : "", className: "n" },
+      ]),
+  );
+  $("restore-list").hidden = false;
+
+  const written = rows.filter((row) => row.action === "write").map((row) => row.partition);
+  const unverified = rows.filter((row) => row.action === "unverified").length;
+  let summary = written.length
+    ? `Restores ${written.length} of ${rows.length} partitions: ${written.length > 6 ? `${written.slice(0, 6).join(", ")} and ${written.length - 6} more` : written.join(", ")}.`
+    : "Nothing in this folder can be restored: no .bin or .img file is named after a partition on this phone, such as boot.bin or boot.img.";
+  if (unverified) {
+    summary += ` ${unverified} per-phone ${unverified === 1 ? "partition is" : "partitions are"} skipped because the folder has no traceability.bin from this phone.`;
+  }
+  $("restore-summary").textContent = summary;
+  $("restore-summary").hidden = false;
+}
+
+$("restore-folder-button").onclick = () => $("restore-folder-input").click();
+$("restore-folder-input").onchange = (event) => {
+  const files = [...event.target.files];
+  if (files.length === 0) return;
+  const folder = files[0].webkitRelativePath.split("/")[0] || "local folder";
+  state.backup = FileSource.backup(files, folder);
+  $("restore-folder-name").textContent = `${folder}: ${state.backup.count} images, ${formatBytes(state.backup.totalBytes)}`;
+  log(`Restore folder: ${folder}`);
+  run("Check folder", showRestore, "restore-problem");
+};
+
+$("restore-button").onclick = () =>
+  run(
+    "Restore",
+    async () => {
+      // Checked again against the phone as it is now; every check runs before the question is asked.
+      await showRestore();
+      const plan = state.restoreRows.filter((row) => row.action === "write");
+      if (plan.length === 0) return;
+      const names = plan.map((row) => row.partition);
+      const variant = VARIANTS[state.session.variant].name;
+      const bootChain = names.some((name) => BOOT_CHAIN.includes(name)) ? " This includes the bootloader." : "";
+      if (
+        !confirm(
+          `Restore ${plan.length} ${plan.length === 1 ? "partition" : "partitions"} from ${state.backup.label} to this ${variant}?\n\n` +
+            `${names.length > 12 ? `${names.slice(0, 12).join(", ")} and ${names.length - 12} more` : names.join(", ")}.${bootChain}\n\n` +
+            "Do not unplug the phone until it finishes.",
+        )
+      )
+        return;
+
+      $("restore-progress").hidden = false;
+      const started = performance.now();
+      let current = -1;
+      try {
+        await guarded(() =>
+          flash(state.session, plan, state.backup, ({ step, partition, written, total }) => {
+            if (step !== current) {
+              current = step;
+              log(`Writing ${partition}`);
+            }
+            $("restore-bar").value = written / total;
+            $("restore-text").textContent = progressLine(partition, written, total, started);
+          }),
+        );
+      } catch (e) {
+        throw new Error(`${e.message}. The phone may not boot until a restore completes; leave it connected and press Restore again.`);
+      }
+      const minutes = ((performance.now() - started) / 60000).toFixed(1);
+      log(`Restore complete in ${minutes} min`);
+      $("restore-text").textContent = `Done in ${minutes} min`;
+      await reboot();
+      showResult(
+        "Restore complete. If the phone stays on the boot logo or asks to reset, do a factory reset from recovery (see below).",
+        false,
+        "restore-result",
+      );
+    },
+    "restore-result",
+  );
 
 // --- startup ----------------------------------------------------------------
 
@@ -386,5 +532,6 @@ if (!navigator.usb) {
 
 $("copy-log").onclick = () => navigator.clipboard.writeText($("log").textContent);
 
+showTab();
 refresh();
 tailorInstructions();

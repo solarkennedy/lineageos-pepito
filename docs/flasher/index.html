@@ -22,8 +22,19 @@
         Showing instructions for <b id="os-name"></b>. <button id="os-all" type="button" class="link">Show all systems</button>
       </p>
 
-      <section id="build-card">
-        <h2><span class="num">1</span> Get the ROM</h2>
+      <nav class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="backup">Back up</button>
+        <button type="button" role="tab" data-tab="flash">Flash</button>
+        <button type="button" role="tab" data-tab="restore">Restore</button>
+      </nav>
+
+      <p class="notice" data-tabs="flash">
+        Flashing this phone for the first time? <a href="#backup">Back it up</a> first. The backup holds the stock
+        firmware and this phone's own radio calibration, and it is the only way back to stock.
+      </p>
+
+      <section id="build-card" data-tabs="flash">
+        <h2><span class="num"></span> Get the ROM</h2>
         <ol class="steps">
           <li>
             <a href="https://github.com/solarkennedy/lineageos-pepito/releases" target="_blank" rel="noopener"
@@ -108,8 +119,8 @@ chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
           </p>
           <p>
             This page can flash any of them, within what it writes. The folder you choose must contain
-            <code>boot.bin</code>, <code>recovery.bin</code>, <code>system.bin</code> and <code>vendor.bin</code>,
-              with exactly those names. Rename <code>.img</code> files if needed.
+            <code>boot</code>, <code>recovery</code>, <code>system</code> and <code>vendor</code> images, named
+            <code>boot.bin</code> or <code>boot.img</code> and so on.
           </p>
           <p>
             The images must be raw, not Android "sparse" images. This page refuses a sparse image; convert it first
@@ -118,7 +129,7 @@ chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
           <p>
             Only those four partitions are written, and <code>config</code> is cleared. A stock firmware package also
             carries the bootloader, modem and other firmware; this page leaves those as they are. To put a phone fully
-            back to stock, restore your own backup with the command-line tool (see step 3).
+            back to stock, restore your own backup on the Restore tab.
           </p>
         </details>
         <details>
@@ -158,8 +169,8 @@ chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
         </details>
       </section>
 
-      <section id="phone-card">
-        <h2><span class="num">2</span> Connect the phone</h2>
+      <section id="phone-card" data-tabs="backup flash restore">
+        <h2><span class="num"></span> Connect the phone</h2>
         <ol class="steps">
           <li>
             Put the phone in EDL mode, using one of the ways listed below. The screen goes black and stays black.
@@ -302,8 +313,8 @@ sudo udevadm control --reload-rules</pre>
         <dl id="phone-info" hidden></dl>
       </section>
 
-      <section id="backup-card">
-        <h2><span class="num">3</span> Back up the phone</h2>
+      <section id="backup-card" data-tabs="backup">
+        <h2><span class="num"></span> Back up the phone</h2>
         <p>
           Copies every partition except your personal data to a folder on this computer: the stock firmware, the
           bootloader and the modem calibration that is unique to this phone. It is the only way back to stock, so do
@@ -340,9 +351,9 @@ sudo udevadm control --reload-rules</pre>
             cannot be read back on a phone that has been reflashed.
           </p>
           <p>
-            <b>Restoring</b> is not done from this page, because it rewrites the bootloader and modem. Use the
-            <a href="https://github.com/linux-msm/qdl" target="_blank" rel="noopener">qdl</a> command-line tool with
-            the phone in EDL mode, from the folder that holds the loader:
+            <b>Restoring</b> is done on the Restore tab. The
+            <a href="https://github.com/linux-msm/qdl" target="_blank" rel="noopener">qdl</a> command-line tool can
+            also do it, with the phone in EDL mode, from the folder that holds the loader:
           </p>
           <pre>qdl --storage emmc --include palm-pvg100-backup-DATE pvg100_firehose.elf palm-pvg100-backup-DATE/rawprogram_restore.xml</pre>
           <p>On a PVG100E use <code>pvg100e_firehose.elf</code>.</p>
@@ -350,8 +361,73 @@ sudo udevadm control --reload-rules</pre>
         </details>
       </section>
 
-      <section id="flash-card">
-        <h2><span class="num">4</span> Flash</h2>
+      <section id="restore-card" data-tabs="restore">
+        <h2><span class="num"></span> Restore a backup</h2>
+        <p>
+          Writes partition images from a folder back to the phone: a whole backup from the Back up tab, to return to
+          stock or undo a flash, or just the files you need, such as a single <code>boot.bin</code> or <code>boot.img</code>.
+          Each file goes to the partition it is named after; partitions with no file are left as they are.
+        </p>
+        <p>
+          The partitions that hold this phone's own identity and calibration are only written from a backup of this
+          same phone. The page checks the folder's <code>traceability.bin</code> against the phone's factory record
+          first, and skips them when the folder has none.
+        </p>
+        <div class="row">
+          <button id="restore-folder-button" type="button" class="primary">Choose the backup folder</button>
+          <input id="restore-folder-input" type="file" webkitdirectory multiple hidden />
+          <span id="restore-folder-name" class="muted"></span>
+        </div>
+        <p id="restore-problem" class="notice bad" hidden></p>
+        <p id="restore-summary" hidden></p>
+        <div id="restore-list" class="scroll" hidden>
+          <table id="restore-table" class="files"></table>
+        </div>
+        <div class="row">
+          <button id="restore-button" type="button" class="primary" disabled>Restore</button>
+          <span class="muted">The phone restarts when the restore finishes.</span>
+        </div>
+        <p id="restore-needs" class="needs" hidden></p>
+        <div id="restore-progress" hidden>
+          <progress id="restore-bar" max="1" value="0"></progress>
+          <p id="restore-text" class="progress-text"></p>
+        </div>
+        <p id="restore-result" class="notice" hidden></p>
+        <details>
+          <summary>What a restore writes, and what comes after</summary>
+          <p>
+            A file is matched to a partition by its name: <code>boot.bin</code> or <code>boot.img</code> goes to
+            <code>boot</code>, <code>modemst1.bin</code> to <code>modemst1</code>. Files must be raw images no
+            larger than their partition, not Android "sparse" images (convert those with <code>simg2img</code>).
+            Other files in the folder are ignored. A whole backup is about 8 GB and takes longer than a
+            flash. Your personal data (<code>userdata</code>) is never written.
+          </p>
+          <p>
+            If the folder holds a <code>gpt-lun0.bin</code> or <code>traceability.bin</code>, they must match this
+            phone, or nothing is written: the folder is a backup of a different phone.
+          </p>
+          <p>
+            <b>After restoring stock firmware</b>, the data LineageOS left behind cannot be read by stock Android. If
+            the phone stays on the boot logo or asks to reset, open stock recovery (hold the power button down through
+            three restarts) and choose <b>Wipe data/factory reset</b>. It erases everything on the phone.
+          </p>
+          <p>
+            <b>The restore stopped part-way:</b> leave the phone connected and press Restore again. If the page lost
+            the connection, put the phone back into EDL mode, reload this page and start again. A phone whose
+            bootloader is only half-written goes into EDL mode on its own when switched on; failing that, an EDL
+            cable always works.
+          </p>
+          <p>
+            <b>Why some partitions need proof:</b> <code>traceability</code>, <code>modemst1</code>,
+            <code>modemst2</code>, <code>fsg</code>, <code>persist</code>, <code>tunning</code>, <code>simlock</code>
+            and <code>DDR</code> belong to one phone: its identity, radio and sensor calibration. Writing another
+            phone's would give this one the other's identity and a radio tuned for different hardware.
+          </p>
+        </details>
+      </section>
+
+      <section id="flash-card" data-tabs="flash">
+        <h2><span class="num"></span> Flash</h2>
         <p>Writes <b>boot</b>, <b>recovery</b>, <b>system</b> and <b>vendor</b>, and clears <b>config</b>.</p>
         <table id="plan-table" class="files" hidden></table>
         <div class="row">
@@ -379,8 +455,8 @@ sudo udevadm control --reload-rules</pre>
         </details>
       </section>
 
-      <section id="erase-card">
-        <h2><span class="num">5</span> Erase data <span class="muted">(optional)</span></h2>
+      <section id="erase-card" data-tabs="flash">
+        <h2><span class="num"></span> Erase data <span class="muted">(optional)</span></h2>
         <p>
           Only needed after a major change: coming from stock firmware, switching to a different ROM, or a major
           version upgrade. Skip it when updating to a newer build of the ROM already on the phone. <b>It erases

@@ -1,6 +1,6 @@
 // The flashing procedure, free of any UI so it can be driven by tests.
 
-import { VARIANTS, WRITES } from "./device.js";
+import { IMAGE_EXTENSIONS, VARIANTS, WRITES } from "./device.js";
 import { Firehose, SECTOR_SIZE } from "./firehose.js";
 import { readGpt } from "./gpt.js";
 import { LAYOUTS } from "./layouts.js";
@@ -30,6 +30,16 @@ function layoutProblems(gpt, layout) {
     }
   });
   return problems;
+}
+
+/**
+ * The file in `source` that holds an image: `<image>.bin` or `<image>.img`.
+ * Undefined if it has neither. Both at once is refused rather than guessed at.
+ */
+export function imageFile(source, image) {
+  const found = IMAGE_EXTENSIONS.map((ext) => image + ext).filter((file) => source.has(file));
+  if (found.length > 1) throw new FlashError(`The folder has both ${found.join(" and ")}; keep one. Nothing was written.`);
+  return found[0];
 }
 
 export function matchLayout(gpt) {
@@ -110,8 +120,9 @@ export function buildPlan(session, source, { root = false } = {}) {
     if (write.zero) {
       return { partition: write.partition, file: null, start: part.start, sectors: part.sectors, bytes: capacity };
     }
-    const file = root && write.rootFile ? write.rootFile : write.file;
-    if (!source.has(file)) throw new FlashError(`The build has no ${file}`);
+    const image = root && write.rootImage ? write.rootImage : write.image;
+    const file = imageFile(source, image);
+    if (!file) throw new FlashError(`The build has no ${image}.bin or ${image}.img`);
     const bytes = source.size(file);
     if (bytes > capacity) {
       throw new FlashError(`${file} (${bytes} bytes) does not fit in ${write.partition} (${capacity} bytes)`);
@@ -193,6 +204,108 @@ export function restoreManifest(plan) {
         `num_partition_sectors="${step.sectors}" physical_partition_number="0" start_sector="${step.start}"/>`,
     );
   return `<?xml version="1.0" ?>\n<data>\n${lines.join("\n")}\n</data>\n`;
+}
+
+// The phone's factory record: serial numbers and model, written at the factory
+// and never since. Every unit seen so far has its own, and it survives
+// flashing, so it tells one phone from another.
+const IDENTITY_PARTITION = "traceability";
+
+// Partitions that belong to one phone: the factory record, the modem's
+// identity and calibration, sensor calibration, memory training. A restore
+// writes them only from a folder proven to come from this phone.
+export const PER_PHONE = ["traceability", "modemst1", "modemst2", "fsg", "persist", "tunning", "simlock", "DDR"];
+
+// Android sparse images start with this magic. Written as-is they would
+// produce a corrupt partition.
+const SPARSE_MAGIC = [0x3a, 0xff, 0x26, 0xed];
+
+export const isSparse = (head) => SPARSE_MAGIC.every((byte, i) => head[i] === byte);
+
+function list(names) {
+  return names.length > 4 ? `${names.slice(0, 4).join(", ")} and ${names.length - 4} more` : names.join(", ");
+}
+
+/**
+ * Match a folder of partition images against the connected phone. Each
+ * `<partition>.bin` or `<partition>.img` goes to the partition it is named after, at the offset in
+ * the phone's own partition table; partitions with no file are left alone, and
+ * userdata is never written. Reads from the phone; writes nothing.
+ *
+ * A folder that is another phone's backup is refused outright: its
+ * gpt-lun0.bin or traceability.bin, when present, must match this phone.
+ * Per-phone partitions are written only when traceability.bin proves the
+ * folder came from this phone, and skipped otherwise.
+ *
+ * Each row's action is "write", "no-file", "unverified" (a per-phone partition
+ * without that proof) or "never" (userdata).
+ * @returns {Promise<{partition: string, file: string, start: number, sectors: number, bytes: number, action: string}[]>}
+ */
+export async function restorePlan(session, source) {
+  const phone = session.gpt.partitions;
+
+  const files = new Map(phone.map((p) => [p.name, imageFile(source, p.name)]));
+
+  if (source.has("gpt-lun0.bin")) {
+    const table = await source.bytes("gpt-lun0.bin");
+    let gpt;
+    try {
+      gpt = await readGpt(async (start, count) => table.subarray(start * SECTOR_SIZE, (start + count) * SECTOR_SIZE));
+    } catch (e) {
+      throw new FlashError(`The folder's gpt-lun0.bin is damaged (${e.message}). Nothing was written.`);
+    }
+    const sameTable =
+      gpt.partitions.length === phone.length &&
+      gpt.partitions.every((p, i) => p.name === phone[i].name && p.start === phone[i].start && p.sectors === phone[i].sectors);
+    if (!sameTable) {
+      throw new FlashError(
+        "The folder's gpt-lun0.bin differs from this phone's partition table, so it is a backup of another phone or model. Nothing was written.",
+      );
+    }
+  }
+
+  let verified = false;
+  const identity = phone.find((p) => p.name === IDENTITY_PARTITION);
+  if (identity && files.get(IDENTITY_PARTITION)) {
+    const saved = await source.bytes(files.get(IDENTITY_PARTITION));
+    // A blank record proves nothing either way, so per-phone partitions stay skipped.
+    if (saved.some((byte) => byte !== 0)) {
+      const current = await session.firehose.read(identity.start, identity.sectors);
+      if (saved.length !== current.length || saved.some((byte, i) => byte !== current[i])) {
+        throw new FlashError(
+          `The folder's ${files.get(IDENTITY_PARTITION)} does not match this phone's factory record, so it is a backup of a different phone. ` +
+            "Restoring it would copy that phone's identity and radio calibration onto this one. Nothing was written.",
+        );
+      }
+      verified = true;
+    }
+  }
+
+  const rows = phone.map((p) => {
+    const file = files.get(p.name);
+    const row = { partition: p.name, file, start: p.start, sectors: p.sectors, bytes: 0 };
+    if (p.name === "userdata") return { ...row, action: "never" };
+    if (!file) return { ...row, action: "no-file" };
+    const bytes = source.size(file);
+    if (PER_PHONE.includes(p.name) && !verified) return { ...row, bytes, action: "unverified" };
+    const capacity = p.sectors * SECTOR_SIZE;
+    if (bytes === 0) throw new FlashError(`${file} is empty. Nothing was written.`);
+    if (bytes > capacity) {
+      throw new FlashError(`${file} (${bytes} bytes) does not fit in ${p.name} (${capacity} bytes). Nothing was written.`);
+    }
+    return { ...row, bytes, sectors: Math.ceil(bytes / SECTOR_SIZE), action: "write" };
+  });
+
+  const sparse = [];
+  for (const row of rows.filter((r) => r.action === "write")) {
+    if (isSparse(await source.head(row.file, 4))) sparse.push(row.file);
+  }
+  if (sparse.length) {
+    throw new FlashError(
+      `${list(sparse)} is an Android sparse image, which this page cannot write. Convert it to a raw image with simg2img first. Nothing was written.`,
+    );
+  }
+  return rows;
 }
 
 /**

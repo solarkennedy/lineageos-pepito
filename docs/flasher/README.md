@@ -22,9 +22,18 @@ Open http://localhost:8100/ in Chrome or Edge. The page walks the user through
 downloading the release zip, extracting it and running `ota2raw`, then reads
 the images from the zip's `edl/` folder: `boot.bin`, `recovery.bin`, `system.bin`, `vendor.bin`,
 `pvg100_firehose.elf`, `pvg100e_firehose.elf` and optionally `boot-magisk.bin`.
+Any image may instead be named `.img` (`imageFile()` in `js/flash.js`, shared
+with Restore); a folder with both names for one image is refused.
 Nothing is uploaded, and the page never fetches images over the network.
 
 ## What it does
+
+The page has one tab per task, selected by the URL hash: `#backup` (connect,
+back up; the default), `#flash` (get the ROM, connect, flash, erase data) and
+`#restore` (connect, restore a backup).
+Elements say which tabs they belong to with `data-tabs`, and steps are
+numbered per tab. The phone connection is shared, so connecting on one tab
+carries over to the other.
 
 1. The user chooses PVG100 or PVG100E.
 2. Sends that variant's programmer, then reads the phone's partition table.
@@ -37,7 +46,30 @@ Nothing is uploaded, and the page never fetches images over the network.
 
 Before flashing, "Back up to a folder" reads every partition except userdata
 into `<partition>.bin` files plus `gpt-lun0.bin` and `rawprogram_restore.xml`,
-the same layout `scripts/qdl-dump.sh` produces. Restoring is done with `qdl`:
+the same layout `scripts/qdl-dump.sh` produces.
+
+The Restore tab writes a folder of partition images back: a whole backup, or
+just some files, down to a single `boot.bin`. Each top-level `<partition>.bin`
+or `<partition>.img` (both at once is refused) goes to the partition it is named after, at the offset in the phone's own
+partition table; partitions without a file are left alone, userdata is never
+written, and the rawprogram XMLs are never read. The page lists every
+partition with what will happen to it. `restorePlan()` in `js/flash.js`
+decides, reading the phone but writing nothing:
+
+- If the folder has `gpt-lun0.bin`, it must equal the phone's partition table,
+  or nothing is written. That also rules out the other model.
+- If the folder has a non-blank `traceability.bin`, it must be byte-identical
+  to the phone's `traceability` partition, or nothing is written: the folder
+  is another phone's backup. That partition is the factory record (board
+  serial, model). It differed on all 9 bench units and was unchanged on
+  9c2e6b00 across six weeks and a LineageOS flash, so it tells phones apart.
+- The per-phone partitions (`PER_PHONE`: traceability, modemst1/2, fsg,
+  persist, tunning, simlock, DDR) are written only when that match succeeded,
+  and skipped otherwise. Writing another phone's copies would clone its
+  identity and modem calibration.
+- Images must be raw, non-empty and no larger than their partition.
+
+Restoring from the command line is done with `qdl`:
 
     qdl --storage emmc --include <backup dir> pvg100_firehose.elf <backup dir>/rawprogram_restore.xml
 

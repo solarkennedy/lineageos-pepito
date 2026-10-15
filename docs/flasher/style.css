@@ -81,6 +81,29 @@ h2 {
   font-size: 0.85rem;
 }
 
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0 0 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.tabs button {
+  margin-bottom: -1px;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.tabs button[aria-selected="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
 .row {
   display: flex;
   flex-wrap: wrap;
@@ -193,8 +216,28 @@ table.files td.n {
   font-variant-numeric: tabular-nums;
 }
 
+table.files th.l {
+  text-align: left;
+}
+
+.scroll {
+  max-height: 22rem;
+  overflow-y: auto;
+}
+
+.scroll table.files th {
+  position: sticky;
+  top: 0;
+  background: var(--card);
+}
+
 .missing {
   color: var(--bad);
+}
+
+.good {
+  color: var(--good);
+  font-weight: 600;
 }
 
 dl {

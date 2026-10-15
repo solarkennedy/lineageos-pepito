@@ -133,6 +133,11 @@ export class MockPhone {
     }
   }
 
+  /** Put bytes on the pretend eMMC, as the factory would. */
+  writeDisk(startSector, bytes) {
+    this.#store(startSector, bytes);
+  }
+
   /** Bytes currently on the pretend eMMC. */
   readDisk(startSector, numSectors) {
     const out = new Uint8Array(numSectors * SECTOR);
