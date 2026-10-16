@@ -385,6 +385,9 @@ Memory: `splash-boot-logo`. Tools in `tools/splash/` (README has the format).
   (trim.txt on a 720x1280 canvas). Each part runs at stock speed on dut1. Continuous splash keeps the
   logo up until bootanim starts (15–31 s into boot). `render-bootanimation.py` renders any zip to
   mp4/webm/gif.
-- Not shipped to users yet: OTAs write only system/vendor/boot, so the splash also needs an OTA
-  releasetools write plus the EDL manifest, ota2raw and the web flasher. The animation ships with
-  the build.
+- **Shipping (2026-10-16, pushed, not yet built):** device tree `85c7e499` carries the logo as
+  `splash/splash.img` (first 128 KiB of the partition) and `releasetools.py` writes it in every OTA
+  (`firmware-update/splash.img`); landing `c797d05` stages it in prepare-flash, puts it in the EDL
+  kit's manifest (ota2raw rebuilds it) and has the web flasher write it when present. Check on the
+  next build: `out/.../Mi8937/splash.img` exists, the OTA zip has `firmware-update/splash.img` and
+  the updater-script line, and release.sh's ota2raw round trip passes.
