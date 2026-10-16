@@ -289,3 +289,15 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   Repeat at ~50 % charge before selling Gold.
 - **Deferred:** Bluetooth-tether IPv6 with a phone client — needs a cellular-upstream phone; Silver and new2
   were running the stick-lane captures and DUT1 was off the bench.
+
+## Bench result 2026-10-15 — custom boot logo (`splash` partition) boots on dut1
+Memory: `splash-boot-logo`. Tool `tools/splash/` (README has the format).
+- `splash` (22528 sectors, both GPT layouts) holds the five screens aboot draws: `SPLASH!!` + 720x1280
+  header, frame table at 0x200, five zlib-9 BGR24 frames (0 = PALM logo). 0x20000+ is leftover from an
+  older image. All 7 backed-up units are identical apart from the 0x00/0xff filler before 0x20000.
+- `splash.py replace-logo` re-encodes frame 0 only (new logo ≤ 18,457 B compressed). A "LineageOS" text
+  logo flashed over EDL to dut1 **boots and shows** ✅. So aboot doesn't checksum frame 0; the unexplained
+  header words (216, 0xffffff06, 0x79) are not a check on it.
+- Not shipped: OTAs write only system/vendor/boot. Shipping a logo would need a pepito-gated
+  releasetools write (the OTA zip is shared with land/santoni/ugg), plus the EDL manifest, ota2raw and the
+  web flasher. Test image and dut1's stock copy are in `flash-staging/held-splash-{test,stock}/`.
