@@ -130,7 +130,8 @@ chmod +x <span data-ota2raw="macos">ota2raw-macos-arm64</span>
             with <code>simg2img</code>.
           </p>
           <p>
-            Only those four partitions are written, and <code>config</code> is cleared. A stock firmware package also
+            Only those four partitions are written, plus the boot logo at the start of <code>splash</code> when the
+            folder has a <code>splash.bin</code>, and <code>config</code> is cleared. A stock firmware package also
             carries the bootloader, modem and other firmware; this page leaves those as they are. To put a phone fully
             back to stock, restore your own backup on the Restore tab.
           </p>
@@ -520,7 +521,7 @@ sudo udevadm control --reload-rules</pre>
 
       <section id="flash-card" data-tabs="flash">
         <h2><span class="num"></span> Flash</h2>
-        <p>Writes <b>boot</b>, <b>recovery</b>, <b>system</b> and <b>vendor</b>, and clears <b>config</b>.</p>
+        <p>Writes <b>boot</b>, <b>recovery</b>, <b>system</b>, <b>vendor</b> and the boot logo (<b>splash</b>), and clears <b>config</b>.</p>
         <table id="plan-table" class="files" hidden></table>
         <div class="row">
           <button id="flash-button" type="button" class="primary" disabled>Flash</button>

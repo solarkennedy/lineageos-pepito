@@ -15,6 +15,9 @@ export const WRITES = [
   { partition: "recovery", image: "recovery" },
   { partition: "system", image: "system" },
   { partition: "vendor", image: "vendor" },
+  // The boot logo (the first 128 KiB of splash). Optional: kits from before
+  // it was added have no splash.bin, and those still flash.
+  { partition: "splash", image: "splash", optional: true },
   // Zero-filled so factory reset protection state cannot outlive the install.
   { partition: "config", zero: true },
 ];

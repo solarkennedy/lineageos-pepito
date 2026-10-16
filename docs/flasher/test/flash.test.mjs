@@ -107,6 +107,22 @@ for (const variant of ["pvg100", "pvg100e"]) {
   });
 }
 
+test("the boot logo is written when the build has one, and skipped when not", async () => {
+  const splash = bytes(131072, 8);
+  const phone = phoneFor("pvg100");
+  const source = memorySource({ ...FILES, "splash.bin": splash });
+  const session = await connect(await open(phone), source, { variant: "pvg100" });
+  const plan = buildPlan(session, source);
+  assert.deepEqual(plan.map((step) => step.partition), ["boot", "recovery", "system", "vendor", "splash", "config"]);
+  const step = plan.find((s) => s.partition === "splash");
+  assert.equal(step.sectors, 256, "only the image's own sectors, not the whole partition");
+  await flash(session, plan, source);
+  assertOnDisk(phone, "pvg100", "splash", splash);
+
+  const without = buildPlan(session, memorySource());
+  assert.ok(!without.some((s) => s.partition === "splash"));
+});
+
 test("root option swaps in the Magisk boot image", async () => {
   const phone = phoneFor("pvg100");
   const source = memorySource();

@@ -76,12 +76,13 @@ DIST_DIR="${DIST_DIR:-$TREE/release-dist}"
 # a file; a reference copy's SHA-256 goes into edl/manifest.json and is what
 # ota2raw's output must match.
 #
-# boot/recovery/config: the reference is the copy prepare-flash.sh staged
-# (boot.img/recovery.img zero-padded to the partition size, and a 32 KB
+# boot/recovery/config/splash: the reference is the copy prepare-flash.sh
+# staged (boot.img/recovery.img zero-padded to the partition size, a 32 KB
 # zero-fill that clears a stale FRP token so A15+ FRP can auto-deactivate after
-# a wipe). userdata is deliberately excluded — a release flash must not wipe
-# /data as a side effect.
-EDL_IMAGES=(boot.bin recovery.bin config.bin)
+# a wipe, and the boot logo: the build's splash.img, which the OTA carries as
+# firmware-update/splash.img and writes itself). userdata is deliberately
+# excluded — a release flash must not wipe /data as a side effect.
+EDL_IMAGES=(boot.bin recovery.bin config.bin splash.bin)
 # system/vendor: the reference is the target-files image the OTA payload was
 # generated from (IMAGES/<part>.img, desparsified with simg2img), NOT the
 # system.bin/vendor.bin in flash-staging/. Those come from out/<part>.img, a
@@ -201,7 +202,7 @@ only from a full EDL backup).
 
 At the top level, next to this README, is the update payload
 (\`system.new.dat.br\`, \`vendor.new.dat.br\`, \`boot.img\`, \`recovery.img\`,
-\`META-INF/\` and friends). Leave those files where they are; \`ota2raw\` reads
+\`firmware-update/splash.img\`, \`META-INF/\` and friends). Leave those files where they are; \`ota2raw\` reads
 them.
 
 In \`edl/\`:
@@ -217,8 +218,8 @@ In \`edl/\`:
 - \`rawprogram0.pvg100.xml\` — **PVG100** partition table
 - \`rawprogram0.pvg100e.xml\` — **PVG100E** partition table (same disk, but the
   partitions live at different offsets — the two are NOT interchangeable)
-- In either XML only the boot/recovery/system/vendor/config entries are used
-  here; the rest are skipped with \`--allow-missing\`.
+- In either XML only the boot/recovery/system/vendor/config/splash entries are
+  used here; the rest are skipped with \`--allow-missing\`.
 - \`boot-magisk.bin\` — **optional**: the boot image pre-patched with
   Magisk $MAGISK_VERSION for root. Not used by either XML — see "Root (optional)"
   below. Ignore this file if you don't want root.
@@ -239,10 +240,14 @@ In \`edl/\`:
 - \`config.bin\` — a 32 KB zero-fill flashed over the \`config\` partition to
   clear any stale factory-reset-protection (FRP) token, so you don't get a
   bogus "factory reset" prompt on every boot. It does **not** touch \`/data\`.
+- \`splash.bin\` — the boot logo (PALM, which the boot animation then fades
+  out). It is the first 128 KB of the \`splash\` partition; the rest of that
+  partition is left as it is. Every OTA update writes it too.
 
 This kit does **not** touch modem, bootloader, TrustZone, RPM, or other
 firmware partitions — those are stock, device-specific, and already on your
-phone. Only boot / recovery / system / vendor / config are written.
+phone. Only boot / recovery / system / vendor / config, and the boot-logo part
+of splash, are written.
 
 ## Which variant do I have?
 
@@ -804,6 +809,7 @@ SPEC = [
     ("system.bin", "blocks", "system"),
     ("vendor.bin", "blocks", "vendor"),
     ("config.bin", "zero", ""),
+    ("splash.bin", "file", "firmware-update/splash.img"),
 ]
 images = []
 for name, kind, source in SPEC:

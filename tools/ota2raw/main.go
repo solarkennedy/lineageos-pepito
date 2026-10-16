@@ -8,6 +8,8 @@
 //	boot.bin, recovery.bin   boot.img / recovery.img, zero-padded
 //	system.bin, vendor.bin   the block stream written out per the transfer list
 //	config.bin               zero-fill (clears a stale FRP token)
+//	splash.bin               firmware-update/splash.img: the boot logo, the
+//	                         first 128 KiB of the splash partition
 //
 // What to build, and the SHA-256 every result must have, comes from
 // edl/manifest.json inside the zip (written by scripts/release.sh, which checks

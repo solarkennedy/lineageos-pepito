@@ -10,6 +10,7 @@ step that turns its update payload back into flashable images:
 | `boot.bin`, `recovery.bin` | `boot.img` / `recovery.img`, zero-padded to the partition size |
 | `system.bin`, `vendor.bin` | `<part>.new.dat.br` (brotli) written out per `<part>.transfer.list` |
 | `config.bin` | zero-fill |
+| `splash.bin` | `firmware-update/splash.img`, the boot logo (the first 128 KiB of the `splash` partition) |
 
 What to build and the SHA-256 each image must have come from
 `edl/manifest.json` in the zip, written by `scripts/release.sh`. The release

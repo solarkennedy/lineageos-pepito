@@ -43,6 +43,24 @@ previews or posting:
 
     render-bootanimation.py bootanimation.zip -o boot.mp4 [--hold 1.5] [--loops 2] [--scale 0.5]
 
+## How the logo ships
+
+The device tree carries the logo as `device/xiaomi/Mi8937/splash/splash.img`:
+the first 128 KiB of the partition (header and frames, everything below
+0x20000), not the whole 11 MiB. The build copies it into target-files
+`RADIO/` (`Android.mk`, `add-radio-file`), and `releasetools.py` puts it in
+every OTA, full and incremental, as `firmware-update/splash.img` and writes
+it to `/dev/block/by-name/splash`. The rest of the partition stays as it is
+on the phone. For EDL, `prepare-flash.sh` stages it as `splash.bin`, and the
+release kit's `manifest.json` has `ota2raw` rebuild `splash.bin` from the zip.
+qdl and the web flasher write only those 128 KiB.
+
+To change the logo, run `replace-logo` on a stock `splash.bin` and replace
+`splash.img` with the first 128 KiB of the result:
+
+    splash.py replace-logo splash.bin logo.png -o new.bin
+    head -c 131072 new.bin > device/xiaomi/Mi8937/splash/splash.img
+
 ## Size limit
 
 The new logo has to compress to **18,457 bytes or less** (the stock one is

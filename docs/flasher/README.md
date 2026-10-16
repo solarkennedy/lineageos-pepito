@@ -43,7 +43,9 @@ carries over to the other.
    The boot ROM only accepts the programmer signed for its own variant.
 3. Refuses to continue unless the table matches the chosen variant's layout
    (`js/layouts.js`).
-4. Writes `boot`, `recovery`, `system` and `vendor` and zero-fills `config`, at
+4. Writes `boot`, `recovery`, `system` and `vendor`, the boot logo
+   (`splash.bin`, the first 128 KiB of `splash`) when the folder has one, and
+   zero-fills `config`, at
    the offsets in the phone's own partition table. That list is fixed in
    `js/device.js`; a build cannot add to it.
 

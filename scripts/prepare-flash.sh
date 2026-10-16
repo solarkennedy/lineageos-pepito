@@ -10,6 +10,8 @@
 #     image here is idempotent. Switching an EXISTING key-signed install onto this
 #     graft changes the ROT once → one /data wipe.
 #   - Writes a ZEROED config.bin (clears a stale FRP token — see below)
+#   - Stages splash.bin, the boot logo (the first 128 KiB of the splash
+#     partition; the build's splash.img, which every OTA also writes)
 #   - Builds boot-magisk.bin: the same boot image pre-patched with Magisk and
 #     re-grafted, for users who want root (scripts/make-magisk-boot.sh; skip
 #     with --no-magisk). Users cannot patch boot.bin themselves — magiskboot
@@ -139,6 +141,18 @@ if [[ "$BOOT_ONLY" -eq 0 ]]; then
     # stray stock config.bin can never be flashed in its place.
     echo "==> Writing zeroed config.bin (clears stale FRP token)..."
     dd if=/dev/zero of="$FLASH_DIR/config.bin" bs=1K count=32 status=none
+
+    # The boot logo: device/xiaomi/Mi8937/splash/splash.img, installed by the
+    # build (add-radio-file) and written by every OTA (releasetools.py). It is
+    # the first 128 KiB of the partition only; qdl and the web flasher write
+    # just that and leave the rest of splash as it is. A build without one
+    # (older trees) must not leave a stale splash.bin behind for release.sh.
+    if [[ -f "$PRODUCT_OUT/splash.img" ]]; then
+        echo "==> Staging splash.bin (boot logo)..."
+        cp "$PRODUCT_OUT/splash.img" "$FLASH_DIR/splash.bin"
+    else
+        rm -f "$FLASH_DIR/splash.bin"
+    fi
 
     # NB: userdata is intentionally NOT staged here — see header. Leaving
     # userdata.bin absent means qdl --allow-missing skips it and /data is

@@ -113,7 +113,7 @@ export async function connect(usb, loaders, { variant, log = () => {} }) {
  * @returns {{partition: string, file: string|null, start: number, sectors: number, bytes: number}[]}
  */
 export function buildPlan(session, source, { root = false } = {}) {
-  return WRITES.map((write) => {
+  return WRITES.filter((write) => !write.optional || imageFile(source, write.image)).map((write) => {
     const part = session.gpt.partitions.find((p) => p.name === write.partition);
     if (!part) throw new FlashError(`No ${write.partition} partition on this phone`);
     const capacity = part.sectors * SECTOR_SIZE;
