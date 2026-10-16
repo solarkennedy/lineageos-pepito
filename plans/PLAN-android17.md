@@ -224,7 +224,10 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
 - pepito-24 `device.mk` must point `lineage.updater.uri` at `lineageos24.0/pepito.json`.
 
 - [ ] **Gate for the next 24.0 release (Kyle, 2026-10-14): fix the emergency-calls-only stick first**
-      (`PLAN-emergency-only.md`) and ship it in that release. The release must also be dated after the
+      (`PLAN-emergency-only.md`) and ship it in that release. **STAGED 2026-10-15**: data-centric
+      `usage_preference=2` asserted by `ims_enabler` at boot from a new Settings > System > "Modem
+      tweaks" switch (default on, restart to apply, readback row); the watchdog toggles moved there
+      out of Pepito Tweaks. Pushed (LineageParts `34cd6354`, Mi8937 `442f1a54`); validated on new2 10-15 (probe-cap bug fixed, `d08e4c86`); boot readback correct from the next build. The release must also be dated after the
       final 23.2 (`20261013`) or the 23.2 Updater will not offer it; kernel `pepito-24` `50c36c782d89`
       (list_del panic fix, `PLAN-list-del-panic.md`) rides along.
 - [x] 23.2's fate: **final release `20261013` cut 2026-10-13**, points its Updater at the 24.0 feed with
@@ -289,6 +292,84 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   Repeat at ~50 % charge before selling Gold.
 - **Deferred:** Bluetooth-tether IPv6 with a phone client — needs a cellular-upstream phone; Silver and new2
   were running the stick-lane captures and DUT1 was off the bench.
+
+## Bench result 2026-10-15 — B12 band toggle lane (Modem tweaks candidate row)
+
+- **Which band:** B12 (B13 is already on). FCC-certified, hidden by per-unit modem NV; only buys
+  T-Mobile/regional 700 MHz A-block. Verizon never uses it.
+- **Lever FOUND (read-only so far, dut1):** legacy NV **6828 `LTE_BC_CONFIG_I`** reads
+  `1a 10 01 00 00 00 08 00` = `0x000800000001101a` (B2 B4 B5 B13 B17 + bit 51 ≙ B66), **bit 11 (B12)
+  clear**; NV 1877 `RF_BC_CONFIG_I` = `0x06e80180`, byte-for-byte the DMS 0x45 legacy mask. The
+  seven-band unit (6210972a) reported `0x1181a`, i.e. the same mask with bit 11 set. Legacy numbered
+  NV **is readable over diag DCI** (`/nvm` is only denied via EFS2) — new tool
+  `~/android/lineage-23/diag-tools/nv-probe/` (`read`/`bands`/`spc`/`write`, uncommitted; on dut1 at
+  `/data/local/tmp/nv-probe`). ✅ **Write path (diag 0x27) WORKS** — Kyle ran it 10-15 ~14:55: status DONE,
+  no SPC needed, readback shows bit 11 set. Reboot + capability re-probe pending.
+- **Next (Kyle, dut1 c39a6acf; reversible, old value above, stock dump banked):**
+  ```
+  dut1-adb shell 'cd /data/local/tmp && ./nv-probe write 6828 1a18010000000800 --yes-write'
+  # if it answers DIAG_BAD_SPC_MODE_F:  ./nv-probe spc 000000   then retry the write
+  # wait ≥3 min for the EFS flush, then:  dut1-adb reboot
+  dut1-adb shell 'cd /data/local/tmp && timeout 20 env LD_PRELOAD=/vendor/lib64/libqmi_force_ipcr.so ./nas-probe bands'
+  # revert:  ./nv-probe write 6828 1a10010000000800 --yes-write   (+ flush wait + reboot)
+  ```
+  **Result 15:08: NV persisted, still SIX bands.** Second gate found: B12's TX-linearizer cal item
+  `RFNV_LTE_B12_TX_MULTI_LIN_V3_DATA_I` (rfnv 24237) is absent on dut1 while 24227/24229/24230/24238/24240
+  (B2/B4/B5/B13/B17) exist — the only per-band family missing B12; mcfg identical across units (not MCFG).
+  Candidate item built from B17 (channels −670 EARFCN), `diag-tools/nv-probe/b12/` (lineage-23 tree) and
+  staged on dut1 `/data/local/tmp/00024237-b12-candidate.bin`. Next (Kyle):
+  ```
+  dut1-adb shell 'cd /data/local/tmp && ./efs2-probe put 00024237-b12-candidate.bin /nv/item_files/rfnv/00024237 --yes-write --allow-critical'
+  # watch sha256 of /dev/block/by-name/modemst2 until it moves (~4 min), then: dut1-adb reboot
+  dut1-adb root; dut1-adb shell 'cd /data/local/tmp && timeout 20 env LD_LIBRARY_PATH=/vendor/lib64 LD_PRELOAD=/vendor/lib64/libqmi_force_ipcr.so ./nas-probe bands'
+  ```
+  ✅ **Write ACCEPTED 10-15 15:40** (item created, 528 B, verify OK) ⇒ diag-EFS2 can create rfnv items; the
+  earlier "/nv/** denied" verdict was UIM-module-only. **Reboot ~15:55: STILL six bands.**
+  Mechanism (from new2's eSIM-lane restart capture): RF card has B12; `rflte_nv_update_data_valid_flag` says
+  "NVs are invalid for the band 11" → "band is not supported 11" → mask 0x1a01101a. The per-band cal loads
+  are not logged, so which B12 items are still missing is unknown. **Next: the same F3 capture on dut1**
+  (`diag-tools/nv-probe/b12/capture-rf-init.sh`, Kyle runs it; it cycles the modem via per_mgr) and diff the
+  B12 lines against new2's.
+  **Capture runs 10-15 19:51 and 21:23 (dut1):** modem restart works (per_mgr cycle, crash=0) but the LTE RF NV
+  init walk is never in the log — it runs in the first second of modem boot, before the AP can apply a message
+  mask (logger attached at ~1-2 s into boot, 106k later messages captured, zero RF-init lines). The kernel does
+  re-push masks after the feature-mask handshake, just too late. new2's eSIM-lane capture got the walk only
+  because its logger happened to be attached before RF init. **LANE PARKED 2026-10-15:** two per-unit gates
+  found (NV 6828 bit 11 — writable; per-band TX-linearizer cal validity — item created, still judged invalid),
+  no further visibility without a boot-time modem log, payoff is T-Mobile A-block only. dut1 state: NV 6828 has
+  bit 11 set and rfnv item 24237 exists — both harmless (band still hidden); revert bit 11 with
+  `./nv-probe write 6828 1a10010000000800 --yes-write` if a stock-identical bench unit is wanted.
+  Seven bands incl. B12 ⇒ a Settings row is feasible only as a one-shot "calibrate B12 from B17" action
+  (EFS item create + NV 6828 bit) with the NV bit as the on/off toggle; a vendor helper doing this diag write on
+  `persist.gotweak.modem_b12` + restart, readback from DMS 0x45 (NV persists, no boot assert).
+  Write refused ⇒ lane closes like eSIM (no write primitive). Priority: below the emergency-only
+  gate and WFC Wi-Fi preference.
+
+## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, change STAGED on the builder)
+Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261015/` (lineage-23 tree).
+- **Mechanism (modem F3, new2 A17):** the in-call IWLAN→LTE move is `qpDplHandOver.c:4291 In Audio call
+  [wifi pref], Wifi < D and LTE>LTE2` fired at `InCall 0→1`, with Wi-Fi quality −1 (nothing on our stack arms
+  the modem's WQE profile; ANDSF logs `wqe profile type is inactive` and discards the feeder's RSSI). The only
+  live term is `LTE > LTE2 (−115)`. Lever = IMSS SET_HANDOVER_CONFIG 0x5d TLV 0x16 (LTE threshold 2; GET 0x5e
+  TLV 0x17). Modem rejects values above ≈−70 silently; −80 accepted.
+- **Static TH2=−80:** call stays on Wi-Fi ✅ but Wi-Fi loss mid-call ⇒ `WIFI_LOST` drop after 20 s ❌ (TH2 also
+  gates `None→LTE`). **Dynamic:** Wi-Fi off → TH2 back to −115 one second later → `callSessionHandover 18→14`
+  5.4 s after the write, call survives ✅. Feeding Wi-Fi quality (option B) is blocked at the modem's WQE arming
+  step — same wall as PLAN-wifi-calling parts 12–13.
+- **Staged (uncommitted) on the builder, `device/xiaomi/Mi8937` + one `mithorium-common` file:**
+  `qmux/wfc_wlan_bridge.c` steers TH2 (−80 while WFC on ∧ Calling preference = Wi-Fi preferred/only ∧ wlan0
+  associated ∧ RSSI ≥ −75, hysteresis release < −82; stock −115 otherwise, asserted at boot/WFC-off/disassoc;
+  2 s wlan0 poll while sticky; status `vendor.qmux.wfc_th2` = stock|sticky|error); `WfcBridge` mirrors the
+  per-sub `wfc_ims_mode` (siminfo, READ_PRIVILEGED_PHONE_STATE + privapp allowlist) into
+  `persist.sys.pepito.wfc_mode`; `init.qmux.rc` copies it to `vendor.qmux.wfc_mode`; property_contexts entry;
+  `vendor.xml` 311/480 gets `editable_wfc_mode_bool=true` so the Settings row shows. Default (row untouched)
+  = cellular preferred = stock behaviour.
+- **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
+  visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_th2` = sticky while on
+  Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays `rat=0`; `wfc-walkaway.sh` (without the manual
+  rescue) hands over to LTE instead of dropping; set Cellular preferred → `wfc_th2` = stock, call hands over
+  at answer as before. Also check `logcat -s wfc_wlan_bridge` for "wlan0 reports no dBm RSSI" (would mean the
+  SIOCGIWSTATS path needs a /proc/net/wireless fallback).
 
 ## Bench result 2026-10-15 — custom boot logo (`splash` partition) boots on dut1
 Memory: `splash-boot-logo`. Tool `tools/splash/` (README has the format).

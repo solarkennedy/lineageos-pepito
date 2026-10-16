@@ -56,7 +56,7 @@ Two facts about M3 that already constrain it:
 - `new2` runs the AML modem image (`…C1-214411`, flashed 09-02) — byte-identical to DUT1's and to
   silver's stock-AML modem ⇒ silver is an apples-to-apples witness for bench A/B.
 - `new2` state read 2026-09-15 08:18 (USB, read-only): build 20260913 (includes the M1 fix and the
-  uicc-toggle fix), root-on-boot ✓ (`persist.vendor.xiaomi.adbroot=1`), WFC on, sitting on
+  uicc-toggle fix), `persist.vendor.xiaomi.adbroot=1` set (not root-on-boot; see the 10-15 correction under 09-16 17:40), WFC on, sitting on
   **IWLAN at home**, `persist.adb.tcp.port` **unset**, **no Tailscale node**, **no persistent
   logging**, radio ring at the 256 KB default ⇒ the 09-14 radio logcat is gone; only the framework's
   in-memory histories may still hold it (§3, pull before the next reboot). `units.conf` still says
@@ -165,7 +165,7 @@ the plan depends on. Battery cost must be measured before Kyle drives with it (�
   `diag_qsr4_guid_list.xml` GUID matches the repo `qdb.dec` (DUT1's decoded clean; Gold's handshake
   came back empty — the "per-unit GUID" loose end in `diag-a16-shim/README.md`). If empty on
   `new2`, that is a blocker for F3 decode (log packets still decode via scat).
-- Start mechanism: root-on-boot already fires on `new2`; arm the recorder the way
+- Start mechanism: no root-on-boot on `new2` (adbd is uid 2000 after a reboot); arm the recorder the way
   `pepito-diagcap.rc` does (a vendor init rc with `seclabel u:r:su:s0` executing a script under
   `/data/local/tmp`), disarmed by deleting the rc. Alternative with zero image changes: a Tailscale
   cron from netbook4 that (re)starts it whenever `new2` is reachable at home.
@@ -432,7 +432,7 @@ questions about 09-14.
 
 ### 2026-09-16 08:00 — recorder LIVE for the first road day (reach: Tailscale)
 - Kyle rebooted ~06:39; `new2` is now tailnet **`pvg100-2` = 100.82.14.21**, LAN **10.0.2.123**, TCP adb
-  5555 (persist), root on boot ✓. Roster updated (`DAILY=new2`, addresses filled, gold demoted to
+  5555 (persist), root ✓ (post-flash `adb root` from `flash-staging.sh`, not root-on-boot). Roster updated (`DAILY=new2`, addresses filled, gold demoted to
   bench); `pepito-adb new2` / `new2-adb` / `daily-adb` resolve it. TCP adb showed "device still
   authorizing" for ~1 min after connect — retry, don't re-pair.
 - Recorder re-armed over Tailscale at 08:00 with `new2-arm-recorder.sh` (`NEW2_SERIAL=100.82.14.21:5555`):
@@ -588,7 +588,9 @@ Session 09:08→12:35 (modem stream alive until 12:35:16), decoded with `road-an
    passes `-e` (wake lock) — costs battery, fine on the bank/bench; the "one session per boot" rule stands.
 
 ### 2026-09-16 17:40 — overnight automation armed (new2 at home, LAN-reachable)
-- Rebooted ~17:20 (root-on-boot raced again → `adb root` by hand; arm script now self-roots). ONE diag session
+- Rebooted ~17:20 (came up unrooted → `adb root` by hand; arm script now self-roots). *Correction 2026-10-15:
+  there is no root-on-boot "race" — ordinary reboots always come back uid 2000; the only rooted boots were
+  post-flash ones, where `flash-staging.sh` runs `adb root` itself.* ONE diag session
   since 17:38:35 with `-e` (wake lock held: `diag_mdlog_wakelock`), road mask, modem frames verified
   (f99=12.5k/f10=701 in the first 3 MB). Sampler v4 logs `MODEM reg= plmn= lte=` per 30 s (the truth field).
 - Host loops (scratchpad, banked copies in `diag-tools/nas-probe/`): `new2-recorder-watch.sh` arms whenever no
@@ -982,3 +984,44 @@ Clean silver-A16 F3 capture (no toggle → no handshake flood, 3694 decoded line
 **CONCLUSION: no ROM regression.** A16 == stock at the modem level (same 88% acq-fail rate, shorter backoff). The user's "stock was much better" is (a) hold-vs-acquire conflation ("held to −140" = holding an existing link, ≠ acquiring from cold, which fails at the fringe for both), and (b) a cherry-picked 62 s timer vs stock's real 21-min OOS. 
 **Caveat:** captures were uncontrolled and at slightly different signal (A16 −113 vs stock ~−121), so a small acquisition-sensitivity difference can't be 100% excluded — but there is no clean evidence of one; rate, mechanism, and backoff all say same-or-better.
 **Only usability lever left:** the watchdog (auto-nudge a fresh Verizon retry when stuck = what the airplane toggle does by hand — shortcuts the backoff + retries from clean state, gets lucky sooner). It's a band-aid for RF physics, NOT a fix for a regression (there is none).
+
+## 2026-10-15 — F1 STAGED: data-centric ships as a "Modem tweaks" switch, asserted by the boot oneshot
+
+Productizes the 10-14 decision (ship `usage_preference=2`). Where the value is set: **not live
+from Settings** — the switch writes `persist.gotweak.modem_data_centric` (default **1** via a
+system_ext build prop in `Mi8937/device.mk`) and prompts for a restart; `ims_enabler` (the
+existing VoLTE NV boot oneshot) gained a third phase that reads the prop and asserts NAS
+`usage_preference` = 2 (on) / 1 (off, stock voice-centric) by read-compare-write — steady state is
+one GET 0x34, a SET 0x33 (usage TLV only) goes out only on mismatch, because a SET kicks a PLMN
+reselection and we want that to happen as one clean cold attach at boot rather than while the user
+sits in Settings. Verified readback is published in `vendor.pepito.modem.usage` (new
+`vendor_public_prop`, `get_prop(system_app, …)`) so the Settings row shows "Applied: data-centric"
+vs "Waiting for a restart" without adb. Same boot-assert also covers the EFS-flush-before-reboot
+loss and the 07-09 "read back 1 shortly after the write" race.
+
+**New Settings part: System > Modem tweaks** (`LineageParts` `radio/ModemTweaksSettings`, catalog
++ manifest alias like Life Mode). Rows: About; Network registration → data-centric switch + status
+row; "Stuck on Emergency calls only" → the watchdog toggles **moved out of Pepito Tweaks unchanged**
+(same keys and `persist.gotweak.*` props, so existing settings carry over; still off by default per
+Kyle 10-11). Pepito Tweaks loses its Mobile-network category. Future proven modem levers (LTE-only
+mode mask, WFC Wi-Fi preference, NAS backoff NV) belong here, each with an ON and an OFF value.
+
+Touched: `packages/apps/LineageParts` (new part, 3 new files + 5 edits), `device/xiaomi/Mi8937`
+(`qmux/ims_enabler.c` NAS phase, `sepolicy/vendor/{qmux.te,property.te,property_contexts}`,
+`device.mk` default prop, `init.qmux.rc` comment). Module build (`ims_enabler LineageParts
+selinux_policy`) passed on the builder; **COMMITTED + PUSHED 2026-10-15**: LineageParts `34cd6354`, Mi8937 `442f1a54` (both `pepito-24`), rides the next build. **Bench next**: flash new2,
+confirm `getprop vendor.pepito.modem.usage` = 2 and `nas-probe status` usage_preference=2 across a
+reboot; flip the switch off → restart → 1; then the 10-14 induced-IMS-off A/B once more on the
+shipped path. Residual gap (same as the WFC gate): no SIM-inserted-later re-run from a vendor rc
+(`gsm.sim.state` neverallow); the WFC-on trigger re-runs the enabler, and NAS usage is a global
+NV item (`mmode/ue_usage_setting`), not per-subscription, so it should not need one.
+
+**Validated on new2 (build 20261015, flashed by Kyle) 2026-10-15 12:35, no toggles/reboots:** new part resolves,
+`persist.gotweak.modem_data_centric=1` (gotweak_prop) and `vendor.pepito.modem.usage` (vendor_pepito_modem_prop)
+carry the right contexts, `nas-probe status` usage_preference=2 (NV already held it from the 10-14 bench writes).
+**Bug found + fixed:** the boot run reported `usage=failed` — the enabler probed IDL minors only 0..300 and NAS is
+minor 321 (nas-probe hard-codes it); cap raised to 512 (`Mi8937` `d08e4c86`, pushed). Rebuilt binary run from
+`/data/local/tmp` on new2: every IMSS row "already", `nas.usage_preference already 2`, msisdn kept, 0 NV writes,
+readback prop 2, zero avc. **Reflashed with the fix 2026-10-15 14:00: boot-time run now clean** — `vendor.pepito.modem.usage=2`,
+`ims_enabler=ok`, `ims_msisdn=kept`, modem usage=2 REGISTERED on 311/480, no avc. Settings status row should read "Applied: data-centric". ⚠️ new2's NV is already 2, so the "fresh voice-centric unit gets written at boot" path is still unexercised —
+the first flash of dut1/silver should log `nas.usage_preference: set to 2 (verified)` + 1 NV write.
