@@ -40,7 +40,35 @@ directory holds the static work-up and a tool to test it.
    (same fused-root wall as the modem image). The hashes, however, are fully
    repairable. So the lane hinges on one unknown that is cheap to test on-device.
 
-## The open question (settle on-device, black-box)
+## ⛔ RESULT 2026-10-16 — route CLOSED: mcfg_sw signature IS enforced
+
+Tested end-to-end on dut1 (c39a6acf) via `pdc-mbn-loader load`. The modem
+authenticates the config at LOAD-commit and rejects any modified blob:
+
+- modified config (even a pristine payload with only the 3-byte mcfg version
+  bumped, hashes repaired, RSA sig stale) → terminal LOAD indication
+  **`ind_error=34` = `QMI_ERR_AUTHENTICATION_FAILED_V01`**, config not registered.
+- control: byte-identical **unmodified** stock config → `ind_error=0`, registers fine.
+
+So `fake_sec_enabled` is NOT in effect on this fuse config — mcfg_sw is signed
+AND enforced, same wall as the modem code image. We cannot re-sign against the
+fused root, and ANY edit invalidates the RSA signature over the hash table.
+**The MCFG/PDC write path is closed.** (It was the right lane to try: it does
+bypass the diag `FS_DIAG_VALIDATE_PATH_ACCESS` ACL — a valid config commits and
+applies from inside the modem — but auth stops us from making a valid modified one.)
+
+Only surviving MCFG sub-idea (long shot): find a *legitimately signed* stock/vendor
+config that already carries `apdu_security_restrictions=0` or an `apdu_security_aid_list`
+permitting ISD-R, and load that unchanged. None of pepito's four stock configs do.
+
+Loader bugs fixed along the way (the `load` write path had never been exercised):
+32 KB single chunk → `QMI_CLIENT_TRANSPORT_ERR`; `id_len=0` → `INVALID_ID`; and the
+tool never waited for the terminal LOAD indication that carries the real verdict.
+Fixes in `~/android/lineage-23/diag-tools/pdc-mbn-loader/` (+ `build-nosysroot.sh`,
+since the 23-tree `out/` is gone): 4 KB chunks, explicit/optional config id, and a
+post-upload drain that decodes `pdc_load_config_ind_msg_v01.ind_error`.
+
+## (superseded) The open question — settled above
 
 Does this modem **enforce** the SW-config signature at PDC load? The modem has
 `mcfg_auth_img_verify()` / `mcfg_auth_verify_hash()` *and* a `fake_sec_enabled`

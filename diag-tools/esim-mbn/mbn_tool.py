@@ -80,6 +80,8 @@ def main():
     ap.add_argument('--off',type=lambda x:int(x,0),help='flip: payload-relative byte offset')
     ap.add_argument('--xor',type=lambda x:int(x,0),default=0x01)
     ap.add_argument('--path'); ap.add_argument('--value',help='hex value bytes')
+    ap.add_argument('--setver',help='inject: new 4-byte mcfg version as hex LE, '
+                    'e.g. 15020107 for 0x07010215; bumps the internal config id')
     ap.add_argument('--after',default='/nv/item_files/modem/uim/mmgsdi/refresh_vote_ok',
                     help='inject: insert new record right after this existing EFS path')
     a=ap.parse_args()
@@ -109,6 +111,20 @@ def main():
         b[ph[2]['o']+16:ph[2]['o']+20]=struct.pack('<I',ph[2]['fsz']+grow)  # p_filesz
         b[ph[2]['o']+20:ph[2]['o']+24]=struct.pack('<I',ph[2]['msz']+grow)  # p_memsz
         print(f"injected {len(rec)}B record at payload+0x{ins-payload_off:x}; num_items {ni}->{ni+1}")
+        if a.setver:
+            # mcfg version sits at payload+0x14 and twice more in the trailer;
+            # replace every copy in the payload so the internal id is consistent.
+            cur=bytes(b[payload_off+0x14:payload_off+0x18])
+            new=bytes.fromhex(a.setver)
+            assert len(new)==4
+            pend=payload_off+ph[2]['fsz']+len(rec)
+            n=0; i=payload_off
+            while True:
+                j=b.find(cur,i,pend)
+                if j<0: break
+                b[j:j+4]=new; n+=1; i=j+4
+            print(f"setver: {cur.hex()} -> {new.hex()} ({n} copies) "
+                  f"= 0x{int.from_bytes(new,'little'):08x}")
         # NOTE: ph0 mirror holds a COPY of the phdr table (off 0..0x94); patch it too.
         # the phdr table starts at e_phoff within the mirror.
     s0,s2=fix_hashes(b)

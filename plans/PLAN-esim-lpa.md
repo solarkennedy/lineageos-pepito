@@ -4,7 +4,7 @@
 pulling it out to the external CCID reader. Downloading new profiles over the reader stays
 fine; the win is `Warp(VZW) ↔ DarkStar(AT&T) ↔ Roamless` switching in the field.
 
-**Status: 🏁 shipped via OTG reader (2026-07-30); 🔎 RE-OPENED 2026-10-16 on a NEW write path — the MCFG/PDC config-apply route, which was never tested. See "MCFG/MBN write path" below; prior static close-outs (10-14/10-15) remain valid for the diag/offline-EFS routes.**
+**Status: 🏁 CLOSED — shipped via OTG reader (2026-07-30). The MCFG/PDC write path (re-opened & tested 2026-10-16) is also closed: the modem enforces the mcfg_sw signature at load-commit (`QMI_ERR_AUTHENTICATION_FAILED`), so no modified config can be made valid. All three EFS write routes are now closed by signing or ACL. See "MCFG/MBN write path" below.**
 The stated goal (switch profiles *while the card sits in the tray*) is **impossible on this
 hardware**: the modem refuses logical channels to the eUICC ISD-R AID, from every client
 including qcrild. What we shipped instead, and what Kyle validated, is **OpenEUICC driving the
@@ -255,11 +255,16 @@ Static work-up (full detail + tooling in `diag-tools/esim-mbn/`):
   `fake_sec_enabled` token (Qualcomm's permissive SW path — why community carrier MBNs load on
   most MSM8937). Enforcement is in paged code; test it empirically.
 
-**Next (on-device, reversible — reload stock after):** `mbn_tool.py` builds the images.
-1. Hash-only probe: flip one payload byte, fix hashes, leave RSA sig stale, PDC-load. Loads →
-   SW auth NOT enforced (fake-sec) → route open. Rejected → enforced → route dead.
-2. If open: inject `apdu_security_restrictions=00`, load, read it back over diag EFS2 (reads
-   allowed), re-probe ISD-R OPEN_LOGICAL_CHANNEL. ISD-R opens → reader-free switching.
+**Tested on dut1 2026-10-16 → ⛔ CLOSED.** `pdc-mbn-loader load` uploads fine, but the modem
+authenticates at commit: a modified config (even just the 3-byte mcfg version bumped + hashes
+repaired, RSA sig stale) returns terminal `ind_error=34 = QMI_ERR_AUTHENTICATION_FAILED_V01` and
+does not register; an unmodified stock config returns `ind_error=0` and registers. So `fake_sec`
+is OFF on this fuse config — mcfg_sw is signed AND enforced, same wall as the modem image. We
+can't re-sign against the fused root, and any edit breaks the signature. Only surviving MCFG
+sub-idea (long shot): find a legitimately-signed stock config that already carries
+`apdu_security_restrictions=0` / a permissive `apdu_security_aid_list` and load it unchanged —
+none of pepito's four stock configs do. Full detail + loader-bug fixes in `diag-tools/esim-mbn/NOTES.md`.
+**Permanent answer stays the USB-CCID reader over OTG.**
 
 ### Static q6zip RE re-attempt (2026-10-15) — decoder located, not cracked, lane closed
 
