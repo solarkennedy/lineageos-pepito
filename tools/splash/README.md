@@ -37,6 +37,12 @@ To try an animation without rebuilding, as root:
 `mount --bind /data/local/tmp/b.zip /product/media/bootanimation.zip` and run
 `/system/bin/bootanimation`.
 
+`render-bootanimation.py` renders any `bootanimation.zip` to `.mp4`, `.webm`
+or `.gif` the way the phone draws it (trim rectangles, linear scaling), for
+previews or posting:
+
+    render-bootanimation.py bootanimation.zip -o boot.mp4 [--hold 1.5] [--loops 2] [--scale 0.5]
+
 ## Size limit
 
 The new logo has to compress to **18,457 bytes or less** (the stock one is

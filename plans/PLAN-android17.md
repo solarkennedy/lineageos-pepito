@@ -372,13 +372,19 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   SIOCGIWSTATS path needs a /proc/net/wireless fallback).
 
 ## Bench result 2026-10-15 — custom boot logo (`splash` partition) boots on dut1
-Memory: `splash-boot-logo`. Tool `tools/splash/` (README has the format).
+Memory: `splash-boot-logo`. Tools in `tools/splash/` (README has the format).
 - `splash` (22528 sectors, both GPT layouts) holds the five screens aboot draws: `SPLASH!!` + 720x1280
   header, frame table at 0x200, five zlib-9 BGR24 frames (0 = PALM logo). 0x20000+ is leftover from an
   older image. All 7 backed-up units are identical apart from the 0x00/0xff filler before 0x20000.
-- `splash.py replace-logo` re-encodes frame 0 only (new logo ≤ 18,457 B compressed). A "LineageOS" text
-  logo flashed over EDL to dut1 **boots and shows** ✅. So aboot doesn't checksum frame 0; the unexplained
-  header words (216, 0xffffff06, 0x79) are not a check on it.
-- Not shipped: OTAs write only system/vendor/boot. Shipping a logo would need a pepito-gated
-  releasetools write (the OTA zip is shared with land/santoni/ugg), plus the EDL manifest, ota2raw and the
-  web flasher. Test image and dut1's stock copy are in `flash-staging/held-splash-{test,stock}/`.
+- `splash.py replace-logo` re-encodes frame 0 only (new logo ≤ 18,457 B compressed). A re-encoded logo
+  **boots and shows** on dut1 ✅, so aboot doesn't checksum frame 0; the unexplained header words (216,
+  0xffffff06, 0x79) are not a check on it.
+- **Design (2026-10-16, on dut1):** splash = stock PALM in place, footer dropped; the boot animation
+  (`device/xiaomi/Mi8937/bootanimation/`, `TARGET_BOOTANIMATION`, built by `make-bootanimation.py`)
+  starts on that exact screen, fades PALM out over 0.5 s, then plays LineageOS's parts unchanged
+  (trim.txt on a 720x1280 canvas). Each part runs at stock speed on dut1. Continuous splash keeps the
+  logo up until bootanim starts (15–31 s into boot). `render-bootanimation.py` renders any zip to
+  mp4/webm/gif.
+- Not shipped to users yet: OTAs write only system/vendor/boot, so the splash also needs an OTA
+  releasetools write plus the EDL manifest, ota2raw and the web flasher. The animation ships with
+  the build.
