@@ -17,6 +17,26 @@ anything; keep the backup anyway.
 The logo must be 720x1280. `--fit` centres an image of another size on black,
 shrinking it if it is too big. Transparency is filled with black.
 
+## Boot animation that continues from the logo
+
+`make-bootanimation.py` takes the boot animation LineageOS builds and a stock
+`splash.bin`, and writes a new `logo.png` and `bootanimation.zip`. The logo is
+the stock PALM logo, in its usual place, without the "powered by Android"
+footer. The animation gets a new first part that starts on exactly that screen
+and fades PALM out over 30 frames (0.5 s); LineageOS's own parts then play
+unchanged, placed with `trim.txt` on a full-screen canvas. The fade frames hold
+only the PALM rows, because frames are decoded as they play; on dut1 every
+part runs at full speed.
+
+    make-bootanimation.py bootanimation.zip splash.bin -o out/
+    splash.py replace-logo splash.bin out/logo.png -o splash-new.bin
+
+The device tree ships the result as
+`device/xiaomi/Mi8937/bootanimation/bootanimation.zip` (`TARGET_BOOTANIMATION`).
+To try an animation without rebuilding, as root:
+`mount --bind /data/local/tmp/b.zip /product/media/bootanimation.zip` and run
+`/system/bin/bootanimation`.
+
 ## Size limit
 
 The new logo has to compress to **18,457 bytes or less** (the stock one is
