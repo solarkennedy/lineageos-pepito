@@ -18,8 +18,9 @@
 #     boot.bin, so switching between the two does not wipe /data.
 #
 # We deliberately do NOT touch userdata here: the release must not wipe a user's
-# /data as a side effect of flashing. Coming from stock, the first boot formats
-# /data on its own (encryption mismatch); an in-place update keeps it intact.
+# /data as a side effect of flashing; an in-place update keeps it intact. Coming
+# from stock (or any foreign /data) the first boot does NOT format it — it
+# boot-loops — so wipe explicitly: flash-staging.sh --wipe.
 #
 # Run from anywhere. Then: flash-staging/flash-staging.sh
 
