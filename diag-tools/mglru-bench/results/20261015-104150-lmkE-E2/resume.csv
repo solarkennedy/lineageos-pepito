@@ -1,0 +1,13 @@
+iter,app,survived,state,total_ms,hog_s
+1,com.android.settings/.Settings,1,HOT,611,21
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1496,21
+1,org.lineageos.jelly/.MainActivity,1,UNKNOWN,590,21
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,555,21
+2,com.android.settings/.Settings,1,HOT,557,21
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1370,21
+2,org.lineageos.jelly/.MainActivity,0,COLD,1432,21
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,529,21
+3,com.android.settings/.Settings,0,COLD,1930,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1408,20
+3,org.lineageos.jelly/.MainActivity,0,COLD,1411,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,434,20

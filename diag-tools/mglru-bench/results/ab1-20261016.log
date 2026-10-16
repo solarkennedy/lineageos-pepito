@@ -1,0 +1,349 @@
+=== ab1: 5 blocks, orig enabled=0x0001, kernel 4.19.325-cip135-st19-perf-00036-g3af02bb2495c
+    [ro.lmk.lowmem_min_oom_score]: [1001]
+    [ro.lmk.relaxed_available_memory]: [true]
+    [ro.lmk.swap_compression_ratio]: [3]
+=== cell 1 block 1 arm on (06:07) enabled -> 0x0001
+1,com.android.settings/.Settings,0,UNKNOWN,1028,21
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,583,21
+1,org.lineageos.jelly/.MainActivity,1,HOT,376,21
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,335,21
+lmk_kills                                  38
+psi_full_stall                           2.94 s
+2,com.android.settings/.Settings,1,UNKNOWN,437,21
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,556,21
+2,org.lineageos.jelly/.MainActivity,1,HOT,421,21
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,370,21
+lmk_kills                                   0
+psi_full_stall                           1.81 s
+3,com.android.settings/.Settings,1,WARM,755,19
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,501,19
+3,org.lineageos.jelly/.MainActivity,1,HOT,351,19
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,364,19
+lmk_kills                                   2
+psi_full_stall                           1.59 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-060937-ab1-on1)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 356 ms
+com.android.settings/.Settings                                         survived 2/3  cold 0  mean 740 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 546 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 382 ms
+round 1: 15 launches, 8 cold, mean 737 ms
+round 2: 15 launches, 0 cold, mean 251 ms
+round 3: 15 launches, 0 cold, mean 189 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-061835-ab1-on1)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.22 s
+=== cell 2 block 1 arm off (06:22) enabled -> 0x0000
+1,com.android.settings/.Settings,1,WARM,834,21
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,549,21
+1,org.lineageos.jelly/.MainActivity,1,HOT,397,21
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,355,21
+lmk_kills                                  14
+psi_full_stall                           3.56 s
+2,com.android.settings/.Settings,1,UNKNOWN,377,20
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,487,20
+2,org.lineageos.jelly/.MainActivity,1,HOT,307,20
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,351,20
+lmk_kills                                   2
+psi_full_stall                           1.70 s
+3,com.android.settings/.Settings,1,UNKNOWN,416,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,467,20
+3,org.lineageos.jelly/.MainActivity,1,HOT,354,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,380,20
+lmk_kills                                   2
+psi_full_stall                           1.49 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-062427-ab1-off2)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 362 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 542 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 501 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 352 ms
+round 1: 15 launches, 9 cold, mean 656 ms
+round 2: 15 launches, 0 cold, mean 212 ms
+round 3: 15 launches, 0 cold, mean 178 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-063317-ab1-off2)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.23 s
+=== cell 3 block 2 arm off (06:37) enabled -> 0x0000
+1,com.android.settings/.Settings,1,WARM,767,21
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,540,21
+1,org.lineageos.jelly/.MainActivity,1,HOT,373,21
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,365,21
+lmk_kills                                  11
+psi_full_stall                           3.16 s
+2,com.android.settings/.Settings,1,WARM,727,19
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,530,19
+2,org.lineageos.jelly/.MainActivity,1,HOT,404,19
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,367,19
+lmk_kills                                   2
+psi_full_stall                           1.61 s
+3,com.android.settings/.Settings,1,UNKNOWN,449,19
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,492,19
+3,org.lineageos.jelly/.MainActivity,1,HOT,402,19
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,372,19
+lmk_kills                                   1
+psi_full_stall                           1.72 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-063905-ab1-off3)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 368 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 647 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 520 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 393 ms
+round 1: 15 launches, 10 cold, mean 743 ms
+round 2: 15 launches, 0 cold, mean 215 ms
+round 3: 15 launches, 0 cold, mean 178 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-064752-ab1-off3)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.33 s
+=== cell 4 block 2 arm on (06:51) enabled -> 0x0001
+1,com.android.settings/.Settings,1,WARM,881,22
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,601,22
+1,org.lineageos.jelly/.MainActivity,1,HOT,426,22
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,395,22
+lmk_kills                                  10
+psi_full_stall                           2.99 s
+2,com.android.settings/.Settings,1,WARM,963,19
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,550,19
+2,org.lineageos.jelly/.MainActivity,1,HOT,350,19
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,403,19
+lmk_kills                                   0
+psi_full_stall                           1.61 s
+3,com.android.settings/.Settings,1,UNKNOWN,384,18
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,557,18
+3,org.lineageos.jelly/.MainActivity,1,HOT,323,18
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,366,18
+lmk_kills                                   3
+psi_full_stall                           1.30 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-065342-ab1-on4)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 388 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 742 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 569 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 366 ms
+round 1: 15 launches, 10 cold, mean 741 ms
+round 2: 15 launches, 0 cold, mean 241 ms
+round 3: 15 launches, 0 cold, mean 177 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-070230-ab1-on4)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.33 s
+=== cell 5 block 3 arm on (07:06) enabled -> 0x0001
+1,com.android.settings/.Settings,1,WARM,784,21
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,543,21
+1,org.lineageos.jelly/.MainActivity,1,HOT,373,21
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,378,21
+lmk_kills                                   7
+psi_full_stall                           3.09 s
+2,com.android.settings/.Settings,1,WARM,863,19
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,591,19
+2,org.lineageos.jelly/.MainActivity,1,HOT,399,19
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,378,19
+lmk_kills                                   0
+psi_full_stall                           1.82 s
+3,com.android.settings/.Settings,1,WARM,783,21
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,561,21
+3,org.lineageos.jelly/.MainActivity,1,HOT,360,21
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,359,21
+lmk_kills                                   3
+psi_full_stall                           1.88 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-070821-ab1-on5)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 371 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 810 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 565 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 377 ms
+round 1: 15 launches, 5 cold, mean 588 ms
+round 2: 15 launches, 0 cold, mean 244 ms
+round 3: 15 launches, 0 cold, mean 170 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-071713-ab1-on5)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.22 s
+=== cell 6 block 3 arm off (07:20) enabled -> 0x0000
+1,com.android.settings/.Settings,1,WARM,729,22
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,543,22
+1,org.lineageos.jelly/.MainActivity,1,HOT,390,22
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,371,22
+lmk_kills                                   6
+psi_full_stall                           4.01 s
+2,com.android.settings/.Settings,1,WARM,722,21
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,537,21
+2,org.lineageos.jelly/.MainActivity,1,HOT,306,21
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,390,21
+lmk_kills                                   8
+psi_full_stall                           1.84 s
+3,com.android.settings/.Settings,1,WARM,913,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,553,20
+3,org.lineageos.jelly/.MainActivity,1,HOT,430,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,372,20
+lmk_kills                                   0
+psi_full_stall                           1.47 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-072302-ab1-off6)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 377 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 788 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 544 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 375 ms
+round 1: 15 launches, 8 cold, mean 649 ms
+round 2: 15 launches, 0 cold, mean 220 ms
+round 3: 15 launches, 0 cold, mean 182 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-073155-ab1-off6)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.30 s
+=== cell 7 block 4 arm off (07:35) enabled -> 0x0000
+1,com.android.settings/.Settings,1,UNKNOWN,417,20
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,531,20
+1,org.lineageos.jelly/.MainActivity,1,HOT,436,20
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,382,20
+lmk_kills                                   8
+psi_full_stall                           3.52 s
+2,com.android.settings/.Settings,1,WARM,884,20
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,557,20
+2,org.lineageos.jelly/.MainActivity,1,HOT,364,20
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,391,20
+lmk_kills                                   4
+psi_full_stall                           2.30 s
+3,com.android.settings/.Settings,1,WARM,792,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,509,20
+3,org.lineageos.jelly/.MainActivity,1,HOT,353,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,396,20
+lmk_kills                                   2
+psi_full_stall                           1.63 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-073743-ab1-off7)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 389 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 697 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 532 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 384 ms
+round 1: 15 launches, 9 cold, mean 677 ms
+round 2: 15 launches, 0 cold, mean 218 ms
+round 3: 15 launches, 0 cold, mean 172 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-074633-ab1-off7)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.32 s
+=== cell 8 block 4 arm on (07:50) enabled -> 0x0001
+1,com.android.settings/.Settings,1,WARM,826,22
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,604,22
+1,org.lineageos.jelly/.MainActivity,1,HOT,381,22
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,418,22
+lmk_kills                                  12
+psi_full_stall                           3.04 s
+2,com.android.settings/.Settings,1,WARM,764,19
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,300,19
+2,org.lineageos.jelly/.MainActivity,1,HOT,400,19
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,377,19
+lmk_kills                                   0
+psi_full_stall                           1.45 s
+3,com.android.settings/.Settings,1,WARM,758,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,601,20
+3,org.lineageos.jelly/.MainActivity,1,HOT,400,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,369,20
+lmk_kills                                   0
+psi_full_stall                           1.56 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-075222-ab1-on8)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 388 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 782 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 501 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 393 ms
+round 1: 15 launches, 8 cold, mean 659 ms
+round 2: 15 launches, 0 cold, mean 249 ms
+round 3: 15 launches, 0 cold, mean 184 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-080112-ab1-on8)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.23 s
+=== cell 9 block 5 arm on (08:05) enabled -> 0x0001
+1,com.android.settings/.Settings,1,WARM,670,22
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,537,22
+1,org.lineageos.jelly/.MainActivity,1,HOT,389,22
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,376,22
+lmk_kills                                   9
+psi_full_stall                           2.92 s
+2,com.android.settings/.Settings,1,UNKNOWN,550,20
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,532,20
+2,org.lineageos.jelly/.MainActivity,1,HOT,396,20
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,433,20
+lmk_kills                                   0
+psi_full_stall                           1.42 s
+3,com.android.settings/.Settings,1,UNKNOWN,422,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,570,20
+3,org.lineageos.jelly/.MainActivity,1,HOT,440,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,384,20
+lmk_kills                                   0
+psi_full_stall                           1.40 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-080702-ab1-on9)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 397 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 547 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 546 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 408 ms
+round 1: 15 launches, 7 cold, mean 676 ms
+round 2: 15 launches, 0 cold, mean 252 ms
+round 3: 15 launches, 0 cold, mean 178 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-081552-ab1-on9)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.22 s
+=== cell 10 block 5 arm off (08:19) enabled -> 0x0000
+1,com.android.settings/.Settings,1,WARM,834,21
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,569,21
+1,org.lineageos.jelly/.MainActivity,1,HOT,457,21
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,365,21
+lmk_kills                                  11
+psi_full_stall                           3.94 s
+2,com.android.settings/.Settings,1,WARM,757,20
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,503,20
+2,org.lineageos.jelly/.MainActivity,1,HOT,395,20
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,404,20
+lmk_kills                                   2
+psi_full_stall                           1.63 s
+3,com.android.settings/.Settings,1,UNKNOWN,454,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,536,20
+3,org.lineageos.jelly/.MainActivity,1,HOT,290,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,409,20
+lmk_kills                                   2
+psi_full_stall                           1.60 s
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-082142-ab1-off10)
+org.lineageos.aperture/.CameraLauncher                                 survived 3/3  cold 0  mean 392 ms
+com.android.settings/.Settings                                         survived 3/3  cold 0  mean 681 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 3/3  cold 0  mean 536 ms
+org.lineageos.jelly/.MainActivity                                      survived 3/3  cold 0  mean 380 ms
+round 1: 15 launches, 10 cold, mean 782 ms
+round 2: 15 launches, 0 cold, mean 229 ms
+round 3: 15 launches, 0 cold, mean 195 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261016-083032-ab1-off10)
+cold rate (rounds 2+): 0/30
+lmk_kills                                   0
+psi_full_stall                           0.50 s
+=== restored enabled=0x0001
+== arm on: 10 cell dirs
+   org.lineageos.aperture/.CameraLauncher        survived 10/10 cold  0 mean   380 ms
+   com.android.settings/.Settings                survived 10/10 cold  0 mean   667 ms
+   com.google.android.apps.messaging/.ui.ConversationListActivity survived 10/10 cold  0 mean   531 ms
+   org.lineageos.jelly/.MainActivity             survived 10/10 cold  0 mean   384 ms
+   ALL APPS: survived 40/40 (100%), mean resume 491 ms
+   hog lmk_kills          mean     0.80 over 10 hogs
+   hog psi_full_stall     mean     1.58 over 10 hogs
+   hog swapped_out        mean   806.75 over 10 hogs
+   hog refault_per_steal  mean     0.18 over 10 hogs
+   hog direct_share       mean     0.04 over 10 hogs
+   app-cycle: cold 0/150 (0.0%), mean launch 214 ms
+   cycle lmk_kills        mean     0.00 over 5 runs
+   cycle psi_full_stall   mean     0.24 over 5 runs
+   cycle kswapd_cpu       mean     2.72 over 5 runs
+   cycle refault_per_steal mean     0.13 over 5 runs
+   cycle direct_share     mean     0.00 over 5 runs
+== arm off: 10 cell dirs
+   org.lineageos.aperture/.CameraLauncher        survived 10/10 cold  0 mean   383 ms
+   com.android.settings/.Settings                survived 10/10 cold  0 mean   649 ms
+   com.google.android.apps.messaging/.ui.ConversationListActivity survived 10/10 cold  0 mean   517 ms
+   org.lineageos.jelly/.MainActivity             survived 10/10 cold  0 mean   360 ms
+   ALL APPS: survived 40/40 (100%), mean resume 477 ms
+   hog lmk_kills          mean     2.50 over 10 hogs
+   hog psi_full_stall     mean     1.70 over 10 hogs
+   hog swapped_out        mean   778.50 over 10 hogs
+   hog refault_per_steal  mean     0.43 over 10 hogs
+   hog direct_share       mean     0.02 over 10 hogs
+   app-cycle: cold 0/150 (0.0%), mean launch 200 ms
+   cycle lmk_kills        mean     0.00 over 5 runs
+   cycle psi_full_stall   mean     0.34 over 5 runs
+   cycle kswapd_cpu       mean     4.84 over 5 runs
+   cycle refault_per_steal mean     0.50 over 5 runs
+   cycle direct_share     mean     0.00 over 5 runs

@@ -1,0 +1,8 @@
+--------- beginning of main
+10-16 06:17:00.498 I/lowmemorykiller(  503): Kill 'com.google.android.syncadapters.calendar' (4157), uid 10129, oom_score_adj 965 to free 7644kB rss, 1820kB anon rss, 47620kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (144188kB < 157284kB)
+--------- beginning of system
+10-16 06:17:00.607 I/ActivityManager( 1199): Process com.google.android.syncadapters.calendar (pid 4157) has died: cch  +65 CEM 
+10-16 06:17:00.697 I/lowmemorykiller(  503): Kill 'com.android.healthconnect.controller' (3737), uid 10155, oom_score_adj 955 to free 7416kB rss, 2040kB anon rss, 46160kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (118132kB < 157284kB)
+10-16 06:17:00.809 I/ActivityManager( 1199): Process com.android.healthconnect.controller (pid 3737) has died: cch  +55 CEM 
+10-16 06:17:42.940 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:17:42.942 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

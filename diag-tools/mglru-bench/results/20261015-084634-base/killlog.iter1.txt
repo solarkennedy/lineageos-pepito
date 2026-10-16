@@ -1,0 +1,54 @@
+--------- beginning of main
+10-15 08:47:42.936 I/lowmemorykiller(  502): Kill 'com.google.android.contacts' (23805), uid 10131, oom_score_adj 970 to free 41536kB rss, 24964kB anon rss, 60736kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (45936kB < 157284kB)
+--------- beginning of system
+10-15 08:47:43.108 I/ActivityManager( 1250): Process com.google.android.contacts (pid 23805) has died: cch  +70 CAC 
+10-15 08:47:43.127 I/lowmemorykiller(  502): Kill 'com.android.permissioncontroller' (589), uid 10169, oom_score_adj 970 to free 28372kB rss, 13288kB anon rss, 44416kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (61400kB < 157284kB)
+10-15 08:47:43.230 I/lowmemorykiller(  502): Kill 'org.lineageos.glimpse' (22838), uid 10120, oom_score_adj 960 to free 31484kB rss, 16172kB anon rss, 42348kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (64608kB < 157284kB)
+10-15 08:47:43.324 I/lowmemorykiller(  502): Kill 'com.google.android.dialer' (23874), uid 10103, oom_score_adj 960 to free 35960kB rss, 21044kB anon rss, 47128kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (74352kB < 157284kB)
+10-15 08:47:43.409 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23805
+10-15 08:47:43.410 I/ActivityManager( 1250): Process com.android.permissioncontroller (pid 589) has died: cch  +70 CAC 
+10-15 08:47:43.429 I/ActivityManager( 1250): Process org.lineageos.glimpse (pid 22838) has died: cch  +60 CAC 
+10-15 08:47:43.436 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 589
+10-15 08:47:43.436 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 22838
+10-15 08:47:43.441 I/ActivityManager( 1250): Process com.google.android.dialer (pid 23874) has died: cch  +60 CAC 
+10-15 08:47:43.476 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23874
+10-15 08:47:43.494 I/lowmemorykiller(  502): Kill 'android.process.media' (23204), uid 10060, oom_score_adj 955 to free 13852kB rss, 4884kB anon rss, 43968kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (81776kB < 157284kB)
+10-15 08:47:43.571 I/ActivityManager( 1250): Process android.process.media (pid 23204) has died: cch  +55 CEM 
+10-15 08:47:44.000 I/lowmemorykiller(  502): Kill 'org.lineageos.etar' (22995), uid 10118, oom_score_adj 950 to free 22144kB rss, 10032kB anon rss, 44652kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (53824kB < 157284kB)
+10-15 08:47:44.086 I/ActivityManager( 1250): Process org.lineageos.etar (pid 22995) has died: cch  +50 CAC 
+10-15 08:47:44.107 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 22995
+10-15 08:47:44.129 I/lowmemorykiller(  502): Kill 'org.lineageos.twelve' (22909), uid 10115, oom_score_adj 950 to free 27924kB rss, 15388kB anon rss, 43396kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (47900kB < 157284kB)
+10-15 08:47:44.226 I/ActivityManager( 1250): Process org.lineageos.twelve (pid 22909) has died: cch  +50 CAC 
+10-15 08:47:44.349 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 22909
+10-15 08:47:44.371 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:provider' (23906), uid 10104, oom_score_adj 945 to free 20708kB rss, 12544kB anon rss, 43692kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (55076kB < 157284kB)
+10-15 08:47:44.452 I/ActivityManager( 1250): Process com.google.android.projection.gearhead:provider (pid 23906) has died: cch  +45 CEM 
+10-15 08:47:44.490 I/lowmemorykiller(  502): Kill 'com.android.shell' (23220), uid 2000, oom_score_adj 945 to free 11228kB rss, 3464kB anon rss, 44628kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (64216kB < 157284kB)
+10-15 08:47:44.582 I/lowmemorykiller(  502): Kill 'com.android.calculator2' (23107), uid 10128, oom_score_adj 940 to free 27376kB rss, 15588kB anon rss, 45108kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (62020kB < 157284kB)
+10-15 08:47:44.600 I/ActivityManager( 1250): Process com.android.shell (pid 23220) has died: cch  +45 CEM 
+10-15 08:47:44.678 I/ActivityManager( 1250): Process com.android.calculator2 (pid 23107) has died: cch  +40 CAC 
+10-15 08:47:44.697 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23107
+10-15 08:47:44.751 I/lowmemorykiller(  502): Kill 'com.android.deskclock' (23060), uid 10121, oom_score_adj 940 to free 20916kB rss, 9656kB anon rss, 44356kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (66144kB < 157284kB)
+10-15 08:47:44.806 I/ActivityManager( 1250): Process com.android.deskclock (pid 23060) has died: cch  +40 CAC 
+10-15 08:47:44.828 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23060
+10-15 08:47:46.126 I/lowmemorykiller(  502): Kill 'com.android.vending:background' (23642), uid 10108, oom_score_adj 935 to free 30660kB rss, 23832kB anon rss, 49712kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (46196kB < 157284kB)
+10-15 08:47:46.325 I/ActivityManager( 1250): Process com.android.vending:background (pid 23642) has died: cch  +35 CEM 
+10-15 08:47:46.357 I/lowmemorykiller(  502): Kill 'org.lineageos.pepito.volumetile' (23303), uid 10063, oom_score_adj 935 to free 10996kB rss, 3244kB anon rss, 44572kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (53864kB < 157284kB)
+10-15 08:47:46.453 I/ActivityManager( 1250): Process org.lineageos.pepito.volumetile (pid 23303) has died: cch  +35 CEM 
+10-15 08:47:46.454 I/lowmemorykiller(  502): Kill 'org.lineageos.recorder' (23269), uid 10123, oom_score_adj 930 to free 15736kB rss, 4888kB anon rss, 47400kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (53640kB < 157284kB)
+10-15 08:47:46.575 I/ActivityManager( 1250): Process org.lineageos.recorder (pid 23269) has died: cch  +30 CAC 
+10-15 08:47:46.597 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23269
+10-15 08:47:46.609 I/lowmemorykiller(  502): Kill 'com.android.documentsui' (23166), uid 10061, oom_score_adj 930 to free 51080kB rss, 39568kB anon rss, 59712kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (59072kB < 157284kB)
+10-15 08:47:46.704 I/ActivityManager( 1250): Process com.android.documentsui (pid 23166) has died: cch  +30 CAC 
+10-15 08:47:46.767 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23166
+10-15 08:47:49.183 I/lowmemorykiller(  502): Kill 'com.google.android.googlequicksearchbox:search' (23531), uid 10106, oom_score_adj 925 to free 36392kB rss, 29456kB anon rss, 44016kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (43268kB < 157284kB)
+10-15 08:47:49.279 I/ActivityManager( 1250): Process com.google.android.googlequicksearchbox:search (pid 23531) has died: cch  +25 CEM 
+10-15 08:47:49.426 I/lowmemorykiller(  502): Kill 'com.google.android.gms.unstable' (27108), uid 10109, oom_score_adj 925 to free 46364kB rss, 37276kB anon rss, 43452kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (64676kB < 157284kB)
+10-15 08:47:49.500 I/ActivityManager( 1250): Process com.google.android.gms.unstable (pid 27108) has died: cch  +25 CEM 
+10-15 08:47:49.829 I/lowmemorykiller(  502): Kill 'com.google.android.googlequicksearchbox:googleapp' (23456), uid 10106, oom_score_adj 920 to free 71164kB rss, 52068kB anon rss, 61368kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (81516kB < 157284kB)
+10-15 08:47:50.051 I/ActivityManager( 1250): Process com.google.android.googlequicksearchbox:googleapp (pid 23456) has died: cch  +20 CAC 
+10-15 08:47:50.106 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23456
+10-15 08:47:50.130 I/lowmemorykiller(  502): Kill 'com.android.vending' (23322), uid 10108, oom_score_adj 920 to free 40436kB rss, 29700kB anon rss, 52136kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (112124kB < 157284kB)
+10-15 08:47:50.274 I/ActivityManager( 1250): Process com.android.vending (pid 23322) has died: cch  +20 CAC 
+10-15 08:47:50.305 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 23322
+10-15 08:48:34.387 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:48:34.400 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

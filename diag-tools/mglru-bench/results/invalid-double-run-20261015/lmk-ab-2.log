@@ -1,0 +1,171 @@
+=== cell A #1: defaults
+1,com.android.settings/.Settings,0,COLD,1870,20
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,5096,20
+1,org.lineageos.jelly/.MainActivity,0,COLD,1510,20
+1,org.lineageos.aperture/.CameraLauncher,0,COLD,1282,20
+lmk_kills                                  17
+2,com.android.settings/.Settings,0,COLD,6556,20
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1471,20
+2,org.lineageos.jelly/.MainActivity,0,COLD,1480,20
+2,org.lineageos.aperture/.CameraLauncher,0,COLD,1130,20
+lmk_kills                                  10
+3,com.android.settings/.Settings,0,COLD,5448,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1360,20
+3,org.lineageos.jelly/.MainActivity,0,COLD,1567,20
+3,org.lineageos.aperture/.CameraLauncher,0,COLD,1206,20
+lmk_kills                                  10
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-094836-lmkE-A1)
+org.lineageos.aperture/.CameraLauncher                                 survived 0/3  cold 3  mean 1206 ms
+com.android.settings/.Settings                                         survived 0/3  cold 3  mean 4624 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/3  cold 3  mean 2642 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/3  cold 3  mean 1519 ms
+=== cell E #2: swap_compression_ratio=3
+1,com.android.settings/.Settings,0,COLD,1685,19
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,HOT,168,19
+1,org.lineageos.jelly/.MainActivity,0,HOT,182,19
+1,org.lineageos.aperture/.CameraLauncher,0,HOT,235,19
+lmk_kills                                   7
+2,com.android.settings/.Settings,0,HOT,352,20
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,HOT,166,20
+2,org.lineageos.jelly/.MainActivity,0,HOT,167,20
+2,org.lineageos.aperture/.CameraLauncher,0,HOT,286,20
+lmk_kills                                   8
+3,com.android.settings/.Settings,0,HOT,334,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,HOT,147,20
+3,org.lineageos.jelly/.MainActivity,0,HOT,212,20
+3,org.lineageos.aperture/.CameraLauncher,0,HOT,296,20
+lmk_kills                                  10
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-094911-lmkE-A1)
+org.lineageos.aperture/.CameraLauncher                                 survived 0/3  cold 0  mean 272 ms
+com.android.settings/.Settings                                         survived 0/3  cold 1  mean 790 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/3  cold 0  mean 160 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/3  cold 0  mean 187 ms
+=== cell E #2: swap_compression_ratio=3
+1,com.android.settings/.Settings,0,COLD,2007,20
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1400,20
+1,org.lineageos.jelly/.MainActivity,0,HOT,124,20
+1,org.lineageos.aperture/.CameraLauncher,0,COLD,1139,20
+lmk_kills                                  14
+2,com.android.settings/.Settings,0,COLD,2412,20
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1358,20
+2,org.lineageos.jelly/.MainActivity,0,COLD,1466,20
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,435,20
+lmk_kills                                  10
+3,com.android.settings/.Settings,0,COLD,2121,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1393,20
+3,org.lineageos.jelly/.MainActivity,0,COLD,1421,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,348,20
+lmk_kills                                   9
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-095813-lmkE-E2)
+org.lineageos.aperture/.CameraLauncher                                 survived 2/3  cold 1  mean 640 ms
+com.android.settings/.Settings                                         survived 0/3  cold 3  mean 2180 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/3  cold 3  mean 1383 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/3  cold 2  mean 1003 ms
+=== cell A #3: defaults
+1,com.android.settings/.Settings,0,HOT,295,19
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,HOT,206,19
+1,org.lineageos.jelly/.MainActivity,0,HOT,153,19
+1,org.lineageos.aperture/.CameraLauncher,0,HOT,307,19
+lmk_kills                                   5
+2,com.android.settings/.Settings,0,HOT,176,19
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,HOT,167,19
+2,org.lineageos.jelly/.MainActivity,0,HOT,188,19
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,261,19
+lmk_kills                                  10
+3,com.android.settings/.Settings,0,HOT,211,21
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,HOT,141,21
+3,org.lineageos.jelly/.MainActivity,0,HOT,156,21
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,285,21
+lmk_kills                                   9
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-095833-lmkE-E2)
+org.lineageos.aperture/.CameraLauncher                                 survived 2/3  cold 0  mean 284 ms
+com.android.settings/.Settings                                         survived 0/3  cold 0  mean 227 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/3  cold 0  mean 171 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/3  cold 0  mean 165 ms
+=== cell A #3: defaults
+1,com.android.settings/.Settings,0,COLD,1672,22
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1422,22
+1,org.lineageos.jelly/.MainActivity,0,COLD,1411,22
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,372,22
+lmk_kills                                  15
+2,com.android.settings/.Settings,0,WARM,1305,25
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1466,25
+2,org.lineageos.jelly/.MainActivity,0,HOT,152,25
+2,org.lineageos.aperture/.CameraLauncher,0,COLD,1189,25
+lmk_kills                                  14
+3,com.android.settings/.Settings,0,WARM,978,71
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,71
+3,org.lineageos.jelly/.MainActivity,0,UNKNOWN,575,71
+3,org.lineageos.aperture/.CameraLauncher,0,UNKNOWN,0,71
+lmk_kills                                  41
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-100748-lmkE-A3)
+org.lineageos.aperture/.CameraLauncher                                 survived 1/3  cold 1  mean 520 ms
+com.android.settings/.Settings                                         survived 0/3  cold 1  mean 1318 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/3  cold 2  mean 962 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/3  cold 1  mean 712 ms
+1,com.android.settings/.Settings,0,HOT,183,22
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,HOT,116,22
+1,org.lineageos.jelly/.MainActivity,0,HOT,135,22
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,263,22
+lmk_kills                                  15
+2,com.android.settings/.Settings,0,UNKNOWN,80,23
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,UNKNOWN,75,23
+2,org.lineageos.jelly/.MainActivity,0,UNKNOWN,56,23
+2,org.lineageos.aperture/.CameraLauncher,0,UNKNOWN,28,23
+lmk_kills                                  14
+3,com.android.settings/.Settings,0,UNKNOWN,0,70
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,70
+3,org.lineageos.jelly/.MainActivity,0,UNKNOWN,0,70
+3,org.lineageos.aperture/.CameraLauncher,0,UNKNOWN,381,70
+lmk_kills                                  41
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-100801-lmkE-A3)
+org.lineageos.aperture/.CameraLauncher                                 survived 1/3  cold 0  mean 224 ms
+com.android.settings/.Settings                                         survived 0/3  cold 0  mean 87 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/3  cold 0  mean 63 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/3  cold 0  mean 63 ms
+=== cell E #4: swap_compression_ratio=3
+=== cell E #4: swap_compression_ratio=3
+1,com.android.settings/.Settings,0,UNKNOWN,0,476
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,476
+1,org.lineageos.jelly/.MainActivity,0,UNKNOWN,3098,476
+1,org.lineageos.aperture/.CameraLauncher,0,UNKNOWN,0,476
+lmk_kills                                  49
+2,com.android.settings/.Settings,0,WARM,1055,90
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,90
+2,org.lineageos.jelly/.MainActivity,0,UNKNOWN,0,90
+2,org.lineageos.aperture/.CameraLauncher,0,UNKNOWN,430,90
+lmk_kills                                  80
+3,com.android.settings/.Settings,0,UNKNOWN,0,113
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,113
+3,org.lineageos.jelly/.MainActivity,0,UNKNOWN,0,113
+3,org.lineageos.aperture/.CameraLauncher,0,COLD,2278,113
+lmk_kills                                  70
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-101820-lmkE-E4)
+org.lineageos.aperture/.CameraLauncher                                 survived 0/6  cold 2  mean 825 ms
+com.android.settings/.Settings                                         survived 0/6  cold 0  mean 522 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/6  cold 0  mean -1 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/6  cold 0  mean 1054 ms
+1,com.android.settings/.Settings,0,WARM,1122,475
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,475
+1,org.lineageos.jelly/.MainActivity,0,UNKNOWN,0,475
+1,org.lineageos.aperture/.CameraLauncher,0,COLD,2244,475
+lmk_kills                                  49
+2,com.android.settings/.Settings,0,UNKNOWN,0,90
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,90
+2,org.lineageos.jelly/.MainActivity,0,UNKNOWN,148,90
+2,org.lineageos.aperture/.CameraLauncher,0,UNKNOWN,0,90
+lmk_kills                                  80
+3,com.android.settings/.Settings,0,WARM,955,114
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,ERR,-1,114
+3,org.lineageos.jelly/.MainActivity,0,UNKNOWN,3080,114
+3,org.lineageos.aperture/.CameraLauncher,0,UNKNOWN,0,114
+lmk_kills                                  70
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-101820-lmkE-E4)
+org.lineageos.aperture/.CameraLauncher                                 survived 0/6  cold 2  mean 825 ms
+com.android.settings/.Settings                                         survived 0/6  cold 0  mean 522 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 0/6  cold 0  mean -1 ms
+org.lineageos.jelly/.MainActivity                                      survived 0/6  cold 0  mean 1054 ms
+=== overrides cleared
+EXIT 0
+=== overrides cleared
+EXIT 0

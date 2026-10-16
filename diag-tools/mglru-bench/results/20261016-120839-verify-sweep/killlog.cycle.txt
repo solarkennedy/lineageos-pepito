@@ -1,0 +1,26 @@
+--------- beginning of system
+10-16 12:09:50.390 I/ActivityManager( 1216): updateOomAdj start time is before than pendingPid added, don't delete it
+10-16 12:09:54.904 W/ActivityManager( 1216): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 12:09:54.925 W/ActivityManager( 1216): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 12:10:02.427 I/ActivityManager( 1216): Start proc 6202:org.lineageos.aperture/u0a119 for next-top-activity {org.lineageos.aperture/org.lineageos.aperture.CameraLauncher}
+10-16 12:10:03.259 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 12:10:03.259 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 12:10:07.290 I/ActivityManager( 1216): Start proc 6364:org.lineageos.glimpse/u0a120 for next-top-activity {org.lineageos.glimpse/org.lineageos.glimpse.MainActivity}
+10-16 12:10:11.599 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-16 12:10:15.889 I/ActivityManager( 1216): Start proc 6502:org.lineageos.etar/u0a118 for next-top-activity {org.lineageos.etar/com.android.calendar.AllInOneActivity}
+10-16 12:10:24.361 I/ActivityManager( 1216): Start proc 6584:com.android.calculator2/u0a128 for next-top-activity {com.android.calculator2/com.android.calculator2.Calculator}
+10-16 12:10:28.920 I/ActivityManager( 1216): Start proc 6633:com.android.documentsui/u0a61 for next-top-activity {com.android.documentsui/com.android.documentsui.LauncherActivity}
+10-16 12:10:33.380 I/ActivityManager( 1216): Start proc 6697:org.lineageos.recorder/u0a123 for next-top-activity {org.lineageos.recorder/org.lineageos.recorder.RecorderActivity}
+10-16 12:10:44.269 I/ActivityManager( 1216): Start proc 6837:com.google.android.googlequicksearchbox:search/u0a106 for bound-service {com.google.android.googlequicksearchbox/com.google.apps.tiktok.account.data.manager.AccountSyncService}
+10-16 12:10:44.351 I/ActivityManager( 1216): Start proc 6847:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i1 for bound-service {com.google.android.googlequicksearchbox/org.chromium.content.app.SandboxedProcessService0:0}
+10-16 12:10:47.426 I/ActivityManager( 1216): Process com.google.android.googlequicksearchbox:googleapp (pid 3094) has died: cch CAC 
+10-16 12:10:47.466 W/ActivityManager( 1216): setHasOverlayUi called on unknown pid: 3094
+10-16 12:10:47.468 I/ActivityManager( 1216): Killing 6847:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a106i1 (adj 0): isolated not needed
+10-16 12:10:58.659 W/ActivityManager( 1216): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 12:11:06.560 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 12:11:06.561 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 12:11:40.901 I/ActivityManager( 1216): Start proc 7343:com.google.android.googlequicksearchbox:googleapp/u0a106 for next-top-activity {com.google.android.googlequicksearchbox/com.google.android.googlequicksearchbox.SearchActivity}
+10-16 12:11:43.878 I/ActivityManager( 1216): Start proc 7432:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i2 for bound-service {com.google.android.googlequicksearchbox/org.chromium.content.app.SandboxedProcessService0:0}
+10-16 12:11:57.350 W/ActivityManager( 1216): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 12:12:04.896 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 12:12:04.896 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

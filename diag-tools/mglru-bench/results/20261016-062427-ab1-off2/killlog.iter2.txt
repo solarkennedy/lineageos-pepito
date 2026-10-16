@@ -1,0 +1,9 @@
+--------- beginning of main
+10-16 06:29:00.394 I/lowmemorykiller(  503): Kill 'com.android.shell' (25509), uid 2000, oom_score_adj 975 to free 4476kB rss, 1384kB anon rss, 46656kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (111%)
+--------- beginning of system
+10-16 06:29:00.538 I/ActivityManager( 1199): Process com.android.shell (pid 25509) has died: cch  +75 CEM 
+10-16 06:29:02.589 I/lowmemorykiller(  503): Kill 'com.android.documentsui' (25462), uid 10061, oom_score_adj 970 to free 8256kB rss, 1224kB anon rss, 71684kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (155620kB < 157284kB)
+10-16 06:29:02.713 I/ActivityManager( 1199): Process com.android.documentsui (pid 25462) has died: cch  +70 CAC 
+10-16 06:29:02.982 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 25462
+10-16 06:29:44.398 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:29:44.399 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

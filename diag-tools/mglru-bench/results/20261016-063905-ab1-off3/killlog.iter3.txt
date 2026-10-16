@@ -1,0 +1,6 @@
+--------- beginning of main
+10-16 06:46:15.305 I/lowmemorykiller(  503): Kill 'android.process.acore' (25023), uid 10062, oom_score_adj 935 to free 4684kB rss, 840kB anon rss, 49040kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (104%)
+--------- beginning of system
+10-16 06:46:15.437 I/ActivityManager( 1199): Process android.process.acore (pid 25023) has died: cch  +35 CEM 
+10-16 06:46:59.285 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:46:59.286 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

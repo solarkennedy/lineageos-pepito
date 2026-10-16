@@ -1,0 +1,31 @@
+--------- beginning of main
+10-15 08:58:30.619 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:provider' (4607), uid 10104, oom_score_adj 935 to free 18564kB rss, 12532kB anon rss, 43588kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (37436kB < 157284kB)
+10-15 08:58:30.733 I/lowmemorykiller(  502): Kill 'com.google.android.dialer' (4561), uid 10103, oom_score_adj 925 to free 24640kB rss, 19268kB anon rss, 43592kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (42020kB < 157284kB)
+--------- beginning of system
+10-15 08:58:30.746 I/ActivityManager( 1250): Process com.google.android.projection.gearhead:provider (pid 4607) has died: cch  +35 CEM 
+10-15 08:58:30.805 I/ActivityManager( 1250): Killing 4561:com.google.android.dialer/u0a103 (adj 925): depends on provider com.google.android.projection.gearhead/com.google.android.apps.auto.components.projectionstate.ProjectionStateProvider in dying proc com.google.android.projection.gearhead:provider (adj -10000)
+10-15 08:58:30.970 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (4674), uid 10101, oom_score_adj 920 to free 53592kB rss, 45300kB anon rss, 42808kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (51044kB < 157284kB)
+10-15 08:58:31.157 I/lowmemorykiller(  502): Kill 'android.process.acore' (4522), uid 10062, oom_score_adj 915 to free 12004kB rss, 6420kB anon rss, 43416kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (77764kB < 157284kB)
+10-15 08:58:31.255 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (4775), uid 99025, oom_score_adj 910 to free 31912kB rss, 25588kB anon rss, 36388kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (79828kB < 157284kB)
+10-15 08:58:31.299 I/ActivityManager( 1250): Process com.google.android.apps.messaging (pid 4674) has died: cch  +20 CAC 
+10-15 08:58:31.354 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 4674
+10-15 08:58:31.355 I/ActivityManager( 1250): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 4775) has died: cch  +10 CACC
+10-15 08:58:31.378 W/ActivityManager( 1250): Scheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 30000ms for connection
+10-15 08:58:31.385 I/ActivityManager( 1250): Process android.process.acore (pid 4522) has died: cch  +15 CEM 
+10-15 08:58:31.433 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 9928ms for mem-pressure-event
+10-15 08:58:57.902 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 0ms for mem-pressure-event
+10-15 08:59:03.391 I/ActivityManager( 1250): Start proc 6512:com.google.android.apps.messaging/u0a101 for next-top-activity {com.google.android.apps.messaging/com.google.android.apps.messaging.gaia.expresssignin.BugleExpressSignInActivity}
+10-15 08:59:09.984 W/ActivityManager( 1250): Slow operation: 52ms so far, now at startProcess: done starting proc!
+10-15 08:59:10.085 W/ActivityManager( 1250): Slow operation: 103ms so far, now at startProcess: returned from zygote!
+10-15 08:59:10.085 W/ActivityManager( 1250): Slow operation: 104ms so far, now at startProcess: done updating battery stats
+10-15 08:59:10.086 W/ActivityManager( 1250): Slow operation: 104ms so far, now at startProcess: building log message
+10-15 08:59:10.086 I/ActivityManager( 1250): Start proc 6585:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i26 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 08:59:10.086 W/ActivityManager( 1250): Slow operation: 104ms so far, now at startProcess: starting to update pids map
+10-15 08:59:10.086 W/ActivityManager( 1250): Slow operation: 104ms so far, now at startProcess: done updating pids map
+10-15 08:59:10.468 I/ActivityManager( 1250): Process org.lineageos.jelly (pid 4750) has died: fg  TOP 
+10-15 08:59:10.483 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 4750
+10-15 08:59:10.500 I/ActivityManager( 1250): Start proc 6595:org.lineageos.jelly/u0a116 for top-activity {org.lineageos.jelly/org.lineageos.jelly.MainActivity}
+10-15 08:59:10.585 I/ActivityManager( 1250): Killing 6585:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a116i26 (adj 905): isolated not needed
+10-15 08:59:10.887 I/ActivityManager( 1250): Start proc 6618:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i27 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 08:59:15.616 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:59:15.617 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

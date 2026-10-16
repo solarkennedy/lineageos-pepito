@@ -1,0 +1,23 @@
+--------- beginning of system
+10-16 06:33:52.228 I/ActivityManager( 1199): Start proc 1086:com.android.permissioncontroller/u0a169 for next-top-activity {com.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity}
+10-16 06:33:52.242 I/ActivityManager( 1199): Start proc 1087:com.google.android.contacts/u0a131 for activity {com.google.android.contacts/com.google.android.apps.contacts.permission.RequestPermissionsActivity}
+10-16 06:33:56.968 I/ActivityManager( 1199): Start proc 1267:com.google.android.dialer/u0a103 for next-top-activity {com.google.android.dialer/com.google.android.dialer.extensions.GoogleDialtactsActivity}
+10-16 06:33:57.925 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 06:33:57.970 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 06:34:05.456 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:34:05.457 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:34:09.200 I/ActivityManager( 1199): Start proc 1636:org.lineageos.glimpse/u0a120 for next-top-activity {org.lineageos.glimpse/org.lineageos.glimpse.MainActivity}
+10-16 06:34:13.591 I/ActivityManager( 1199): Start proc 1707:org.lineageos.twelve/u0a115 for next-top-activity {org.lineageos.twelve/org.lineageos.twelve.MainActivity}
+10-16 06:34:14.378 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-16 06:34:14.378 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-16 06:34:17.941 I/ActivityManager( 1199): Start proc 1783:org.lineageos.etar/u0a118 for next-top-activity {org.lineageos.etar/com.android.calendar.AllInOneActivity}
+10-16 06:34:22.266 I/ActivityManager( 1199): Start proc 1866:com.android.deskclock/u0a121 for next-top-activity {com.android.deskclock/com.android.deskclock.DeskClock}
+10-16 06:34:26.476 I/ActivityManager( 1199): Start proc 2043:com.android.calculator2/u0a128 for next-top-activity {com.android.calculator2/com.android.calculator2.Calculator}
+10-16 06:34:30.734 I/ActivityManager( 1199): Start proc 2153:com.android.documentsui/u0a61 for next-top-activity {com.android.documentsui/com.android.documentsui.LauncherActivity}
+10-16 06:34:35.131 I/ActivityManager( 1199): Start proc 2345:org.lineageos.recorder/u0a123 for next-top-activity {org.lineageos.recorder/org.lineageos.recorder.RecorderActivity}
+10-16 06:34:59.053 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 06:35:06.559 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:35:06.560 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:35:55.218 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 06:36:02.704 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 06:36:02.705 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

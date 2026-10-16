@@ -1,0 +1,25 @@
+--------- beginning of system
+10-16 07:47:08.298 I/ActivityManager( 1199): Start proc 12837:com.android.permissioncontroller/u0a169 for next-top-activity {com.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity}
+10-16 07:47:08.312 I/ActivityManager( 1199): Start proc 12838:com.google.android.contacts/u0a131 for activity {com.google.android.contacts/com.google.android.apps.contacts.permission.RequestPermissionsActivity}
+10-16 07:47:12.977 I/ActivityManager( 1199): Start proc 12929:com.google.android.dialer/u0a103 for next-top-activity {com.google.android.dialer/com.google.android.dialer.extensions.GoogleDialtactsActivity}
+10-16 07:47:13.690 I/ActivityManager( 1199): Start proc 12964:com.google.android.projection.gearhead:provider/u0a104 for content provider {com.google.android.projection.gearhead/com.google.android.apps.auto.components.projectionstate.ProjectionStateProvider}
+10-16 07:47:14.024 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 07:47:14.084 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 07:47:14.133 I/ActivityManager( 1199): Start proc 12990:android.process.acore/u0a62 for content provider {com.android.providers.contacts/com.android.providers.contacts.CallLogProvider}
+10-16 07:47:21.677 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:47:21.678 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:47:25.382 I/ActivityManager( 1199): Start proc 13148:org.lineageos.glimpse/u0a120 for next-top-activity {org.lineageos.glimpse/org.lineageos.glimpse.MainActivity}
+10-16 07:47:29.886 I/ActivityManager( 1199): Start proc 13208:org.lineageos.twelve/u0a115 for next-top-activity {org.lineageos.twelve/org.lineageos.twelve.MainActivity}
+10-16 07:47:30.622 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-16 07:47:30.622 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-16 07:47:34.190 I/ActivityManager( 1199): Start proc 13285:org.lineageos.etar/u0a118 for next-top-activity {org.lineageos.etar/com.android.calendar.AllInOneActivity}
+10-16 07:47:38.533 I/ActivityManager( 1199): Start proc 13337:com.android.deskclock/u0a121 for next-top-activity {com.android.deskclock/com.android.deskclock.DeskClock}
+10-16 07:47:42.809 I/ActivityManager( 1199): Start proc 13384:com.android.calculator2/u0a128 for next-top-activity {com.android.calculator2/com.android.calculator2.Calculator}
+10-16 07:47:47.486 I/ActivityManager( 1199): Start proc 13433:com.android.documentsui/u0a61 for next-top-activity {com.android.documentsui/com.android.documentsui.LauncherActivity}
+10-16 07:47:51.830 I/ActivityManager( 1199): Start proc 13494:org.lineageos.recorder/u0a123 for next-top-activity {org.lineageos.recorder/org.lineageos.recorder.RecorderActivity}
+10-16 07:48:15.698 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 07:48:23.205 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:48:23.206 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:49:11.849 W/ActivityManager( 1199): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-16 07:49:19.375 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:49:19.377 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

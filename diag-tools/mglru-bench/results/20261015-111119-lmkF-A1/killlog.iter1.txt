@@ -1,0 +1,36 @@
+--------- beginning of main
+10-15 11:12:29.009 I/lowmemorykiller(  502): Kill 'com.android.permissioncontroller' (12504), uid 10169, oom_score_adj 940 to free 55196kB rss, 14740kB anon rss, 35552kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (152616kB < 157284kB)
+--------- beginning of system
+10-15 11:12:29.132 I/ActivityManager(22214): Process com.android.permissioncontroller (pid 12504) has died: cch  +40 CACC
+10-15 11:12:29.174 W/ActivityManager(22214): Scheduling restart of crashed service com.android.permissioncontroller/.permission.service.PermissionControllerServiceImpl in 1000ms for connection
+10-15 11:12:29.245 I/lowmemorykiller(  502): Kill 'com.android.settings' (12455), uid 1000, oom_score_adj 930 to free 80036kB rss, 30860kB anon rss, 33200kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (148712kB < 157284kB)
+10-15 11:12:29.352 I/ActivityManager(22214): Process com.android.settings (pid 12455) has died: cch  +30 CAC 
+10-15 11:12:29.417 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 12455
+10-15 11:12:32.014 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (12583), uid 10101, oom_score_adj 920 to free 57924kB rss, 49464kB anon rss, 39780kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (30800kB < 157284kB)
+10-15 11:12:32.195 I/ActivityManager(22214): Process com.google.android.apps.messaging (pid 12583) has died: cch  +20 CAC 
+10-15 11:12:32.290 I/lowmemorykiller(  502): Kill 'com.android.cellbroadcastreceiver.module' (13599), uid 10154, oom_score_adj 915 to free 12160kB rss, 6628kB anon rss, 42188kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (60024kB < 157284kB)
+10-15 11:12:32.403 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (12678), uid 99010, oom_score_adj 910 to free 30908kB rss, 25136kB anon rss, 36464kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (57356kB < 157284kB)
+10-15 11:12:32.527 I/lowmemorykiller(  502): Kill 'com.google.android.apps.wellbeing' (12481), uid 10111, oom_score_adj 905 to free 14088kB rss, 8780kB anon rss, 42636kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (71560kB < 157284kB)
+10-15 11:12:32.630 I/lowmemorykiller(  502): Kill 'org.lineageos.jelly' (12653), uid 10116, oom_score_adj 900 to free 42716kB rss, 26252kB anon rss, 41832kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (73532kB < 157284kB)
+10-15 11:12:32.728 I/ActivityManager(22214): Process com.android.cellbroadcastreceiver.module (pid 13599) has died: cch  +15 CEM 
+10-15 11:12:32.747 I/ActivityManager(22214): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 12678) has died: cch  +10 CACC
+10-15 11:12:32.758 W/ActivityManager(22214): Scheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 10000ms for connection
+10-15 11:12:32.769 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 12583
+10-15 11:12:32.782 I/ActivityManager(22214): Process com.google.android.apps.wellbeing (pid 12481) has died: cch CEM 
+10-15 11:12:32.827 I/ActivityManager(22214): Process org.lineageos.jelly (pid 12653) has died: cch CAC 
+10-15 11:12:32.835 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 12653
+10-15 11:12:37.915 I/ActivityManager(22214): Test idle passed
+10-15 11:12:42.963 I/ActivityManager(22214): Test idle passed
+10-15 11:12:47.965 I/ActivityManager(22214): Test idle passed
+10-15 11:12:52.967 I/ActivityManager(22214): Test idle passed
+10-15 11:12:57.568 I/ActivityManager(22214): Start proc 14585:com.android.settings/1000 for broadcast {com.android.settings/com.android.settings.network.telephony.satellite.quicksettings.SatelliteTileStateReceiver}
+10-15 11:12:57.970 I/ActivityManager(22214): Test idle failed due to 84bea7d ?:com.android.settings/1000 not runnable because EMPTY
+10-15 11:12:58.501 I/ActivityManager(22214): Start proc 14603:com.android.cellbroadcastreceiver.module/u0a154 for broadcast {com.android.cellbroadcastreceiver.module/com.android.cellbroadcastreceiver.CellBroadcastReceiver}
+10-15 11:13:01.432 I/ActivityManager(22214): Start proc 14637:com.google.android.apps.wellbeing/u0a111 for content provider {com.google.android.apps.wellbeing/com.google.android.apps.wellbeing.api.impl.WellbeingSettingsProvider}
+10-15 11:13:01.883 I/ActivityManager(22214): Start proc 14661:com.android.permissioncontroller/u0a169 for bound-service {com.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl}
+10-15 11:13:02.795 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: 10109, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 11:13:07.251 I/ActivityManager(22214): Start proc 14743:com.google.android.apps.messaging/u0a101 for next-top-activity {com.google.android.apps.messaging/com.google.android.apps.messaging.gaia.expresssignin.BugleExpressSignInActivity}
+10-15 11:13:13.453 I/ActivityManager(22214): Start proc 14817:org.lineageos.jelly/u0a116 for next-top-activity {org.lineageos.jelly/org.lineageos.jelly.MainActivity}
+10-15 11:13:14.053 I/ActivityManager(22214): Start proc 14842:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i11 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 11:13:19.899 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 11:13:19.899 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

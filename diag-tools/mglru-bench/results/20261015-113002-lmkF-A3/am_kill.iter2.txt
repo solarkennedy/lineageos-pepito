@@ -1,0 +1,3 @@
+10-15 11:22:35.686 22214 28939 I am_kill : [0,20626,com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0,905,isolated not needed,52348]
+10-15 11:25:17.927 22214 22240 I am_kill : [0,23052,com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0,905,isolated not needed,52780]
+10-15 11:27:59.242 22214 22599 I am_kill : [0,25242,com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0,905,isolated not needed,52608]

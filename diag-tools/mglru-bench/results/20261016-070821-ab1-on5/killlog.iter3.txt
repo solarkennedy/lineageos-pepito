@@ -1,0 +1,10 @@
+--------- beginning of main
+10-16 07:15:40.225 I/lowmemorykiller(  503): Kill 'com.google.android.projection.gearhead:provider' (19000), uid 10104, oom_score_adj 965 to free 9104kB rss, 2620kB anon rss, 52568kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (84784kB < 157284kB) and thrashing (104%)
+10-16 07:15:40.348 I/lowmemorykiller(  503): Kill 'android.process.acore' (19024), uid 10062, oom_score_adj 955 to free 9668kB rss, 2740kB anon rss, 46760kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (121576kB < 157284kB)
+--------- beginning of system
+10-16 07:15:40.353 I/ActivityManager( 1199): Process com.google.android.projection.gearhead:provider (pid 19000) has died: cch  +65 CEM 
+10-16 07:15:40.450 I/lowmemorykiller(  503): Kill 'com.android.providers.calendar' (3860), uid 10074, oom_score_adj 945 to free 5152kB rss, 1084kB anon rss, 48284kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (144856kB < 157284kB)
+10-16 07:15:40.580 I/ActivityManager( 1199): Process android.process.acore (pid 19024) has died: cch  +55 CEM 
+10-16 07:15:40.597 I/ActivityManager( 1199): Process com.android.providers.calendar (pid 3860) has died: cch  +45 CEM 
+10-16 07:16:20.233 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:16:20.233 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

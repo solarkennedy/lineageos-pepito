@@ -1,0 +1,2 @@
+10-16 06:01:10.382  1199  5412 I am_kill : [0,14629,org.lineageos.aperture,0,stop org.lineageos.aperture due to from pid 20157,135132]
+10-16 06:02:12.188  1199 18115 I am_kill : [0,28149,org.lineageos.aperture,920,stop org.lineageos.aperture due to from pid 29578,115096]

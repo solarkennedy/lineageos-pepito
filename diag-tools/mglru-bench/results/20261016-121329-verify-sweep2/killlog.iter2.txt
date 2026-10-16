@@ -1,0 +1,7 @@
+--------- beginning of main
+10-16 12:17:30.764 I/lowmemorykiller(  504): Kill 'com.android.calculator2' (6584), uid 10128, oom_score_adj 970 to free 10956kB rss, 1504kB anon rss, 57380kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (153300kB < 157284kB) and thrashing (101%)
+--------- beginning of system
+10-16 12:17:30.922 I/ActivityManager( 1216): Process com.android.calculator2 (pid 6584) has died: cch  +70 CAC 
+10-16 12:17:31.170 W/ActivityManager( 1216): setHasOverlayUi called on unknown pid: 6584
+10-16 12:18:11.138 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 12:18:11.138 W/ActivityManager( 1216): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

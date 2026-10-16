@@ -1,0 +1,4 @@
+10-15 12:00:01.493 22214 22306 I am_kill : [0,10744,com.android.settings,0,Can't deliver broadcast,0]
+10-15 12:00:41.893 22214 23763 I am_kill : [0,13003,com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0,905,isolated not needed,52264]
+10-15 12:06:07.206 22214 22346 I am_kill : [0,16578,com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0,905,isolated not needed,52516]
+10-15 12:19:32.846 22214 22348 I am_kill : [0,25310,com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0,905,isolated not needed,52104]

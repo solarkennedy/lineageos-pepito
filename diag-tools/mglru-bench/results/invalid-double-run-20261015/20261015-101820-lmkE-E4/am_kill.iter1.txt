@@ -1,0 +1,2 @@
+10-15 10:16:08.864  1685  1778 I am_kill : [0,2853,com.android.deskclock,905,Can't deliver broadcast,0]
+10-15 10:28:19.948  9162  9307 I am_kill : [0,10549,com.android.deskclock,905,Can't deliver broadcast,0]

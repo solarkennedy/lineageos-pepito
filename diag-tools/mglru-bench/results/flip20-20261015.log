@@ -1,0 +1,24 @@
+flipping 20 times (orig 0x0001) under app-cycle load
+flip 1 -> 0x0000
+flip 2 -> 0x0001
+flip 3 -> 0x0000
+flip 4 -> 0x0001
+flip 5 -> 0x0000
+flip 6 -> 0x0001
+flip 7 -> 0x0000
+flip 8 -> 0x0001
+flip 9 -> 0x0000
+flip 10 -> 0x0001
+flip 11 -> 0x0000
+flip 12 -> 0x0001
+flip 13 -> 0x0000
+flip 14 -> 0x0001
+flip 15 -> 0x0000
+flip 16 -> 0x0001
+flip 17 -> 0x0000
+flip 18 -> 0x0001
+flip 19 -> 0x0000
+flip 20 -> 0x0001
+restored 0x0001
+dmesg BUG/WARN/Bad-page lines (excl. known-benign): 0   benign: gic=2 use_mm=2
+pstore: console-ramoops-0 

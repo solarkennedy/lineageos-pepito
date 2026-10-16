@@ -1,0 +1,13 @@
+--------- beginning of main
+10-16 07:00:56.246 I/lowmemorykiller(  503): Kill 'com.android.documentsui' (11180), uid 10061, oom_score_adj 970 to free 8512kB rss, 1588kB anon rss, 71176kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (137844kB < 157284kB)
+10-16 07:00:56.405 I/lowmemorykiller(  503): Kill 'org.lineageos.recorder' (11242), uid 10123, oom_score_adj 960 to free 9544kB rss, 2264kB anon rss, 50384kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (145996kB < 157284kB)
+--------- beginning of system
+10-16 07:00:56.453 I/ActivityManager( 1199): Process com.android.documentsui (pid 11180) has died: cch  +70 CAC 
+10-16 07:00:56.489 I/lowmemorykiller(  503): Kill 'com.android.vending' (11284), uid 10108, oom_score_adj 950 to free 6424kB rss, 976kB anon rss, 79720kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (139240kB < 157284kB)
+10-16 07:00:56.772 I/ActivityManager( 1199): Process org.lineageos.recorder (pid 11242) has died: cch  +60 CAC 
+10-16 07:00:56.815 I/ActivityManager( 1199): Process com.android.vending (pid 11284) has died: cch  +50 CAC 
+10-16 07:00:56.835 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 11180
+10-16 07:00:56.838 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 11242
+10-16 07:00:56.840 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 11284
+10-16 07:01:37.591 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:01:37.591 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

@@ -1,0 +1,25 @@
+--------- beginning of main
+10-16 07:27:39.037 I/lowmemorykiller(  503): Kill 'com.google.android.projection.gearhead:provider' (27371), uid 10104, oom_score_adj 955 to free 5516kB rss, 1160kB anon rss, 54052kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (148112kB < 157284kB)
+10-16 07:27:39.129 I/lowmemorykiller(  503): Kill 'org.lineageos.etar' (27679), uid 10118, oom_score_adj 950 to free 11352kB rss, 1492kB anon rss, 53184kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (151800kB < 157284kB)
+--------- beginning of system
+10-16 07:27:39.222 I/ActivityManager( 1199): Process com.google.android.projection.gearhead:provider (pid 27371) has died: cch  +55 CEM 
+10-16 07:27:39.328 I/lowmemorykiller(  503): Kill 'org.lineageos.twelve' (27605), uid 10115, oom_score_adj 950 to free 9100kB rss, 0kB anon rss, 57752kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (151068kB < 157284kB)
+10-16 07:27:39.531 I/lowmemorykiller(  503): Kill 'org.lineageos.pepito.volumetile' (27939), uid 10063, oom_score_adj 945 to free 5784kB rss, 1116kB anon rss, 46672kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (144988kB < 157284kB)
+10-16 07:27:39.628 I/lowmemorykiller(  503): Kill 'com.android.calculator2' (19453), uid 10128, oom_score_adj 940 to free 11764kB rss, 1512kB anon rss, 58660kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (142348kB < 157284kB)
+10-16 07:27:39.730 I/lowmemorykiller(  503): Kill 'com.android.deskclock' (19408), uid 10121, oom_score_adj 940 to free 11748kB rss, 1340kB anon rss, 56916kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (154572kB < 157284kB)
+10-16 07:27:39.839 I/ActivityManager( 1199): Process org.lineageos.etar (pid 27679) has died: cch  +50 CAC 
+10-16 07:27:39.869 I/ActivityManager( 1199): Process org.lineageos.twelve (pid 27605) has died: cch  +50 CAC 
+10-16 07:27:39.905 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 27679
+10-16 07:27:39.905 I/ActivityManager( 1199): Process org.lineageos.pepito.volumetile (pid 27939) has died: cch  +45 CEM 
+10-16 07:27:39.913 I/ActivityManager( 1199): Process com.android.calculator2 (pid 19453) has died: cch  +40 CAC 
+10-16 07:27:39.930 I/ActivityManager( 1199): Process com.android.deskclock (pid 19408) has died: cch  +40 CAC 
+10-16 07:27:39.930 I/lowmemorykiller(  503): Kill 'android.process.acore' (27394), uid 10062, oom_score_adj 935 to free 6292kB rss, 1184kB anon rss, 48244kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (146792kB < 157284kB)
+10-16 07:27:39.983 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 27605
+10-16 07:27:39.990 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 19453
+10-16 07:27:40.006 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 19408
+10-16 07:27:40.018 I/ActivityManager( 1199): Process android.process.acore (pid 27394) has died: cch  +35 CEM 
+10-16 07:27:40.029 I/lowmemorykiller(  503): Kill 'org.lineageos.recorder' (19559), uid 10123, oom_score_adj 930 to free 11328kB rss, 1216kB anon rss, 53052kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (156020kB < 157284kB)
+10-16 07:27:40.137 I/ActivityManager( 1199): Process org.lineageos.recorder (pid 19559) has died: cch  +30 CAC 
+10-16 07:27:40.189 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 19559
+10-16 07:28:21.804 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:28:21.805 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

@@ -1,0 +1,9 @@
+--------- beginning of system
+10-16 08:28:46.567 I/ActivityManager( 1199): Start proc 5164:org.lineageos.pepito.volumetile/u0a63 for bound-service {org.lineageos.pepito.volumetile/org.lineageos.pepito.volumetile.VolumeTile}
+--------- beginning of main
+10-16 08:28:57.157 I/lowmemorykiller(  503): Kill 'com.android.providers.calendar' (27703), uid 10074, oom_score_adj 945 to free 4592kB rss, 956kB anon rss, 47640kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (110%)
+10-16 08:28:57.360 I/ActivityManager( 1199): Process com.android.providers.calendar (pid 27703) has died: cch  +45 CEM 
+10-16 08:28:57.743 I/lowmemorykiller(  503): Kill 'com.android.externalstorage' (25489), uid 10073, oom_score_adj 935 to free 3924kB rss, 408kB anon rss, 48360kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (94%)
+10-16 08:28:57.888 I/ActivityManager( 1199): Process com.android.externalstorage (pid 25489) has died: cch  +35 CEM 
+10-16 08:29:39.734 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 08:29:39.736 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

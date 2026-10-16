@@ -1,0 +1,28 @@
+--------- beginning of main
+10-15 12:21:34.111 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (25233), uid 10101, oom_score_adj 920 to free 55384kB rss, 47568kB anon rss, 42572kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (156%)
+--------- beginning of system
+10-15 12:21:34.263 I/ActivityManager(22214): Process com.google.android.apps.messaging (pid 25233) has died: cch  +20 CAC 
+10-15 12:21:34.619 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (26172), uid 99037, oom_score_adj 910 to free 41484kB rss, 33472kB anon rss, 36648kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (106%)
+10-15 12:21:34.923 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 25233
+10-15 12:21:34.934 I/ActivityManager(22214): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 26172) has died: cch  +10 CACC
+10-15 12:21:35.019 W/ActivityManager(22214): Scheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 1000ms for connection
+10-15 12:21:35.220 I/lowmemorykiller(  502): Kill 'com.android.permissioncontroller' (25127), uid 10169, oom_score_adj 910 to free 12288kB rss, 6804kB anon rss, 43564kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (91%)
+10-15 12:21:35.276 I/ActivityManager(22214): Process com.android.permissioncontroller (pid 25127) has died: cch  +10 CACC
+10-15 12:21:35.281 W/ActivityManager(22214): Scheduling restart of crashed service com.android.permissioncontroller/.permission.service.PermissionControllerServiceImpl in 10727ms for connection
+10-15 12:21:39.107 W/ActivityManager(22214): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 25904ms for mem-pressure-event
+10-15 12:21:39.107 W/ActivityManager(22214): Rescheduling restart of crashed service com.android.permissioncontroller/.permission.service.PermissionControllerServiceImpl in 65904ms for mem-pressure-event
+10-15 12:21:46.489 W/ActivityManager(22214): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 0ms for mem-pressure-event
+10-15 12:21:46.489 W/ActivityManager(22214): Rescheduling restart of crashed service com.android.permissioncontroller/.permission.service.PermissionControllerServiceImpl in 0ms for mem-pressure-event
+10-15 12:22:02.709 I/ActivityManager(22214): Start proc 27017:com.android.permissioncontroller/u0a169 for bound-service {com.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl}
+10-15 12:22:07.557 I/ActivityManager(22214): Start proc 27086:com.google.android.apps.messaging/u0a101 for next-top-activity {com.google.android.apps.messaging/com.google.android.apps.messaging.gaia.expresssignin.BugleExpressSignInActivity}
+10-15 12:22:13.910 W/ActivityManager(22214): Slow operation: 106ms so far, now at startProcess: returned from zygote!
+10-15 12:22:13.910 W/ActivityManager(22214): Slow operation: 107ms so far, now at startProcess: done updating battery stats
+10-15 12:22:13.910 W/ActivityManager(22214): Slow operation: 107ms so far, now at startProcess: building log message
+10-15 12:22:13.910 I/ActivityManager(22214): Start proc 27160:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i38 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 12:22:13.911 W/ActivityManager(22214): Slow operation: 107ms so far, now at startProcess: starting to update pids map
+10-15 12:22:13.914 W/ActivityManager(22214): Slow operation: 110ms so far, now at startProcess: done updating pids map
+10-15 12:22:14.360 I/ActivityManager(22214): Process org.lineageos.jelly (pid 26147) has died: fg  TOP 
+10-15 12:22:14.400 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 26147
+10-15 12:22:14.453 I/ActivityManager(22214): Killing 27160:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a116i38 (adj 905): isolated not needed
+10-15 12:22:19.453 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 12:22:19.453 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

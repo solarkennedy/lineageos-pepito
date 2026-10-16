@@ -1,0 +1,51 @@
+--------- beginning of main
+10-15 08:53:07.776 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (31930), uid 10101, oom_score_adj 920 to free 59984kB rss, 46100kB anon rss, 41184kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (48832kB < 157284kB)
+--------- beginning of system
+10-15 08:53:07.963 I/ActivityManager( 1250): Process com.google.android.apps.messaging (pid 31930) has died: cch  +20 CAC 
+10-15 08:53:08.012 I/lowmemorykiller(  502): Kill 'android.process.acore' (31815), uid 10062, oom_score_adj 915 to free 13516kB rss, 6860kB anon rss, 43000kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (73016kB < 157284kB)
+10-15 08:53:08.125 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (32033), uid 99023, oom_score_adj 910 to free 32312kB rss, 24388kB anon rss, 36064kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (70804kB < 157284kB)
+10-15 08:53:08.242 I/lowmemorykiller(  502): Kill 'com.android.cellbroadcastreceiver.module' (32205), uid 10154, oom_score_adj 905 to free 12880kB rss, 5328kB anon rss, 43640kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (83048kB < 157284kB)
+10-15 08:53:08.313 I/ActivityManager( 1250): Process android.process.acore (pid 31815) has died: cch  +15 CEM 
+10-15 08:53:08.323 I/ActivityManager( 1250): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 32033) has died: cch  +10 CACC
+10-15 08:53:08.334 W/ActivityManager( 1250): Scheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 1000ms for connection
+10-15 08:53:08.343 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 31930
+10-15 08:53:08.343 I/ActivityManager( 1250): Process com.android.cellbroadcastreceiver.module (pid 32205) has died: cch CEM 
+10-15 08:53:08.345 I/lowmemorykiller(  502): Kill 'org.lineageos.jelly' (32008), uid 10116, oom_score_adj 900 to free 44432kB rss, 25696kB anon rss, 42692kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (79192kB < 157284kB)
+10-15 08:53:08.444 I/ActivityManager( 1250): Process org.lineageos.jelly (pid 32008) has died: cch CAC 
+10-15 08:53:08.459 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 32008
+10-15 08:53:09.352 I/lowmemorykiller(  502): Kill 'com.android.settings' (31856), uid 1000, oom_score_adj 900 to free 30844kB rss, 21612kB anon rss, 43032kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (58064kB < 157284kB)
+10-15 08:53:09.423 I/ActivityManager( 1250): Process com.android.settings (pid 31856) has died: cch CAC 
+10-15 08:53:09.477 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 31856
+10-15 08:53:11.165 I/lowmemorykiller(  502): Kill 'com.android.inputmethod.latin' (31800), uid 10112, oom_score_adj 201 to free 14728kB rss, 6492kB anon rss, 43912kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (40784kB < 157284kB)
+10-15 08:53:11.237 I/ActivityManager( 1250): Process com.android.inputmethod.latin (pid 31800) has died: prcp IMPB
+10-15 08:53:11.279 W/ActivityManager( 1250): pid 1250 system sent binder code 7 with flags 1 and got error -32
+10-15 08:53:11.361 W/ActivityManager( 1250): Scheduling restart of crashed service com.android.inputmethod.latin/.LatinIME in 1000ms for connection
+10-15 08:53:11.492 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 31800
+10-15 08:53:11.559 W/ActivityManager( 1250): pid 1250 system sent binder code 7 with flags 1 and got error -32
+10-15 08:53:12.451 W/ActivityManager( 1250): Slow operation: 72ms so far, now at startProcess: done creating new process record
+10-15 08:53:12.451 W/ActivityManager( 1250): Slow operation: 73ms so far, now at startProcess: stepping in to startProcess
+10-15 08:53:12.480 W/ActivityManager( 1250): Slow operation: 101ms so far, now at startProcess: done starting proc!
+10-15 08:53:12.524 W/ActivityManager( 1250): Slow operation: 72ms so far, now at startProcess: returned from zygote!
+10-15 08:53:12.527 W/ActivityManager( 1250): Slow operation: 75ms so far, now at startProcess: done updating battery stats
+10-15 08:53:12.528 W/ActivityManager( 1250): Slow operation: 76ms so far, now at startProcess: building log message
+10-15 08:53:12.529 I/ActivityManager( 1250): Start proc 2170:com.android.inputmethod.latin/u0a112 for bound-service {com.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME}
+10-15 08:53:12.529 W/ActivityManager( 1250): Slow operation: 77ms so far, now at startProcess: starting to update pids map
+10-15 08:53:12.532 W/ActivityManager( 1250): Slow operation: 80ms so far, now at startProcess: done updating pids map
+10-15 08:53:13.185 W/ActivityManager( 1250): Slow operation: 52ms so far, now at attachApplicationLocked: immediately after bindApplication
+10-15 08:53:13.185 W/ActivityManager( 1250): Slow operation: 54ms so far, now at attachApplicationLocked: after updateLruProcessLocked
+10-15 08:53:13.194 W/ActivityManager( 1250): Slow operation: 63ms so far, now at attachApplicationLocked: after updateOomAdjLocked
+10-15 08:53:14.034 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10112, TargetPkg: com.android.inputmethod.latin
+10-15 08:53:14.036 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10112, TargetPkg: com.android.inputmethod.latin
+10-15 08:53:14.059 I/ActivityManager( 1250): Start proc 2260:android.process.acore/u0a62 for content provider {com.android.providers.userdictionary/com.android.providers.userdictionary.UserDictionaryProvider}
+10-15 08:53:16.499 I/ActivityManager( 1250): Test idle passed
+10-15 08:53:21.509 I/ActivityManager( 1250): Test idle passed
+10-15 08:53:26.515 I/ActivityManager( 1250): Test idle passed
+10-15 08:53:31.519 I/ActivityManager( 1250): Test idle passed
+10-15 08:53:35.985 I/ActivityManager( 1250): Start proc 2333:com.android.settings/1000 for next-top-activity {com.android.settings/com.android.settings.Settings}
+10-15 08:53:36.520 I/ActivityManager( 1250): Test idle passed
+10-15 08:53:40.416 I/ActivityManager( 1250): Start proc 2494:com.android.cellbroadcastreceiver.module/u0a154 for broadcast {com.android.cellbroadcastreceiver.module/com.android.cellbroadcastreceiver.CellBroadcastReceiver}
+10-15 08:53:41.419 I/ActivityManager( 1250): Start proc 2520:com.google.android.apps.messaging/u0a101 for next-top-activity {com.google.android.apps.messaging/com.google.android.apps.messaging.gaia.expresssignin.BugleExpressSignInActivity}
+10-15 08:53:47.694 I/ActivityManager( 1250): Start proc 2647:org.lineageos.jelly/u0a116 for next-top-activity {org.lineageos.jelly/org.lineageos.jelly.MainActivity}
+10-15 08:53:48.307 I/ActivityManager( 1250): Start proc 2698:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i24 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 08:53:54.202 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:53:54.204 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

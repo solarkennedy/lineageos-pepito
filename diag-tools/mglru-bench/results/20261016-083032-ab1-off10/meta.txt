@@ -1,0 +1,8 @@
+adb dut1-adb serial c39a6acf
+build 20261015 kernel 4.19.325-cip135-st19-perf-00036-g3af02bb2495c
+uptime_s 37967
+lru_gen 0x0000
+zram lzo [lz4] zstd  disksize 1610612736
+swappiness 100 wsf 1 extra_free_kbytes 10800
+lmk_props [ro.lmk.lowmem_min_oom_score]: [1001] [ro.lmk.relaxed_available_memory]: [true] [ro.lmk.swap_compression_ratio]: [3] 
+args ab1-off10 -r 3 -d 2 com.android.settings/.Settings com.google.android.apps.messaging/.ui.ConversationListActivity com.google.android.contacts/com.android.contacts.activities.PeopleActivity com.google.android.dialer/.extensions.GoogleDialtactsActivity org.lineageos.jelly/.MainActivity org.lineageos.aperture/.CameraLauncher org.lineageos.glimpse/.MainActivity org.lineageos.twelve/.MainActivity org.lineageos.etar/com.android.calendar.AllInOneActivity com.android.deskclock/.DeskClock com.android.calculator2/.Calculator com.android.documentsui/.LauncherActivity org.lineageos.recorder/.RecorderActivity com.android.vending/.AssetBrowserActivity com.google.android.googlequicksearchbox/.SearchActivity

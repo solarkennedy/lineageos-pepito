@@ -1,0 +1,6 @@
+10-16 05:39:46.818  1199  1258 I am_kill : [0,15987,org.lineageos.aperture,940,stop org.lineageos.aperture due to from pid 25349,130288]
+10-16 05:41:48.869  1199 28065 I am_kill : [0,19220,org.lineageos.aperture,910,stop org.lineageos.aperture due to from pid 22963,128844]
+10-16 05:42:49.744  1199  9151 I am_kill : [0,4964,org.lineageos.aperture,900,stop org.lineageos.aperture due to from pid 6455,130992]
+10-16 05:43:50.848  1199  3053 I am_kill : [0,15693,org.lineageos.aperture,900,stop org.lineageos.aperture due to from pid 20469,114256]
+10-16 06:01:10.382  1199  5412 I am_kill : [0,14629,org.lineageos.aperture,0,stop org.lineageos.aperture due to from pid 20157,135132]
+10-16 06:02:12.188  1199 18115 I am_kill : [0,28149,org.lineageos.aperture,920,stop org.lineageos.aperture due to from pid 29578,115096]

@@ -1,0 +1,16 @@
+--------- beginning of main
+10-15 11:43:25.091 I/lowmemorykiller(  502): Kill 'com.android.permissioncontroller' (895), uid 10169, oom_score_adj 940 to free 12296kB rss, 6768kB anon rss, 43400kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (139%)
+--------- beginning of system
+10-15 11:43:25.217 I/ActivityManager(22214): Process com.android.permissioncontroller (pid 895) has died: cch  +40 CACC
+10-15 11:43:25.322 W/ActivityManager(22214): Scheduling restart of crashed service com.android.permissioncontroller/.permission.service.PermissionControllerServiceImpl in 1000ms for connection
+10-15 11:43:25.365 I/lowmemorykiller(  502): Kill 'com.android.settings' (31005), uid 1000, oom_score_adj 930 to free 23360kB rss, 17440kB anon rss, 46596kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (146880kB < 157284kB)
+10-15 11:43:25.491 I/ActivityManager(22214): Process com.android.settings (pid 31005) has died: cch  +30 CAC 
+10-15 11:43:25.728 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 31005
+10-15 11:43:51.071 W/ActivityManager(22214): Slow operation: 63ms so far, now at startProcess: done updating battery stats
+10-15 11:43:51.073 W/ActivityManager(22214): Slow operation: 65ms so far, now at startProcess: building log message
+10-15 11:43:51.073 I/ActivityManager(22214): Start proc 3110:com.android.settings/1000 for broadcast {com.android.settings/com.android.settings.network.telephony.satellite.quicksettings.SatelliteTileStateReceiver}
+10-15 11:43:51.073 W/ActivityManager(22214): Slow operation: 65ms so far, now at startProcess: starting to update pids map
+10-15 11:43:51.073 W/ActivityManager(22214): Slow operation: 65ms so far, now at startProcess: done updating pids map
+10-15 11:43:52.484 I/ActivityManager(22214): Start proc 3153:com.android.permissioncontroller/u0a169 for bound-service {com.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl}
+10-15 11:44:08.513 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 11:44:08.514 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

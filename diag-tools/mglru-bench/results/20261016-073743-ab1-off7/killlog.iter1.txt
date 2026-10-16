@@ -1,0 +1,26 @@
+--------- beginning of main
+10-16 07:39:30.128 I/lowmemorykiller(  503): Kill 'com.google.android.contacts' (4399), uid 10131, oom_score_adj 970 to free 27584kB rss, 17916kB anon rss, 42976kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (105%)
+--------- beginning of system
+10-16 07:39:30.460 I/ActivityManager( 1199): Process com.google.android.contacts (pid 4399) has died: cch  +70 CAC 
+10-16 07:39:30.908 I/lowmemorykiller(  503): Kill 'com.android.permissioncontroller' (4398), uid 10169, oom_score_adj 970 to free 23360kB rss, 12688kB anon rss, 44456kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (102%)
+10-16 07:39:31.047 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 4399
+10-16 07:39:31.049 I/ActivityManager( 1199): Process com.android.permissioncontroller (pid 4398) has died: cch  +70 CAC 
+10-16 07:39:31.090 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 4398
+10-16 07:39:34.715 I/lowmemorykiller(  503): Kill 'org.lineageos.glimpse' (4782), uid 10120, oom_score_adj 960 to free 15964kB rss, 5488kB anon rss, 52392kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (156628kB < 157284kB)
+10-16 07:39:34.907 I/ActivityManager( 1199): Process org.lineageos.glimpse (pid 4782) has died: cch  +60 CAC 
+10-16 07:39:34.918 I/lowmemorykiller(  503): Kill 'com.google.android.dialer' (4489), uid 10103, oom_score_adj 960 to free 28984kB rss, 19204kB anon rss, 47336kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (152832kB < 157284kB)
+10-16 07:39:35.088 I/lowmemorykiller(  503): Kill 'com.android.cellbroadcastreceiver.module' (23820), uid 10154, oom_score_adj 955 to free 5832kB rss, 1004kB anon rss, 47960kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (148820kB < 157284kB)
+10-16 07:39:35.118 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 4782
+10-16 07:39:35.118 I/ActivityManager( 1199): Process com.google.android.dialer (pid 4489) has died: cch  +60 CAC 
+10-16 07:39:35.141 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 4489
+10-16 07:39:35.171 I/ActivityManager( 1199): Process com.android.cellbroadcastreceiver.module (pid 23820) has died: cch  +55 CEM 
+10-16 07:39:35.173 I/lowmemorykiller(  503): Kill 'org.lineageos.etar' (4929), uid 10118, oom_score_adj 950 to free 14608kB rss, 3820kB anon rss, 50912kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (147012kB < 157284kB)
+10-16 07:39:35.269 I/lowmemorykiller(  503): Kill 'org.lineageos.twelve' (4848), uid 10115, oom_score_adj 950 to free 13212kB rss, 3432kB anon rss, 54128kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (149696kB < 157284kB)
+10-16 07:39:35.302 I/ActivityManager( 1199): Process org.lineageos.etar (pid 4929) has died: cch  +50 CAC 
+10-16 07:39:35.313 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 4929
+10-16 07:39:35.379 I/ActivityManager( 1199): Process org.lineageos.twelve (pid 4848) has died: cch  +50 CAC 
+10-16 07:39:35.408 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 4848
+10-16 07:39:35.451 I/lowmemorykiller(  503): Kill 'com.google.android.googlequicksearchbox:search' (5180), uid 10106, oom_score_adj 945 to free 26176kB rss, 21628kB anon rss, 54712kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (141420kB < 157284kB)
+10-16 07:39:35.546 I/ActivityManager( 1199): Process com.google.android.googlequicksearchbox:search (pid 5180) has died: cch  +45 CEM 
+10-16 07:40:18.135 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:40:18.136 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

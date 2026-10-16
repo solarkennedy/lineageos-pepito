@@ -1,0 +1,115 @@
+adb dut1-adb serial c39a6acf
+build 20261011 kernel 4.19.325-cip135-st19-perf-00005-g6c2d4dd8cb5b
+uptime_s 155942
+lru_gen absent
+zram lzo [lz4] zstd  disksize 1610612736
+swappiness 100 wsf 1 extra_free_kbytes 10800
+lmk_props 
+args base1 -r 4 -d 3 com.android.settings/.Settings com.google.android.apps.messaging/.ui.ConversationListActivity com.google.android.contacts/com.android.contacts.activities.PeopleActivity com.google.android.dialer/.extensions.GoogleDialtactsActivity org.lineageos.jelly/.MainActivity org.lineageos.aperture/.CameraLauncher org.lineageos.glimpse/.MainActivity org.lineageos.twelve/.MainActivity org.lineageos.etar/com.android.calendar.AllInOneActivity com.android.deskclock/.DeskClock com.android.calculator2/.Calculator com.android.documentsui/.LauncherActivity org.lineageos.recorder/.RecorderActivity com.android.vending/.AssetBrowserActivity com.google.android.googlequicksearchbox/.SearchActivity
+round 1: 15 launches, 9 cold, mean 949 ms
+round 2: 15 launches, 1 cold, mean 456 ms
+round 3: 15 launches, 1 cold, mean 389 ms
+round 4: 15 launches, 0 cold, mean 209 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-083452-base1)
+UNKNOWN    3  mean   390 ms
+WARM       7  mean   407 ms
+HOT       33  mean   252 ms
+COLD       2  mean  1734 ms
+cold rate (rounds 2+): 2/45
+lmk_kills                                  10
+psi_full_stall                           2.11 s
+kswapd_cpu                              22.08 s
+refault_per_steal                       0.434
+direct_share                            0.004
+swapped_out                              96.9 MB
+adb dut1-adb serial c39a6acf
+build 20261011 kernel 4.19.325-cip135-st19-perf-00005-g6c2d4dd8cb5b
+uptime_s 156302
+lru_gen absent
+zram lzo [lz4] zstd  disksize 1610612736
+swappiness 100 wsf 1 extra_free_kbytes 10800
+lmk_props 
+args base2 -r 4 -d 3 com.android.settings/.Settings com.google.android.apps.messaging/.ui.ConversationListActivity com.google.android.contacts/com.android.contacts.activities.PeopleActivity com.google.android.dialer/.extensions.GoogleDialtactsActivity org.lineageos.jelly/.MainActivity org.lineageos.aperture/.CameraLauncher org.lineageos.glimpse/.MainActivity org.lineageos.twelve/.MainActivity org.lineageos.etar/com.android.calendar.AllInOneActivity com.android.deskclock/.DeskClock com.android.calculator2/.Calculator com.android.documentsui/.LauncherActivity org.lineageos.recorder/.RecorderActivity com.android.vending/.AssetBrowserActivity com.google.android.googlequicksearchbox/.SearchActivity
+round 1: 15 launches, 0 cold, mean 221 ms
+round 2: 15 launches, 0 cold, mean 205 ms
+round 3: 15 launches, 0 cold, mean 193 ms
+round 4: 15 launches, 0 cold, mean 186 ms
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-084052-base2)
+HOT       36  mean   174 ms
+WARM       9  mean   278 ms
+cold rate (rounds 2+): 0/45
+lmk_kills                                   0
+psi_full_stall                           0.60 s
+kswapd_cpu                               6.16 s
+refault_per_steal                       0.586
+direct_share                            0.003
+swapped_out                              52.6 MB
+adb dut1-adb serial c39a6acf
+build 20261011 kernel 4.19.325-cip135-st19-perf-00005-g6c2d4dd8cb5b
+uptime_s 156644
+lru_gen absent
+zram lzo [lz4] zstd  disksize 1610612736
+swappiness 100 wsf 1 extra_free_kbytes 10800
+lmk_props 
+args base -n 5 -m 1200 com.android.settings/.Settings com.google.android.apps.messaging/.ui.ConversationListActivity org.lineageos.jelly/.MainActivity org.lineageos.aperture/.CameraLauncher
+== iter 1: warming 4 apps
+== iter 1: hog 1200 MB
+1,com.android.settings/.Settings,1,UNKNOWN,400,21
+1,com.google.android.apps.messaging/.ui.ConversationListActivity,1,HOT,483,21
+1,org.lineageos.jelly/.MainActivity,1,HOT,413,21
+1,org.lineageos.aperture/.CameraLauncher,1,HOT,481,21
+lmk_kills                                  19
+psi_full_stall                           5.55 s
+refault_per_steal                       0.380
+direct_share                            0.000
+swapped_out                             789.4 MB
+== iter 2: warming 4 apps
+== iter 2: hog 1200 MB
+2,com.android.settings/.Settings,0,UNKNOWN,565,19
+2,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1512,19
+2,org.lineageos.jelly/.MainActivity,0,COLD,1416,19
+2,org.lineageos.aperture/.CameraLauncher,1,HOT,354,19
+lmk_kills                                  10
+psi_full_stall                           2.93 s
+refault_per_steal                       0.535
+direct_share                            0.007
+swapped_out                             425.3 MB
+== iter 3: warming 4 apps
+== iter 3: hog 1200 MB
+3,com.android.settings/.Settings,0,UNKNOWN,542,20
+3,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1362,20
+3,org.lineageos.jelly/.MainActivity,0,COLD,1411,20
+3,org.lineageos.aperture/.CameraLauncher,1,HOT,341,20
+lmk_kills                                   7
+psi_full_stall                           2.93 s
+refault_per_steal                       0.404
+direct_share                            0.007
+swapped_out                             448.7 MB
+== iter 4: warming 4 apps
+== iter 4: hog 1200 MB
+4,com.android.settings/.Settings,0,UNKNOWN,597,20
+4,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1487,20
+4,org.lineageos.jelly/.MainActivity,0,COLD,1442,20
+4,org.lineageos.aperture/.CameraLauncher,1,HOT,349,20
+lmk_kills                                   7
+psi_full_stall                           2.99 s
+refault_per_steal                       0.381
+direct_share                            0.002
+swapped_out                             416.3 MB
+== iter 5: warming 4 apps
+== iter 5: hog 1200 MB
+5,com.android.settings/.Settings,1,WARM,686,20
+5,com.google.android.apps.messaging/.ui.ConversationListActivity,0,COLD,1677,20
+5,org.lineageos.jelly/.MainActivity,1,UNKNOWN,581,20
+5,org.lineageos.aperture/.CameraLauncher,1,HOT,390,20
+lmk_kills                                   5
+psi_full_stall                           3.15 s
+refault_per_steal                       0.338
+direct_share                            0.001
+swapped_out                             463.2 MB
+== summary (/home/kyle/Projects/lineageos-pepito-24/diag-tools/mglru-bench/results/20261015-084634-base)
+org.lineageos.aperture/.CameraLauncher                                 survived 5/5  cold 0  mean 383 ms
+com.android.settings/.Settings                                         survived 2/5  cold 0  mean 558 ms
+com.google.android.apps.messaging/.ui.ConversationListActivity         survived 1/5  cold 4  mean 1304 ms
+org.lineageos.jelly/.MainActivity                                      survived 2/5  cold 3  mean 1052 ms
+EXIT 0

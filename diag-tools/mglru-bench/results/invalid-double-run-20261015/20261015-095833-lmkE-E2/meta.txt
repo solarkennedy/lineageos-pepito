@@ -1,0 +1,8 @@
+adb dut1-adb serial c39a6acf
+build 20261011 kernel 4.19.325-cip135-st19-perf-00005-g6c2d4dd8cb5b
+uptime_s 160963
+lru_gen absent
+zram lzo [lz4] zstd  disksize 1610612736
+swappiness 100 wsf 1 extra_free_kbytes 10800
+lmk_props 
+args lmkE-E2 -n 3 -m 1200 com.android.settings/.Settings com.google.android.apps.messaging/.ui.ConversationListActivity org.lineageos.jelly/.MainActivity org.lineageos.aperture/.CameraLauncher

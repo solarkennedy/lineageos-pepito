@@ -1,0 +1,95 @@
+--------- beginning of system
+10-15 08:35:29.258 I/ActivityManager( 1250): Start proc 22479:com.google.android.contacts/u0a131 for next-top-activity {com.google.android.contacts/com.android.contacts.activities.PeopleActivity}
+10-15 08:35:29.764 I/ActivityManager( 1250): Start proc 22506:com.google.android.dialer/u0a103 for broadcast {com.google.android.dialer/com.android.dialer.theme.base.ThemeSettingReceiver}
+10-15 08:35:31.627 I/ActivityManager( 1250): Start proc 22581:com.google.android.projection.gearhead:provider/u0a104 for content provider {com.google.android.projection.gearhead/com.google.android.apps.auto.components.projectionstate.ProjectionStateProvider}
+10-15 08:35:32.006 I/ActivityManager( 1250): Start proc 22604:android.process.acore/u0a62 for content provider {com.android.providers.contacts/com.android.providers.contacts.CallLogProvider}
+10-15 08:35:35.654 W/ActivityManager( 1250): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-15 08:35:35.728 W/ActivityManager( 1250): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-15 08:35:45.488 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:35:45.489 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:35:50.271 I/ActivityManager( 1250): Start proc 22838:org.lineageos.glimpse/u0a120 for next-top-activity {org.lineageos.glimpse/org.lineageos.glimpse.MainActivity}
+10-15 08:35:55.872 I/ActivityManager( 1250): Start proc 22909:org.lineageos.twelve/u0a115 for next-top-activity {org.lineageos.twelve/org.lineageos.twelve.MainActivity}
+10-15 08:35:57.051 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-15 08:35:57.051 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-15 08:35:57.238 I/ActivityManager( 1250): Start proc 22957:com.android.musicfx/u0a66 for broadcast {com.android.musicfx/com.android.musicfx.ControlPanelReceiver}
+10-15 08:36:01.630 I/ActivityManager( 1250): Start proc 22995:org.lineageos.etar/u0a118 for next-top-activity {org.lineageos.etar/com.android.calendar.AllInOneActivity}
+10-15 08:36:01.997 I/ActivityManager( 1250): Start proc 23018:com.android.providers.calendar/u0a74 for content provider {com.android.providers.calendar/com.android.providers.calendar.CalendarProvider2}
+10-15 08:36:07.098 I/ActivityManager( 1250): Start proc 23060:com.android.deskclock/u0a121 for next-top-activity {com.android.deskclock/com.android.deskclock.DeskClock}
+10-15 08:36:12.450 I/ActivityManager( 1250): Start proc 23107:com.android.calculator2/u0a128 for next-top-activity {com.android.calculator2/com.android.calculator2.Calculator}
+10-15 08:36:18.401 I/ActivityManager( 1250): Start proc 23166:com.android.documentsui/u0a61 for next-top-activity {com.android.documentsui/com.android.documentsui.LauncherActivity}
+10-15 08:36:18.636 I/ActivityManager( 1250): Start proc 23185:com.android.externalstorage/u0a73 for content provider {com.android.externalstorage/com.android.externalstorage.ExternalStorageProvider}
+10-15 08:36:18.856 W/ActivityManager( 1250): Slow operation: 52ms so far, now at attachApplicationLocked: immediately after bindApplication
+10-15 08:36:18.856 W/ActivityManager( 1250): Slow operation: 54ms so far, now at attachApplicationLocked: after updateLruProcessLocked
+10-15 08:36:18.857 W/ActivityManager( 1250): Slow operation: 55ms so far, now at attachApplicationLocked: after updateOomAdjLocked
+10-15 08:36:19.040 I/ActivityManager( 1250): Start proc 23204:android.process.media/u0a60 for content provider {com.android.mtp/com.android.mtp.MtpDocumentsProvider}
+10-15 08:36:19.398 I/ActivityManager( 1250): Start proc 23220:com.android.shell/2000 for content provider {com.android.shell/com.android.shell.BugreportStorageProvider}
+10-15 08:36:24.454 I/ActivityManager( 1250): Start proc 23269:org.lineageos.recorder/u0a123 for next-top-activity {org.lineageos.recorder/org.lineageos.recorder.RecorderActivity}
+10-15 08:36:29.205 I/ActivityManager( 1250): Start proc 23303:org.lineageos.pepito.volumetile/u0a63 for bound-service {org.lineageos.pepito.volumetile/org.lineageos.pepito.volumetile.VolumeTile}
+10-15 08:36:29.772 I/ActivityManager( 1250): Start proc 23322:com.android.vending/u0a108 for next-top-activity {com.android.vending/com.android.vending.AssetBrowserActivity}
+--------- beginning of main
+10-15 08:36:30.390 I/lowmemorykiller(  502): Kill 'com.google.android.gms.unstable' (20619), uid 10109, oom_score_adj 975 to free 138948kB rss, 49752kB anon rss, 30160kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:30.556 I/ActivityManager( 1250): Process com.google.android.gms.unstable (pid 20619) has died: cch  +75 CEM 
+10-15 08:36:30.984 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:provider' (22581), uid 10104, oom_score_adj 965 to free 78304kB rss, 22508kB anon rss, 33836kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:31.077 I/ActivityManager( 1250): Process com.google.android.projection.gearhead:provider (pid 22581) has died: cch  +65 CEM 
+10-15 08:36:36.033 I/ActivityManager( 1250): Start proc 23456:com.google.android.googlequicksearchbox:googleapp/u0a106 for next-top-activity {com.google.android.googlequicksearchbox/com.google.android.googlequicksearchbox.SearchActivity}
+10-15 08:36:36.175 W/ActivityManager( 1250): Slow operation: 52ms so far, now at attachApplicationLocked: after updateOomAdjLocked
+10-15 08:36:36.755 I/lowmemorykiller(  502): Kill 'android.process.acore' (22604), uid 10062, oom_score_adj 965 to free 69304kB rss, 18384kB anon rss, 31720kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:36.843 I/ActivityManager( 1250): Process android.process.acore (pid 22604) has died: cch  +65 CEM 
+10-15 08:36:39.009 I/ActivityManager( 1250): Start proc 23531:com.google.android.googlequicksearchbox:search/u0a106 for bound-service {com.google.android.googlequicksearchbox/com.google.apps.tiktok.account.data.manager.AccountSyncService}
+10-15 08:36:39.258 I/lowmemorykiller(  502): Kill 'com.android.settings' (20439), uid 1000, oom_score_adj 960 to free 103712kB rss, 36832kB anon rss, 28092kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:39.349 I/ActivityManager( 1250): Process com.android.settings (pid 20439) has died: cch  +60 CAC 
+10-15 08:36:39.357 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 20439
+10-15 08:36:39.830 I/ActivityManager( 1250): Start proc 23591:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i20 for bound-service {com.google.android.googlequicksearchbox/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 08:36:40.794 I/ActivityManager( 1250): Start proc 23642:com.android.vending:background/u0a108 for bound-service {com.android.vending/com.google.frameworks.client.data.android.server.play.BackgroundProcessEndpointService}
+10-15 08:36:40.964 I/lowmemorykiller(  502): Kill 'com.android.providers.calendar' (23018), uid 10074, oom_score_adj 965 to free 53248kB rss, 12932kB anon rss, 35404kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:41.081 I/ActivityManager( 1250): Process com.android.providers.calendar (pid 23018) has died: cch  +65 CEM 
+10-15 08:36:42.654 I/ActivityManager( 1250): Start proc 23725:com.android.settings/1000 for next-top-activity {com.android.settings/com.android.settings.Settings}
+10-15 08:36:42.780 I/lowmemorykiller(  502): Kill 'com.google.android.contacts' (22479), uid 10131, oom_score_adj 970 to free 105112kB rss, 34980kB anon rss, 30564kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:42.912 I/ActivityManager( 1250): Process com.google.android.contacts (pid 22479) has died: cch  +70 CAC 
+10-15 08:36:42.980 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (20778), uid 99019, oom_score_adj 960 to free 83692kB rss, 31620kB anon rss, 31956kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:43.025 I/ActivityManager( 1250): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 20778) has died: cch  +60 CACC
+10-15 08:36:43.032 W/ActivityManager( 1250): Scheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 10000ms for connection
+10-15 08:36:43.051 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 19981ms for mem-pressure-event
+10-15 08:36:43.871 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 9159ms for mem-pressure-event
+10-15 08:36:44.694 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 0ms for mem-pressure-event
+10-15 08:36:52.686 I/ActivityManager( 1250): Start proc 23805:com.google.android.contacts/u0a131 for activity {com.google.android.contacts/com.google.android.apps.contacts.permission.RequestPermissionsActivity}
+10-15 08:36:54.321 I/lowmemorykiller(  502): Kill 'com.google.android.dialer' (22506), uid 10103, oom_score_adj 970 to free 144896kB rss, 68352kB anon rss, 27392kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:36:54.483 I/ActivityManager( 1250): Process com.google.android.dialer (pid 22506) has died: cch  +70 CAC 
+10-15 08:36:54.501 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 22506
+10-15 08:36:54.507 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 18523ms for mem-pressure-event
+10-15 08:36:56.213 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 0ms for mem-pressure-event
+10-15 08:36:56.738 W/ActivityManager( 1250): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 0ms for mem-pressure-event
+10-15 08:36:57.468 I/ActivityManager( 1250): Start proc 23874:com.google.android.dialer/u0a103 for next-top-activity {com.google.android.dialer/com.google.android.dialer.extensions.GoogleDialtactsActivity}
+10-15 08:36:58.346 I/ActivityManager( 1250): Start proc 23906:com.google.android.projection.gearhead:provider/u0a104 for content provider {com.google.android.projection.gearhead/com.google.android.apps.auto.components.projectionstate.ProjectionStateProvider}
+10-15 08:36:58.744 W/ActivityManager( 1250): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-15 08:36:58.851 W/ActivityManager( 1250): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-15 08:36:58.863 I/ActivityManager( 1250): Start proc 23934:android.process.acore/u0a62 for content provider {com.android.providers.contacts/com.android.providers.contacts.CallLogProvider}
+10-15 08:37:03.696 W/ActivityManager( 1250): Slow operation: 80ms so far, now at startProcess: done starting proc!
+10-15 08:37:03.720 W/ActivityManager( 1250): Slow operation: 57ms so far, now at startProcess: returned from zygote!
+10-15 08:37:03.720 W/ActivityManager( 1250): Slow operation: 57ms so far, now at startProcess: done updating battery stats
+10-15 08:37:03.720 W/ActivityManager( 1250): Slow operation: 57ms so far, now at startProcess: building log message
+10-15 08:37:03.720 I/ActivityManager( 1250): Start proc 23986:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i21 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 08:37:03.720 W/ActivityManager( 1250): Slow operation: 57ms so far, now at startProcess: starting to update pids map
+10-15 08:37:03.720 W/ActivityManager( 1250): Slow operation: 58ms so far, now at startProcess: done updating pids map
+10-15 08:37:03.970 W/ActivityManager( 1250): pid 1250 system sent binder code 45 with flags 1 and got error -32
+10-15 08:37:04.009 W/ActivityManager( 1250): pid 1250 system sent binder code 55 with flags 1 and got error -32
+10-15 08:37:04.017 I/ActivityManager( 1250): Process org.lineageos.jelly (pid 20753) has died: fg  TOP 
+10-15 08:37:04.051 W/ActivityManager( 1250): setHasOverlayUi called on unknown pid: 20753
+10-15 08:37:04.169 I/ActivityManager( 1250): Killing 23986:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0a116i21 (adj 905): isolated not needed
+10-15 08:37:08.922 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:37:08.923 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:37:09.392 I/lowmemorykiller(  502): Kill 'com.android.externalstorage' (23185), uid 10073, oom_score_adj 965 to free 45856kB rss, 12880kB anon rss, 35440kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:37:09.480 I/ActivityManager( 1250): Process com.android.externalstorage (pid 23185) has died: cch  +65 CEM 
+10-15 08:37:23.533 I/ActivityManager( 1250): Start proc 24196:com.android.providers.calendar/u0a74 for content provider {com.android.providers.calendar/com.android.providers.calendar.CalendarProvider2}
+10-15 08:37:38.328 I/ActivityManager( 1250): Start proc 24279:com.android.externalstorage/u0a73 for content provider {com.android.externalstorage/com.android.externalstorage.ExternalStorageProvider}
+10-15 08:38:12.507 W/ActivityManager( 1250): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-15 08:38:17.271 I/ActivityManager( 1250): Start proc 24549:org.lineageos.jelly/u0a116 for next-top-activity {org.lineageos.jelly/org.lineageos.jelly.MainActivity}
+10-15 08:38:18.019 I/ActivityManager( 1250): Start proc 24573:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0i22 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 08:38:24.358 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:38:24.360 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:38:24.860 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (23591), uid 99020, oom_score_adj 980 to free 33772kB rss, 11052kB anon rss, 31320kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 08:38:24.889 I/ActivityManager( 1250): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 23591) has died: cch  +80 CACC
+10-15 08:38:24.905 W/ActivityManager( 1250): Scheduling restart of crashed service com.google.android.googlequicksearchbox/org.chromium.content.app.SandboxedProcessService0:0 in 1000ms for connection
+10-15 08:39:27.695 W/ActivityManager( 1250): Unable to start service Intent { act=com.google.android.apps.tachyon.services.CLIENT_API xflg=0x4 pkg=com.google.android.apps.tachyon } U=0: not found
+10-15 08:39:37.271 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 08:39:37.271 W/ActivityManager( 1250): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

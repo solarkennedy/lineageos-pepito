@@ -1,0 +1,30 @@
+--------- beginning of main
+10-16 08:08:56.739 I/lowmemorykiller(  503): Kill 'com.google.android.contacts' (21172), uid 10131, oom_score_adj 970 to free 18096kB rss, 5768kB anon rss, 55076kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (224kB < 157284kB)
+10-16 08:08:56.860 I/lowmemorykiller(  503): Kill 'com.android.permissioncontroller' (21171), uid 10169, oom_score_adj 970 to free 18520kB rss, 5776kB anon rss, 49760kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (708kB < 157284kB)
+10-16 08:08:56.963 I/lowmemorykiller(  503): Kill 'org.lineageos.glimpse' (21459), uid 10120, oom_score_adj 960 to free 17992kB rss, 5984kB anon rss, 51920kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (576kB < 157284kB)
+--------- beginning of system
+10-16 08:08:57.000 I/ActivityManager( 1199): Process com.google.android.contacts (pid 21172) has died: cch  +70 CAC 
+10-16 08:08:57.060 I/lowmemorykiller(  503): Kill 'com.google.android.dialer' (21264), uid 10103, oom_score_adj 960 to free 15156kB rss, 5008kB anon rss, 61024kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (6152kB < 157284kB)
+10-16 08:08:57.160 I/lowmemorykiller(  503): Kill 'org.lineageos.etar' (21597), uid 10118, oom_score_adj 950 to free 16996kB rss, 6180kB anon rss, 48512kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (24732kB < 157284kB)
+10-16 08:08:57.256 I/lowmemorykiller(  503): Kill 'org.lineageos.twelve' (21521), uid 10115, oom_score_adj 950 to free 14644kB rss, 4668kB anon rss, 52908kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (24144kB < 157284kB)
+10-16 08:08:57.357 I/lowmemorykiller(  503): Kill 'com.google.android.projection.gearhead:provider' (21309), uid 10104, oom_score_adj 945 to free 10620kB rss, 4564kB anon rss, 50668kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (30724kB < 157284kB)
+10-16 08:08:57.403 I/ActivityManager( 1199): Process com.android.permissioncontroller (pid 21171) has died: cch  +70 CAC 
+10-16 08:08:57.428 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21172
+10-16 08:08:57.429 I/ActivityManager( 1199): Process org.lineageos.glimpse (pid 21459) has died: cch  +60 CAC 
+10-16 08:08:57.458 I/lowmemorykiller(  503): Kill 'com.android.calculator2' (21691), uid 10128, oom_score_adj 940 to free 15028kB rss, 5248kB anon rss, 56408kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (35488kB < 157284kB)
+10-16 08:08:57.493 I/ActivityManager( 1199): Process com.google.android.dialer (pid 21264) has died: cch  +60 CAC 
+10-16 08:08:57.532 I/ActivityManager( 1199): Process org.lineageos.etar (pid 21597) has died: cch  +50 CAC 
+10-16 08:08:57.536 I/ActivityManager( 1199): Process org.lineageos.twelve (pid 21521) has died: cch  +50 CAC 
+10-16 08:08:57.582 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21171
+10-16 08:08:57.583 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21459
+10-16 08:08:57.585 I/ActivityManager( 1199): Process com.android.calculator2 (pid 21691) has died: cch  +40 CAC 
+10-16 08:08:57.591 I/ActivityManager( 1199): Process com.google.android.projection.gearhead:provider (pid 21309) has died: cch  +45 CEM 
+10-16 08:08:57.598 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21264
+10-16 08:08:57.599 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21597
+10-16 08:08:57.619 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21521
+10-16 08:08:57.620 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21691
+10-16 08:08:57.722 I/lowmemorykiller(  503): Kill 'com.android.deskclock' (21647), uid 10121, oom_score_adj 940 to free 14764kB rss, 5348kB anon rss, 53316kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (40728kB < 157284kB)
+10-16 08:08:57.849 I/ActivityManager( 1199): Process com.android.deskclock (pid 21647) has died: cch  +40 CAC 
+10-16 08:08:57.872 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 21647
+10-16 08:09:39.522 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 08:09:39.522 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

@@ -1,0 +1,15 @@
+--------- beginning of system
+10-16 07:42:02.364 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: 10109, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+--------- beginning of main
+10-16 07:42:16.435 I/lowmemorykiller(  503): Kill 'com.google.android.projection.gearhead:provider' (4521), uid 10104, oom_score_adj 945 to free 6000kB rss, 1560kB anon rss, 53696kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (129%)
+10-16 07:42:16.612 I/ActivityManager( 1199): Process com.google.android.projection.gearhead:provider (pid 4521) has died: cch  +45 CEM 
+10-16 07:42:16.934 I/lowmemorykiller(  503): Kill 'com.android.calculator2' (5031), uid 10128, oom_score_adj 940 to free 11804kB rss, 1812kB anon rss, 59868kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (154924kB < 157284kB)
+10-16 07:42:17.088 I/ActivityManager( 1199): Process com.android.calculator2 (pid 5031) has died: cch  +40 CAC 
+10-16 07:42:17.116 I/lowmemorykiller(  503): Kill 'com.android.deskclock' (4987), uid 10121, oom_score_adj 940 to free 11904kB rss, 1700kB anon rss, 56840kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (149128kB < 157284kB)
+10-16 07:42:17.208 I/lowmemorykiller(  503): Kill 'android.process.acore' (4552), uid 10062, oom_score_adj 935 to free 7000kB rss, 1528kB anon rss, 48004kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (148144kB < 157284kB)
+10-16 07:42:17.253 I/ActivityManager( 1199): Process com.android.deskclock (pid 4987) has died: cch  +40 CAC 
+10-16 07:42:17.268 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 5031
+10-16 07:42:17.273 W/ActivityManager( 1199): setHasOverlayUi called on unknown pid: 4987
+10-16 07:42:17.302 I/ActivityManager( 1199): Process android.process.acore (pid 4552) has died: cch  +35 CEM 
+10-16 07:42:59.625 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-16 07:42:59.625 W/ActivityManager( 1199): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

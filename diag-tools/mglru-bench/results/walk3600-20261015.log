@@ -1,0 +1,61 @@
+forcing full-scan aging on every memcg for 3600s under app-cycle load
+root max gen after 2 iterations: 15
+20 scans, 3530s left
+40 scans, 3457s left
+60 scans, 3385s left
+80 scans, 3311s left
+100 scans, 3239s left
+120 scans, 3166s left
+140 scans, 3092s left
+160 scans, 3019s left
+180 scans, 2946s left
+200 scans, 2873s left
+220 scans, 2800s left
+240 scans, 2727s left
+260 scans, 2654s left
+280 scans, 2581s left
+300 scans, 2507s left
+320 scans, 2434s left
+340 scans, 2361s left
+360 scans, 2288s left
+380 scans, 2214s left
+400 scans, 2141s left
+420 scans, 2067s left
+440 scans, 1994s left
+460 scans, 1921s left
+480 scans, 1847s left
+500 scans, 1774s left
+520 scans, 1700s left
+540 scans, 1627s left
+560 scans, 1554s left
+580 scans, 1481s left
+600 scans, 1408s left
+620 scans, 1335s left
+640 scans, 1262s left
+660 scans, 1189s left
+680 scans, 1113s left
+700 scans, 1037s left
+720 scans, 961s left
+740 scans, 884s left
+760 scans, 808s left
+780 scans, 732s left
+800 scans, 656s left
+820 scans, 580s left
+840 scans, 504s left
+860 scans, 428s left
+880 scans, 352s left
+900 scans, 276s left
+920 scans, 200s left
+940 scans, 123s left
+960 scans, 47s left
+972 forced scans
+   memcg     1 /
+    node     0
+           984      14360        251         783 
+           985      10730         10         694 
+           986       7110         33        3550 
+           987       3490        122        3542 
+   memcg     2 /apps
+    node     0
+dmesg BUG/WARN/Bad-page lines (excl. known-benign): 0   benign: gic=2 use_mm=2
+pstore: console-ramoops-0 

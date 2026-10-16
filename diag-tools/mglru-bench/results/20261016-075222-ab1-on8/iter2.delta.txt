@@ -1,0 +1,32 @@
+window_s 84
+pgscan_kswapd                          630421
+pgscan_direct                           10299
+pgsteal_kswapd                         327667
+pgsteal_direct                           6358
+allocstall_normal                          16
+allocstall_movable                         30
+workingset_refault                      75682
+workingset_activate                        40
+workingset_restore                      75535
+pswpin                                 162266
+pswpout                                196294
+pgmajfault                             165972
+pgfault                               1996633
+oom_kill                                    0
+compact_stall                               0
+kswapd_low_wmark_hit_quickly              289
+kswapd_high_wmark_hit_quickly              17
+lmk_kills                                   0
+psi_some_stall                           3.12 s
+psi_full_stall                           1.45 s
+kswapd_cpu                               9.19 s
+scanned                                2502.8 MB
+reclaimed                              1304.8 MB
+steal_per_scan                          0.521
+refault_per_steal                       0.227
+direct_share                            0.019
+swapped_out                             766.8 MB
+swapped_in                              633.9 MB
+lru_gen                          0x0001 -> 0x0001
+MemAvailable                     1222840 -> 1258252 kB
+SwapFree                         785940 -> 732492 kB

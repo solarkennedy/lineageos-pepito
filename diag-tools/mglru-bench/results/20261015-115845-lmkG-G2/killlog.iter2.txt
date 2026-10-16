@@ -1,0 +1,21 @@
+--------- beginning of main
+10-15 12:02:45.527 I/lowmemorykiller(  502): Kill 'com.android.permissioncontroller' (12869), uid 10169, oom_score_adj 940 to free 11344kB rss, 6448kB anon rss, 43852kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (109%)
+--------- beginning of system
+10-15 12:02:45.698 I/ActivityManager(22214): Process com.android.permissioncontroller (pid 12869) has died: cch  +40 CACC
+10-15 12:02:45.854 W/ActivityManager(22214): Scheduling restart of crashed service com.android.permissioncontroller/.permission.service.PermissionControllerServiceImpl in 1000ms for connection
+10-15 12:02:46.046 I/lowmemorykiller(  502): Kill 'com.android.settings' (12811), uid 1000, oom_score_adj 930 to free 30844kB rss, 24932kB anon rss, 43448kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (104%)
+10-15 12:02:46.290 I/ActivityManager(22214): Process com.android.settings (pid 12811) has died: cch  +30 CAC 
+10-15 12:02:46.536 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 12811
+10-15 12:02:49.938 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (12931), uid 10101, oom_score_adj 920 to free 37072kB rss, 32980kB anon rss, 54628kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and thrashing (107%)
+10-15 12:02:50.097 I/ActivityManager(22214): Process com.google.android.apps.messaging (pid 12931) has died: cch  +20 CAC 
+10-15 12:02:50.274 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 12931
+10-15 12:02:54.229 W/ActivityManager(22214): Slow operation: 72ms so far, now at startProcess: returned from zygote!
+10-15 12:02:54.230 W/ActivityManager(22214): Slow operation: 73ms so far, now at startProcess: done updating battery stats
+10-15 12:02:54.230 W/ActivityManager(22214): Slow operation: 73ms so far, now at startProcess: building log message
+10-15 12:02:54.230 I/ActivityManager(22214): Start proc 14687:com.android.settings/1000 for broadcast {com.android.settings/com.android.settings.network.telephony.satellite.quicksettings.SatelliteTileStateReceiver}
+10-15 12:02:54.230 W/ActivityManager(22214): Slow operation: 73ms so far, now at startProcess: starting to update pids map
+10-15 12:02:54.230 W/ActivityManager(22214): Slow operation: 73ms so far, now at startProcess: done updating pids map
+10-15 12:03:13.656 I/ActivityManager(22214): Start proc 14744:com.android.permissioncontroller/u0a169 for bound-service {com.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl}
+10-15 12:03:18.964 I/ActivityManager(22214): Start proc 14804:com.google.android.apps.messaging/u0a101 for next-top-activity {com.google.android.apps.messaging/com.google.android.apps.messaging.gaia.expresssignin.BugleExpressSignInActivity}
+10-15 12:03:30.580 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 12:03:30.580 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

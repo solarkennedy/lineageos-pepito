@@ -1,0 +1,72 @@
+--------- beginning of main
+10-15 10:43:30.212 I/lowmemorykiller(  502): Kill 'com.android.messaging' (24659), uid 10124, oom_score_adj 975 to free 27012kB rss, 21884kB anon rss, 28428kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (105924kB < 157284kB)
+10-15 10:43:30.350 I/lowmemorykiller(  502): Kill 'android.process.media' (23555), uid 10060, oom_score_adj 975 to free 27084kB rss, 21920kB anon rss, 28912kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (116148kB < 157284kB)
+--------- beginning of system
+10-15 10:43:30.377 I/ActivityManager(22214): Process com.android.messaging (pid 24659) has died: cch  +75 CEM 
+10-15 10:43:30.503 I/lowmemorykiller(  502): Kill 'com.android.statementservice' (24902), uid 10134, oom_score_adj 965 to free 25172kB rss, 20360kB anon rss, 29384kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (126792kB < 157284kB)
+10-15 10:43:30.617 I/lowmemorykiller(  502): Kill 'com.android.packageinstaller' (24771), uid 10080, oom_score_adj 965 to free 23248kB rss, 18408kB anon rss, 29692kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (152496kB < 157284kB)
+10-15 10:43:30.693 I/lowmemorykiller(  502): Kill 'com.android.ondevicepersonalization.services' (24742), uid 10158, oom_score_adj 965 to free 22788kB rss, 17728kB anon rss, 30292kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (151356kB < 157284kB)
+10-15 10:43:30.744 I/lowmemorykiller(  502): Kill 'com.google.android.syncadapters.calendar' (25162), uid 10129, oom_score_adj 955 to free 22876kB rss, 18540kB anon rss, 30476kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (141636kB < 157284kB)
+10-15 10:43:30.841 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:car' (25106), uid 10104, oom_score_adj 955 to free 28892kB rss, 25040kB anon rss, 30292kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (142308kB < 157284kB)
+10-15 10:43:30.933 I/lowmemorykiller(  502): Kill 'com.google.android.contacts' (24937), uid 10131, oom_score_adj 955 to free 33232kB rss, 28572kB anon rss, 30136kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.031 I/lowmemorykiller(  502): Kill 'org.lineageos.updater' (25300), uid 10139, oom_score_adj 945 to free 23308kB rss, 18556kB anon rss, 32048kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.109 I/ActivityManager(22214): Process android.process.media (pid 23555) has died: cch  +75 CEM 
+10-15 10:43:31.132 I/lowmemorykiller(  502): Kill 'org.calyxos.backup.contacts' (25274), uid 10152, oom_score_adj 945 to free 19360kB rss, 14824kB anon rss, 33096kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.232 I/lowmemorykiller(  502): Kill 'com.google.android.tts' (25206), uid 10130, oom_score_adj 945 to free 27360kB rss, 22316kB anon rss, 32248kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.338 I/lowmemorykiller(  502): Kill 'com.android.externalstorage' (25386), uid 10073, oom_score_adj 935 to free 17480kB rss, 13308kB anon rss, 34700kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.392 I/lowmemorykiller(  502): Kill 'com.android.photopicker' (25337), uid 10160, oom_score_adj 935 to free 18560kB rss, 14272kB anon rss, 33896kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.434 I/ActivityManager(22214): Process com.android.statementservice (pid 24902) has died: cch  +65 CEM 
+10-15 10:43:31.446 I/ActivityManager(22214): Process com.android.packageinstaller (pid 24771) has died: cch  +65 CEM 
+10-15 10:43:31.449 I/ActivityManager(22214): Process com.android.ondevicepersonalization.services (pid 24742) has died: cch  +65 CEM 
+10-15 10:43:31.452 I/ActivityManager(22214): Process com.google.android.syncadapters.calendar (pid 25162) has died: cch  +55 CEM 
+10-15 10:43:31.455 I/ActivityManager(22214): Process com.google.android.projection.gearhead:car (pid 25106) has died: cch  +55 CEM 
+10-15 10:43:31.467 I/ActivityManager(22214): Process com.google.android.contacts (pid 24937) has died: cch  +55 CEM 
+10-15 10:43:31.472 I/ActivityManager(22214): Process org.lineageos.updater (pid 25300) has died: cch  +45 CEM 
+10-15 10:43:31.481 I/ActivityManager(22214): Process org.calyxos.backup.contacts (pid 25274) has died: cch  +45 CEM 
+10-15 10:43:31.486 I/lowmemorykiller(  502): Kill 'com.android.providers.calendar' (24794), uid 10074, oom_score_adj 935 to free 18120kB rss, 13276kB anon rss, 34956kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.487 I/ActivityManager(22214): Process com.google.android.tts (pid 25206) has died: cch  +45 CEM 
+10-15 10:43:31.489 I/ActivityManager(22214): Process com.android.externalstorage (pid 25386) has died: cch  +35 CEM 
+10-15 10:43:31.492 I/ActivityManager(22214): Process com.android.photopicker (pid 25337) has died: cch  +35 CEM 
+10-15 10:43:31.585 I/lowmemorykiller(  502): Kill 'org.lineageos.pepito.volumetile' (24696), uid 10063, oom_score_adj 925 to free 16360kB rss, 11772kB anon rss, 36016kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:31.626 I/ActivityManager(22214): Process com.android.providers.calendar (pid 24794) has died: cch  +35 CEM 
+10-15 10:43:31.666 I/ActivityManager(22214): Process org.lineageos.pepito.volumetile (pid 24696) has died: cch  +25 CEM 
+10-15 10:43:32.370 I/lowmemorykiller(  502): Kill 'android.process.acore' (23132), uid 10062, oom_score_adj 925 to free 16972kB rss, 12392kB anon rss, 38800kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:32.470 I/lowmemorykiller(  502): Kill 'com.android.musicfx' (25409), uid 10066, oom_score_adj 925 to free 13772kB rss, 9956kB anon rss, 38080kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:32.475 W/ActivityManager(22214): Slow operation: 91ms so far, now at startProcess: done creating new process record
+10-15 10:43:32.475 W/ActivityManager(22214): Slow operation: 91ms so far, now at startProcess: stepping in to startProcess
+10-15 10:43:32.562 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (25014), uid 10101, oom_score_adj 920 to free 66036kB rss, 59588kB anon rss, 36464kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:32.568 W/ActivityManager(22214): Slow operation: 184ms so far, now at startProcess: done starting proc!
+10-15 10:43:32.568 W/ActivityManager(22214): Slow operation: 93ms so far, now at startProcess: asking zygote to start proc
+10-15 10:43:32.570 I/ActivityManager(22214): Process android.process.acore (pid 23132) has died: cch  +25 CEM 
+10-15 10:43:32.607 I/ActivityManager(22214): Process com.android.musicfx (pid 25409) has died: cch  +25 CEM 
+10-15 10:43:32.653 W/ActivityManager(22214): Slow operation: 178ms so far, now at startProcess: returned from zygote!
+10-15 10:43:32.655 W/ActivityManager(22214): Slow operation: 180ms so far, now at startProcess: done updating battery stats
+10-15 10:43:32.668 W/ActivityManager(22214): Slow operation: 193ms so far, now at startProcess: building log message
+10-15 10:43:32.668 I/ActivityManager(22214): Start proc 28745:com.android.providers.calendar/u0a74 for broadcast {com.android.providers.calendar/com.android.providers.calendar.CalendarProviderBroadcastReceiver}
+10-15 10:43:32.668 W/ActivityManager(22214): Slow operation: 193ms so far, now at startProcess: starting to update pids map
+10-15 10:43:32.671 W/ActivityManager(22214): Slow operation: 196ms so far, now at startProcess: done updating pids map
+10-15 10:43:32.681 I/ActivityManager(22214): Process com.google.android.apps.messaging (pid 25014) has died: cch  +20 CAC 
+10-15 10:43:32.767 I/lowmemorykiller(  502): Kill 'com.google.android.apps.wellbeing' (24682), uid 10111, oom_score_adj 915 to free 28660kB rss, 24100kB anon rss, 36468kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:32.844 I/ActivityManager(22214): Process com.google.android.apps.wellbeing (pid 24682) has died: cch  +15 CEM 
+10-15 10:43:32.864 W/ActivityManager(22214): setHasOverlayUi called on unknown pid: 25014
+10-15 10:43:32.942 I/lowmemorykiller(  502): Kill 'com.android.vending' (24810), uid 10108, oom_score_adj 915 to free 44256kB rss, 41400kB anon rss, 37072kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:33.059 I/ActivityManager(22214): Process com.android.vending (pid 24810) has died: cch  +15 CEM 
+10-15 10:43:33.164 W/ActivityManager(22214): pid 25768 com.android.vending:background sent binder code 2 with flags 1 and got error -32
+10-15 10:43:33.242 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (27903), uid 99001, oom_score_adj 910 to free 41268kB rss, 34836kB anon rss, 34120kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:33.301 I/ActivityManager(22214): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 27903) has died: cch  +10 CACC
+10-15 10:43:33.322 W/ActivityManager(22214): Scheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 10000ms for connection
+10-15 10:43:33.401 I/lowmemorykiller(  502): Kill 'com.google.android.googlequicksearchbox:search' (23879), uid 10106, oom_score_adj 905 to free 43736kB rss, 40356kB anon rss, 37336kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:33.502 I/ActivityManager(22214): Process com.google.android.googlequicksearchbox:search (pid 23879) has died: cch CEM 
+10-15 10:43:33.603 I/lowmemorykiller(  502): Kill 'com.google.android.gms.unstable' (24936), uid 10109, oom_score_adj 905 to free 34464kB rss, 28896kB anon rss, 48536kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:33.683 I/ActivityManager(22214): Process com.google.android.gms.unstable (pid 24936) has died: cch CEM 
+10-15 10:43:33.776 W/ActivityManager(22214): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 29529ms for mem-pressure-event
+10-15 10:43:41.131 I/lowmemorykiller(  502): Kill 'com.android.cellbroadcastreceiver.module' (27010), uid 10154, oom_score_adj 905 to free 13112kB rss, 8320kB anon rss, 40920kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:41.239 I/lowmemorykiller(  502): Kill 'com.android.permissioncontroller' (22744), uid 10169, oom_score_adj 905 to free 13028kB rss, 7852kB anon rss, 42488kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:43:41.269 I/ActivityManager(22214): Process com.android.cellbroadcastreceiver.module (pid 27010) has died: cch CEM 
+10-15 10:43:41.389 I/ActivityManager(22214): Process com.android.permissioncontroller (pid 22744) has died: cch CEM 
+10-15 10:44:04.657 W/ActivityManager(22214): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 0ms for mem-pressure-event
+10-15 10:44:05.124 I/ActivityManager(22214): Start proc 28795:com.android.permissioncontroller/u0a169 for bound-service {com.android.permissioncontroller/com.android.permissioncontroller.permission.service.PermissionControllerServiceImpl}
+10-15 10:44:09.993 I/ActivityManager(22214): Start proc 28864:com.google.android.apps.messaging/u0a101 for next-top-activity {com.google.android.apps.messaging/com.google.android.apps.messaging.gaia.expresssignin.BugleExpressSignInActivity}
+10-15 10:44:16.871 I/ActivityManager(22214): Process org.lineageos.jelly (pid 27878) has died: fg  TOP 
+10-15 10:44:21.962 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 10:44:21.964 W/ActivityManager(22214): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture

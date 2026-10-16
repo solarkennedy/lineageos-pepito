@@ -1,0 +1,19 @@
+== PPR poke
+org.lineageos.jelly rss 191668 -> 27812 kB
+com.android.settings rss 118448 -> 544 kB
+dmesg BUG/WARN/Bad-page lines (excl. known-benign): 0   benign: gic=2 use_mm=0
+== hog-resume
+could not unlock dut1
+== app-cycle
+round 1: 15 launches, 6 cold, mean 860 ms
+round 2: 15 launches, 1 cold, mean 427 ms
+round 3: 15 launches, 0 cold, mean 199 ms
+cold rate (rounds 2+): 1/30
+lmk_kills                                   0
+psi_full_stall                           1.83 s
+kswapd_cpu                              13.67 s
+refault_per_steal                       0.608
+== health
+dmesg BUG/WARN/Bad-page lines (excl. known-benign): 0   benign: gic=2 use_mm=0
+pstore: console-ramoops-0 pmsg-ramoops-0 
+workingset_refault 632338 workingset_activate 178777 pgsteal_kswapd 1302365 

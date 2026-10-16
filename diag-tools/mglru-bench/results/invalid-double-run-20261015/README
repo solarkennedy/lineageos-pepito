@@ -1,0 +1,1 @@
+Two copies of 'lmk-props.sh ab lmkE "A E A E" 3' ran concurrently (09:48–10:40): duplicate dirs 30 s apart, two 1200 MB hogs at once. Data unusable.

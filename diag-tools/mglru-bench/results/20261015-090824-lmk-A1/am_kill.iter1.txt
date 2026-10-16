@@ -1,0 +1,4 @@
+10-15 08:58:30.874  1250  2373 I am_kill : [0,4561,com.google.android.dialer,925,depends on provider com.google.android.projection.gearhead/com.google.android.apps.auto.components.projectionstate.ProjectionStateProvider in dying proc com.google.android.projection.gearhead:provider (adj -10000),0]
+10-15 08:59:10.586  1250 20561 I am_kill : [0,6585,com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0,905,isolated not needed,52576]
+10-15 09:00:37.762  1250  2889 I am_kill : [0,4527,com.android.settings,900,stop com.android.settings due to from pid 7621,133188]
+10-15 09:00:45.707  1250 19418 I am_kill : [0,7630,com.android.settings,102,stop com.android.settings due to from pid 7778,178348]

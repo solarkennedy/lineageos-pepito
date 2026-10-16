@@ -1,0 +1,454 @@
+--------- beginning of main
+10-15 10:30:17.523 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:provider' (11441), uid 10104, oom_score_adj 985 to free 71464kB rss, 31796kB anon rss, 23432kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+--------- beginning of system
+10-15 10:30:17.593 I/ActivityManager( 9162): Process com.google.android.projection.gearhead:provider (pid 11441) has died: cch  +85 CEM 
+10-15 10:30:17.597 I/ActivityManager( 9162): Killing 11288:com.google.android.dialer/u0a103 (adj 985): depends on provider com.google.android.projection.gearhead/com.google.android.apps.auto.components.projectionstate.ProjectionStateProvider in dying proc com.google.android.projection.gearhead:provider (adj -10000)
+10-15 10:30:17.997 I/lowmemorykiller(  502): Kill 'com.android.dynsystem' (11587), uid 1000, oom_score_adj 975 to free 56600kB rss, 24244kB anon rss, 23716kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:18.071 I/ActivityManager( 9162): Process com.android.dynsystem (pid 11587) has died: cch  +75 CEM 
+10-15 10:30:18.321 I/lowmemorykiller(  502): Kill 'com.android.devicediagnostics' (11560), uid 10078, oom_score_adj 975 to free 55072kB rss, 23724kB anon rss, 24336kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:18.384 I/ActivityManager( 9162): Process com.android.devicediagnostics (pid 11560) has died: cch  +75 CEM 
+10-15 10:30:18.494 I/lowmemorykiller(  502): Kill '.adservices' (11521), uid 10174, oom_score_adj 975 to free 54412kB rss, 23052kB anon rss, 25072kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:18.574 I/ActivityManager( 9162): Process .adservices (pid 11521) has died: cch  +75 CEM 
+10-15 10:30:18.680 I/lowmemorykiller(  502): Kill 'com.android.dialer' (11439), uid 10099, oom_score_adj 975 to free 55204kB rss, 23324kB anon rss, 25240kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:18.730 I/ActivityManager( 9162): Process com.android.dialer (pid 11439) has died: cch  +75 CEM 
+10-15 10:30:18.884 I/lowmemorykiller(  502): Kill 'com.android.managedprovisioning' (11685), uid 10079, oom_score_adj 965 to free 50068kB rss, 22128kB anon rss, 26196kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:18.984 I/ActivityManager( 9162): Process com.android.managedprovisioning (pid 11685) has died: cch  +65 CEM 
+10-15 10:30:18.986 I/lowmemorykiller(  502): Kill 'com.android.healthconnect.controller' (11652), uid 10155, oom_score_adj 965 to free 49100kB rss, 21460kB anon rss, 26784kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.083 I/ActivityManager( 9162): Process com.android.healthconnect.controller (pid 11652) has died: cch  +65 CEM 
+10-15 10:30:19.084 I/lowmemorykiller(  502): Kill 'com.android.dynsystem:dynsystem' (11605), uid 1000, oom_score_adj 965 to free 49092kB rss, 20836kB anon rss, 27020kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.151 I/ActivityManager( 9162): Process com.android.dynsystem:dynsystem (pid 11605) has died: cch  +65 CEM 
+10-15 10:30:19.153 I/lowmemorykiller(  502): Kill 'com.android.federatedcompute.services' (11603), uid 10159, oom_score_adj 965 to free 47956kB rss, 20748kB anon rss, 27264kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.212 I/ActivityManager( 9162): Process com.android.federatedcompute.services (pid 11603) has died: cch  +65 CEM 
+10-15 10:30:19.215 I/lowmemorykiller(  502): Kill 'com.android.shell' (11844), uid 2000, oom_score_adj 955 to free 47968kB rss, 20244kB anon rss, 27784kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.320 I/lowmemorykiller(  502): Kill 'com.android.messaging' (11697), uid 10124, oom_score_adj 955 to free 52908kB rss, 22288kB anon rss, 28060kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.334 I/ActivityManager( 9162): Process com.android.shell (pid 11844) has died: cch  +55 CEM 
+10-15 10:30:19.402 I/ActivityManager( 9162): Process com.android.messaging (pid 11697) has died: cch  +55 CEM 
+10-15 10:30:19.409 I/lowmemorykiller(  502): Kill 'com.android.packageinstaller' (11756), uid 10080, oom_score_adj 955 to free 44204kB rss, 18912kB anon rss, 29092kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.484 I/ActivityManager( 9162): Process com.android.packageinstaller (pid 11756) has died: cch  +55 CEM 
+10-15 10:30:19.487 I/lowmemorykiller(  502): Kill 'com.android.ondevicepersonalization.services' (11734), uid 10158, oom_score_adj 955 to free 44296kB rss, 19104kB anon rss, 28932kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.553 I/ActivityManager( 9162): Process com.android.ondevicepersonalization.services (pid 11734) has died: cch  +55 CEM 
+10-15 10:30:19.563 I/lowmemorykiller(  502): Kill 'com.google.android.syncadapters.calendar' (12088), uid 10129, oom_score_adj 945 to free 47916kB rss, 19652kB anon rss, 29416kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.653 I/ActivityManager( 9162): Process com.google.android.syncadapters.calendar (pid 12088) has died: cch  +45 CEM 
+10-15 10:30:19.657 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:car' (12040), uid 10104, oom_score_adj 945 to free 53200kB rss, 25848kB anon rss, 29524kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.757 I/ActivityManager( 9162): Process com.google.android.projection.gearhead:car (pid 12040) has died: cch  +45 CEM 
+10-15 10:30:19.851 I/lowmemorykiller(  502): Kill 'com.android.rkpdapp' (11819), uid 10172, oom_score_adj 945 to free 46580kB rss, 20520kB anon rss, 29416kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.959 I/lowmemorykiller(  502): Kill 'com.android.statementservice' (11875), uid 10134, oom_score_adj 945 to free 44780kB rss, 20312kB anon rss, 29532kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:19.960 I/ActivityManager( 9162): Process com.android.rkpdapp (pid 11819) has died: cch  +45 CEM 
+10-15 10:30:20.047 I/ActivityManager( 9162): Process com.android.statementservice (pid 11875) has died: cch  +45 CEM 
+10-15 10:30:20.051 I/lowmemorykiller(  502): Kill 'com.android.photopicker' (12281), uid 10160, oom_score_adj 935 to free 39440kB rss, 18316kB anon rss, 29868kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:20.109 I/ActivityManager( 9162): Process com.android.photopicker (pid 12281) has died: cch  +35 CEM 
+10-15 10:30:20.135 I/lowmemorykiller(  502): Kill 'org.lineageos.updater' (12240), uid 10139, oom_score_adj 935 to free 43276kB rss, 20976kB anon rss, 29584kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:20.233 I/ActivityManager( 9162): Process org.lineageos.updater (pid 12240) has died: cch  +35 CEM 
+10-15 10:30:20.235 I/lowmemorykiller(  502): Kill 'org.calyxos.backup.contacts' (12202), uid 10152, oom_score_adj 935 to free 36516kB rss, 18016kB anon rss, 29916kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:20.340 I/lowmemorykiller(  502): Kill 'com.google.android.tts' (12130), uid 10130, oom_score_adj 935 to free 45148kB rss, 25188kB anon rss, 29412kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:20.344 I/ActivityManager( 9162): Process org.calyxos.backup.contacts (pid 12202) has died: cch  +35 CEM 
+10-15 10:30:20.421 I/ActivityManager( 9162): Process com.google.android.tts (pid 12130) has died: cch  +35 CEM 
+10-15 10:30:20.865 I/lowmemorykiller(  502): Kill 'com.android.deskclock' (12440), uid 10121, oom_score_adj 925 to free 39116kB rss, 25152kB anon rss, 29680kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (147072kB < 157284kB)
+10-15 10:30:20.986 I/ActivityManager( 9162): Process com.android.deskclock (pid 12440) has died: cch  +25 CEM 
+10-15 10:30:21.071 I/lowmemorykiller(  502): Kill 'com.google.android.apps.wellbeing' (12341), uid 10111, oom_score_adj 925 to free 36264kB rss, 24404kB anon rss, 31036kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (135228kB < 157284kB)
+10-15 10:30:21.188 I/ActivityManager( 9162): Process com.google.android.apps.wellbeing (pid 12341) has died: cch  +25 CEM 
+10-15 10:30:21.195 I/lowmemorykiller(  502): Kill 'com.android.vending' (11776), uid 10108, oom_score_adj 925 to free 56784kB rss, 46744kB anon rss, 31384kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (137952kB < 157284kB)
+10-15 10:30:21.300 I/ActivityManager( 9162): Process com.android.vending (pid 11776) has died: cch  +25 CEM 
+10-15 10:30:21.394 I/lowmemorykiller(  502): Kill 'com.android.externalstorage' (12314), uid 10073, oom_score_adj 925 to free 25144kB rss, 14464kB anon rss, 33536kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:21.491 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (10991), uid 10101, oom_score_adj 920 to free 68880kB rss, 55016kB anon rss, 33860kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:21.542 I/ActivityManager( 9162): Process com.android.externalstorage (pid 12314) has died: cch  +25 CEM 
+10-15 10:30:21.623 W/ActivityManager( 9162): pid 12768 com.android.vending:background sent binder code 2 with flags 1 and got error -32
+10-15 10:30:21.681 I/ActivityManager( 9162): Process com.google.android.apps.messaging (pid 10991) has died: cch  +20 CAC 
+10-15 10:30:21.718 W/ActivityManager( 9162): pid 9162 system sent binder code 1 with flags 1 and got error -32
+10-15 10:30:21.721 I/lowmemorykiller(  502): Kill 'org.lineageos.pepito.volumetile' (12363), uid 10063, oom_score_adj 915 to free 22196kB rss, 12256kB anon rss, 35624kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:21.775 W/ActivityManager( 9162): pid 9162 system sent binder code 1 with flags 1 and got error -32
+10-15 10:30:21.827 I/lowmemorykiller(  502): Kill 'android.process.media' (10638), uid 10060, oom_score_adj 915 to free 26868kB rss, 15792kB anon rss, 35040kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:21.925 I/lowmemorykiller(  502): Kill 'android.process.acore' (10151), uid 10062, oom_score_adj 915 to free 25840kB rss, 15352kB anon rss, 34804kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.023 I/lowmemorykiller(  502): Kill 'com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0' (13819), uid 99001, oom_score_adj 910 to free 61044kB rss, 50524kB anon rss, 17200kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.045 W/ActivityManager( 9162): setHasOverlayUi called on unknown pid: 10991
+10-15 10:30:22.047 I/ActivityManager( 9162): Process org.lineageos.pepito.volumetile (pid 12363) has died: cch  +15 CEM 
+10-15 10:30:22.060 I/ActivityManager( 9162): Process android.process.media (pid 10638) has died: cch  +15 CEM 
+10-15 10:30:22.110 I/ActivityManager( 9162): Process android.process.acore (pid 10151) has died: cch  +15 CEM 
+10-15 10:30:22.119 I/ActivityManager( 9162): Process com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0 (pid 13819) has died: cch  +10 CACC
+10-15 10:30:22.129 W/ActivityManager( 9162): Scheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 30000ms for connection
+10-15 10:30:22.182 I/lowmemorykiller(  502): Kill 'com.google.android.contacts' (11913), uid 10131, oom_score_adj 905 to free 32764kB rss, 22408kB anon rss, 36284kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.282 I/lowmemorykiller(  502): Kill 'com.google.android.gms.unstable' (10609), uid 10109, oom_score_adj 905 to free 53372kB rss, 42404kB anon rss, 35612kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.289 I/ActivityManager( 9162): Process com.google.android.contacts (pid 11913) has died: cch CEM 
+10-15 10:30:22.391 I/ActivityManager( 9162): Process com.google.android.gms.unstable (pid 10609) has died: cch CEM 
+10-15 10:30:22.396 W/ActivityManager( 9162): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 9726ms for mem-pressure-event
+10-15 10:30:22.483 I/lowmemorykiller(  502): Kill 'com.android.providers.calendar' (11771), uid 10074, oom_score_adj 905 to free 21872kB rss, 12000kB anon rss, 36284kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.543 I/ActivityManager( 9162): Process com.android.providers.calendar (pid 11771) has died: cch CEM 
+10-15 10:30:22.546 I/lowmemorykiller(  502): Kill 'com.android.cellbroadcastreceiver.module' (13709), uid 10154, oom_score_adj 905 to free 22476kB rss, 12608kB anon rss, 36280kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.623 I/ActivityManager( 9162): Process com.android.cellbroadcastreceiver.module (pid 13709) has died: cch CEM 
+10-15 10:30:22.626 I/lowmemorykiller(  502): Kill 'com.android.permissioncontroller' (9770), uid 10169, oom_score_adj 905 to free 24276kB rss, 14020kB anon rss, 35984kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.714 I/ActivityManager( 9162): Process com.android.permissioncontroller (pid 9770) has died: cch CEM 
+10-15 10:30:22.823 I/lowmemorykiller(  502): Kill 'com.android.vending:background' (12768), uid 10108, oom_score_adj 905 to free 69412kB rss, 38812kB anon rss, 34424kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:22.931 I/ActivityManager( 9162): Process com.android.vending:background (pid 12768) has died: cch CEM 
+10-15 10:30:22.944 W/ActivityManager( 9162): Rescheduling restart of crashed service org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0 in 29178ms for mem-pressure-event
+10-15 10:30:23.027 I/lowmemorykiller(  502): Kill 'org.lineageos.jelly' (13795), uid 10116, oom_score_adj 900 to free 53736kB rss, 33144kB anon rss, 36716kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:30:23.148 I/ActivityManager( 9162): Process org.lineageos.jelly (pid 13795) has died: cch CAC 
+10-15 10:30:23.205 W/ActivityManager( 9162): setHasOverlayUi called on unknown pid: 13795
+10-15 10:30:24.225 I/lowmemorykiller(  502): Kill 'org.lineageos.aperture' (11065), uid 10119, oom_score_adj 700 to free 35112kB rss, 21528kB anon rss, 39772kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (152916kB < 157284kB)
+10-15 10:30:24.326 I/ActivityManager( 9162): Process org.lineageos.aperture (pid 11065) has died: prev LAST
+10-15 10:30:24.562 W/ActivityManager( 9162): setHasOverlayUi called on unknown pid: 11065
+10-15 10:30:25.604 I/lowmemorykiller(  502): Kill 'com.android.settings' (9670), uid 1000, oom_score_adj 600 to free 23300kB rss, 9840kB anon rss, 54324kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (150216kB < 157284kB)
+10-15 10:30:25.698 I/ActivityManager( 9162): Process com.android.settings (pid 9670) has died: home HOME
+10-15 10:30:25.737 W/ActivityManager( 9162): setHasOverlayUi called on unknown pid: 9670
+10-15 10:30:25.909 I/lowmemorykiller(  502): Kill 'com.android.inputmethod.latin' (11246), uid 10112, oom_score_adj 201 to free 22876kB rss, 11368kB anon rss, 38932kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (150660kB < 157284kB)
+10-15 10:30:25.988 I/ActivityManager( 9162): Process com.android.inputmethod.latin (pid 11246) has died: prcp IMPB
+10-15 10:30:26.062 W/ActivityManager( 9162): Scheduling restart of crashed service com.android.inputmethod.latin/.LatinIME in 30000ms for connection
+10-15 10:30:26.085 W/ActivityManager( 9162): setHasOverlayUi called on unknown pid: 11246
+10-15 10:30:27.569 W/ActivityManager( 9162): Slow operation: 61ms so far, now at startProcess: done starting proc!
+10-15 10:30:27.653 W/ActivityManager( 9162): Slow operation: 123ms so far, now at startProcess: returned from zygote!
+10-15 10:30:27.661 W/ActivityManager( 9162): Slow operation: 131ms so far, now at startProcess: done updating battery stats
+10-15 10:30:27.678 W/ActivityManager( 9162): Slow operation: 148ms so far, now at startProcess: building log message
+10-15 10:30:27.678 I/ActivityManager( 9162): Start proc 15437:com.android.settings/1000 for broadcast {com.android.settings/com.android.settings.network.telephony.satellite.quicksettings.SatelliteTileStateReceiver}
+10-15 10:30:27.678 W/ActivityManager( 9162): Slow operation: 149ms so far, now at startProcess: starting to update pids map
+10-15 10:30:27.680 W/ActivityManager( 9162): Slow operation: 150ms so far, now at startProcess: done updating pids map
+10-15 10:30:28.298 W/ActivityManager( 9162): Slow operation: 54ms so far, now at attachApplicationLocked: immediately after bindApplication
+10-15 10:30:28.298 W/ActivityManager( 9162): Slow operation: 57ms so far, now at attachApplicationLocked: after updateLruProcessLocked
+10-15 10:30:28.303 W/ActivityManager( 9162): Slow operation: 62ms so far, now at attachApplicationLocked: after updateOomAdjLocked
+10-15 10:30:29.179 W/ActivityManager( 9162): Rescheduling restart of crashed service com.android.inputmethod.latin/.LatinIME in 16866ms for mem-pressure-event
+10-15 10:30:29.446 I/ActivityManager( 9162): Start proc 15453:com.android.cellbroadcastreceiver.module/u0a154 for broadcast {com.android.cellbroadcastreceiver.module/com.android.cellbroadcastreceiver.CellBroadcastReceiver}
+10-15 10:30:29.447 I/lowmemorykiller(  502): Kill 'com.android.settings' (15437), uid 1000, oom_score_adj 905 to free 73772kB rss, 19664kB anon rss, 34368kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (124120kB < 157284kB)
+10-15 10:30:29.563 I/ActivityManager( 9162): Process com.android.settings (pid 15437) has died: cch CEM 
+10-15 10:30:30.725 I/lowmemorykiller(  502): Kill 'com.android.cellbroadcastreceiver.module' (15453), uid 10154, oom_score_adj 905 to free 38000kB rss, 14580kB anon rss, 34408kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached and swap is low (0kB < 157284kB)
+10-15 10:30:30.826 I/ActivityManager( 9162): Process com.android.cellbroadcastreceiver.module (pid 15453) has died: cch CEM 
+10-15 10:30:31.935 I/lowmemorykiller(  502): Kill 'com.google.android.gms' (10068), uid 10109, oom_score_adj 100 to free 68428kB rss, 67480kB anon rss, 48668kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (0kB < 157284kB) and thrashing (347%)
+10-15 10:30:32.180 I/lowmemorykiller(  502): Kill 'com.google.android.googlequicksearchbox:interactor' (10425), uid 10106, oom_score_adj 100 to free 36576kB rss, 36172kB anon rss, 43532kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (9524kB < 157284kB) and thrashing (330%)
+10-15 10:30:33.303 I/lowmemorykiller(  502): Kill 'co.aospa.sense' (10892), uid 1000, oom_score_adj 100 to free 13764kB rss, 13512kB anon rss, 114364kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (0kB < 157284kB) and thrashing (316%)
+10-15 10:30:33.573 I/lowmemorykiller(  502): Kill 'android.ext.services' (10284), uid 10174, oom_score_adj 100 to free 5796kB rss, 5376kB anon rss, 43148kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (58636kB < 157284kB) and thrashing (315%)
+10-15 10:30:34.802 I/lowmemorykiller(  502): Kill 'com.android.launcher3' (9936), uid 10141, oom_score_adj 100 to free 5152kB rss, 4676kB anon rss, 51964kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (0kB < 157284kB) and thrashing (339%)
+10-15 10:30:35.449 I/lowmemorykiller(  502): Kill 'system:ui' (11536), uid 1000, oom_score_adj 0 to free 9304kB rss, 8068kB anon rss, 45368kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is low on swap (0kB < 157284kB) and thrashing (278%)
+10-15 10:30:37.962 I/lowmemorykiller(  502): lmkd data connection dropped
+10-15 10:30:37.962 I/lowmemorykiller(  502): closing lmkd data connection
+10-15 10:30:37.962 D/lowmemorykiller(  502): EPOLLERR on event #0
+10-15 10:31:51.499 I/ActivityManager(15668): Memory class: 192
+10-15 10:31:55.101 I/ActivityManager(15668): Connection with lmkd established
+10-15 10:31:55.102 I/lowmemorykiller(  502): lmkd data connection established
+10-15 10:31:58.238 W/ActivityManager(15668): Skipping saving the start info due to ongoing loading from storage
+10-15 10:32:00.199 E/ActivityManager(15668): Unable to find com.android.providers.media/u0
+10-15 10:32:00.200 E/ActivityManager(15668): Unable to find im.angry.openeuicc/u0
+10-15 10:32:00.200 E/ActivityManager(15668): Unable to find com.android.server.deviceconfig.resources/u0
+10-15 10:32:00.203 E/ActivityManager(15668): Unable to find com.android.gallery3d/u0
+10-15 10:32:00.226 I/ActivityManager(15668): System now ready
+10-15 10:32:00.737 I/ActivityManager(15668): Start proc 15962:com.android.systemui/u0a135 for bound-service {com.android.systemui/com.android.systemui.wallpapers.GradientColorWallpaper}
+10-15 10:32:01.511 I/ActivityManager(15668): Current user:0
+10-15 10:32:01.546 W/ActivityManager(15668): Slow operation: 357ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.546 W/ActivityManager(15668): Slow operation: 357ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.546 W/ActivityManager(15668): Slow operation: 357ms so far, now at startProcess: building log message
+10-15 10:32:01.546 I/ActivityManager(15668): Start proc 16018:WebViewLoader-armeabi-v7a/1037 [android.webkit.WebViewLibraryLoader$RelroFileCreator] for 
+10-15 10:32:01.546 W/ActivityManager(15668): Slow operation: 357ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.546 W/ActivityManager(15668): Slow operation: 358ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.546 W/ActivityManager(15668): Slow operation: 353ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.561 W/ActivityManager(15668): Slow operation: 367ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.561 W/ActivityManager(15668): Slow operation: 367ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.561 W/ActivityManager(15668): Slow operation: 367ms so far, now at startProcess: building log message
+10-15 10:32:01.561 I/ActivityManager(15668): Start proc 16019:WebViewLoader-arm64-v8a/1037 [android.webkit.WebViewLibraryLoader$RelroFileCreator] for 
+10-15 10:32:01.561 W/ActivityManager(15668): Slow operation: 367ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.564 W/ActivityManager(15668): Slow operation: 370ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.565 W/ActivityManager(15668): Slow operation: 65ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.584 W/ActivityManager(15668): Slow operation: 84ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.584 W/ActivityManager(15668): Slow operation: 85ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.584 W/ActivityManager(15668): Slow operation: 85ms so far, now at startProcess: building log message
+10-15 10:32:01.584 I/ActivityManager(15668): Start proc 16020:com.android.networkstack.process/1073 for bound-service {com.android.networkstack/com.android.server.NetworkStackService}
+10-15 10:32:01.584 W/ActivityManager(15668): Slow operation: 85ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.585 W/ActivityManager(15668): Slow operation: 85ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.786 W/ActivityManager(15668): No pending application record for pid 16020 (IApplicationThread android.app.IApplicationThread$Stub$Proxy@fbfe81a); dropping process
+10-15 10:32:01.818 W/ActivityManager(15668): Slow operation: 213ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.819 W/ActivityManager(15668): Slow operation: 214ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.819 W/ActivityManager(15668): Slow operation: 214ms so far, now at startProcess: building log message
+10-15 10:32:01.819 I/ActivityManager(15668): Start proc 16055:com.qualcomm.qti.telephonyservice/1001 for added application com.qualcomm.qti.telephonyservice
+10-15 10:32:01.819 W/ActivityManager(15668): Slow operation: 214ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.819 W/ActivityManager(15668): Slow operation: 215ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.819 W/ActivityManager(15668): Slow operation: 212ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.837 W/ActivityManager(15668): Slow operation: 229ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.837 W/ActivityManager(15668): Slow operation: 230ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.837 W/ActivityManager(15668): Slow operation: 230ms so far, now at startProcess: building log message
+10-15 10:32:01.837 I/ActivityManager(15668): Start proc 16057:com.android.networkstack.process/1073 for added application com.android.networkstack.process
+10-15 10:32:01.837 W/ActivityManager(15668): Slow operation: 230ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.838 W/ActivityManager(15668): Slow operation: 230ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.838 W/ActivityManager(15668): Slow operation: 225ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.857 W/ActivityManager(15668): Slow operation: 244ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.857 W/ActivityManager(15668): Slow operation: 244ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.857 W/ActivityManager(15668): Slow operation: 244ms so far, now at startProcess: building log message
+10-15 10:32:01.857 I/ActivityManager(15668): Start proc 16059:org.codeaurora.ims/u0a147 for added application org.codeaurora.ims
+10-15 10:32:01.857 W/ActivityManager(15668): Slow operation: 245ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.858 W/ActivityManager(15668): Slow operation: 245ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.858 W/ActivityManager(15668): Slow operation: 241ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.875 W/ActivityManager(15668): Slow operation: 259ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.876 W/ActivityManager(15668): Slow operation: 259ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.876 W/ActivityManager(15668): Slow operation: 259ms so far, now at startProcess: building log message
+10-15 10:32:01.876 I/ActivityManager(15668): Start proc 16068:com.android.se/1068 for added application com.android.se
+10-15 10:32:01.876 W/ActivityManager(15668): Slow operation: 259ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.876 W/ActivityManager(15668): Slow operation: 260ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.876 W/ActivityManager(15668): Slow operation: 256ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.894 W/ActivityManager(15668): Slow operation: 273ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.895 W/ActivityManager(15668): Slow operation: 274ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.895 W/ActivityManager(15668): Slow operation: 274ms so far, now at startProcess: building log message
+10-15 10:32:01.895 I/ActivityManager(15668): Start proc 16075:org.lineageos.pepito.wfcbridge/u0a71 for added application org.lineageos.pepito.wfcbridge
+10-15 10:32:01.895 W/ActivityManager(15668): Slow operation: 274ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.896 W/ActivityManager(15668): Slow operation: 275ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.896 W/ActivityManager(15668): Slow operation: 272ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.920 W/ActivityManager(15668): Slow operation: 297ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.921 W/ActivityManager(15668): Slow operation: 297ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.921 W/ActivityManager(15668): Slow operation: 297ms so far, now at startProcess: building log message
+10-15 10:32:01.921 I/ActivityManager(15668): Start proc 16085:com.android.phone/1001 for added application com.android.phone
+10-15 10:32:01.921 W/ActivityManager(15668): Slow operation: 297ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.923 W/ActivityManager(15668): Slow operation: 299ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.923 W/ActivityManager(15668): Slow operation: 146ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:01.943 W/ActivityManager(15668): Slow operation: 166ms so far, now at startProcess: returned from zygote!
+10-15 10:32:01.943 W/ActivityManager(15668): Slow operation: 166ms so far, now at startProcess: done updating battery stats
+10-15 10:32:01.943 W/ActivityManager(15668): Slow operation: 166ms so far, now at startProcess: building log message
+10-15 10:32:01.943 I/ActivityManager(15668): Start proc 16095:com.android.bluetooth/1002 for bound-service {com.android.bluetooth/com.android.bluetooth.btservice.AdapterService}
+10-15 10:32:01.943 W/ActivityManager(15668): Slow operation: 167ms so far, now at startProcess: starting to update pids map
+10-15 10:32:01.963 W/ActivityManager(15668): Slow operation: 186ms so far, now at startProcess: done updating pids map
+10-15 10:32:01.964 W/ActivityManager(15668): Slow operation: 171ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:02.060 W/ActivityManager(15668): Slow operation: 267ms so far, now at startProcess: returned from zygote!
+10-15 10:32:02.090 W/ActivityManager(15668): Slow operation: 53ms so far, now at attachApplicationLocked: before bindApplication
+10-15 10:32:02.090 W/ActivityManager(15668): Slow operation: 53ms so far, now at attachApplicationLocked: immediately before bindApplication
+10-15 10:32:02.093 W/ActivityManager(15668): Slow operation: 56ms so far, now at attachApplicationLocked: immediately after bindApplication
+10-15 10:32:02.093 W/ActivityManager(15668): Slow operation: 57ms so far, now at attachApplicationLocked: after updateLruProcessLocked
+10-15 10:32:02.095 W/ActivityManager(15668): Slow operation: 58ms so far, now at attachApplicationLocked: after updateOomAdjLocked
+10-15 10:32:02.096 W/ActivityManager(15668): Slow operation: 303ms so far, now at startProcess: done updating battery stats
+10-15 10:32:02.096 W/ActivityManager(15668): Slow operation: 303ms so far, now at startProcess: building log message
+10-15 10:32:02.096 I/ActivityManager(15668): Start proc 16155:com.android.settings/1000 for top-activity {com.android.settings/com.android.settings.FallbackHome}
+10-15 10:32:02.096 W/ActivityManager(15668): Slow operation: 303ms so far, now at startProcess: starting to update pids map
+10-15 10:32:02.096 W/ActivityManager(15668): Slow operation: 304ms so far, now at startProcess: done updating pids map
+10-15 10:32:02.154 I/ActivityManager(15668): Process WebViewLoader-armeabi-v7a (pid 16018) has died: psvc PER 
+10-15 10:32:02.168 I/ActivityManager(15668): Process WebViewLoader-arm64-v8a (pid 16019) has died: psvc PER 
+10-15 10:32:02.610 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:02.612 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:02.673 I/ActivityManager(15668): Start proc 16220:com.android.permissioncontroller/u0a169 for broadcast {com.android.permissioncontroller/com.android.permissioncontroller.privacysources.SafetyCenterReceiver}
+10-15 10:32:03.919 I/ActivityManager(15668): Start proc 16310:com.android.cellbroadcastreceiver.module/u0a154 for broadcast {com.android.cellbroadcastreceiver.module/com.android.cellbroadcastreceiver.CellBroadcastReceiver}
+10-15 10:32:04.208 I/ActivityManager(15668): Start proc 16352:com.android.launcher3/u0a141 for bound-service {com.android.launcher3/com.android.quickstep.TouchInteractionService}
+10-15 10:32:04.398 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:04.398 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:05.979 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:05.980 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:05.997 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:05.999 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:06.059 W/ActivityManager(15668): Receiver with filter android.content.IntentFilter@9dfc573 already registered for pid 15962, callerPackage is com.android.systemui
+10-15 10:32:06.623 I/ActivityManager(15668): Start proc 16486:com.google.android.gms/u0a109 for broadcast {com.google.android.gms/com.google.android.gms.chimera.GmsIntentOperationService$PersistentTrustedReceiver}
+10-15 10:32:06.631 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:06.631 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:08.569 W/ActivityManager(15668): Unable to start service Intent { act=com.google.android.chimera.BoundService.START dat=chimera-action: xflg=0x4 cmp=com.google.android.gms/.chimera.PersistentApiService } U=0: not found
+10-15 10:32:08.570 W/ActivityManager(15668): Unbind failed: could not find connection for android.os.BinderProxy@a1ad733
+10-15 10:32:08.715 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:08.756 I/ActivityManager(15668): Start proc 16576:com.android.dialer/u0a99 for broadcast {com.android.dialer/com.android.dialer.app.voicemail.LegacyVoicemailNotificationReceiver}
+10-15 10:32:08.810 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:09.461 I/ActivityManager(15668): Start proc 16600:android.process.acore/u0a62 for content provider {com.android.providers.blockednumber/com.android.providers.blockednumber.BlockedNumberProvider}
+10-15 10:32:09.501 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:09.501 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10135, TargetPkg: com.android.systemui
+10-15 10:32:09.825 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10147, TargetPkg: org.codeaurora.ims
+10-15 10:32:09.826 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10147, TargetPkg: org.codeaurora.ims
+10-15 10:32:10.611 I/ActivityManager(15668): About to commit checkpoint
+10-15 10:32:12.119 W/ActivityManager(15668): Slow operation: 51ms so far, now at startProcess: done updating battery stats
+10-15 10:32:12.120 W/ActivityManager(15668): Slow operation: 51ms so far, now at startProcess: building log message
+10-15 10:32:12.120 I/ActivityManager(15668): Start proc 16728:android.ext.services/u0a174 for on-hold
+10-15 10:32:12.120 W/ActivityManager(15668): Slow operation: 51ms so far, now at startProcess: starting to update pids map
+10-15 10:32:12.121 W/ActivityManager(15668): Slow operation: 52ms so far, now at startProcess: done updating pids map
+10-15 10:32:12.144 I/ActivityManager(15668): Start proc 16731:com.android.deskclock/u0a121 for broadcast {com.android.deskclock/com.android.deskclock.AlarmInitReceiver}
+10-15 10:32:12.204 I/ActivityManager(15668): Start proc 16747:com.qualcomm.qcrilmsgtunnel/1001 for started-service {com.qualcomm.qcrilmsgtunnel/com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService}
+10-15 10:32:12.628 I/ActivityManager(15668): Start proc 16801:com.google.android.apps.wellbeing/u0a111 for broadcast {com.google.android.apps.wellbeing/com.google.android.apps.wellbeing.common.receiver.coalescedreceivers.LockedBootCompletedCoalescedBroadcast_Receiver}
+10-15 10:32:12.651 I/lowmemorykiller(  502): lmkd data connection established
+10-15 10:32:12.655 W/lowmemorykiller(16798): lmkd already handled boot-completed operations
+10-15 10:32:12.656 I/lowmemorykiller(  502): lmkd data connection dropped
+10-15 10:32:12.656 I/lowmemorykiller(  502): closing lmkd data connection
+10-15 10:32:13.161 I/ActivityManager(15668): Start proc 16844:com.android.providers.media.module/u0a161 for bound-service {com.android.providers.media.module/com.android.providers.media.fuse.ExternalStorageServiceImpl}
+10-15 10:32:13.180 I/lowmemorykiller(  502): lmkd data connection established
+10-15 10:32:13.202 I/ActivityManager(15668): Start proc 16846:com.google.android.googlequicksearchbox:interactor/u0a106 for bound-service {com.google.android.googlequicksearchbox/com.google.android.voiceinteraction.GsaVoiceInteractionService}
+10-15 10:32:13.353 I/lowmemorykiller(  502): Wakeup counter is reset from 7614 to 0
+10-15 10:32:13.354 I/lowmemorykiller(  502): Using psi monitors for memory pressure detection
+10-15 10:32:13.354 I/lowmemorykiller(  502): Properties reinitilized
+10-15 10:32:13.356 I/lowmemorykiller(16829): lmkd updated properties successfully
+10-15 10:32:13.357 I/lowmemorykiller(  502): lmkd data connection dropped
+10-15 10:32:13.357 I/lowmemorykiller(  502): closing lmkd data connection
+10-15 10:32:13.416 I/ActivityManager(15668): Start proc 16883:org.lineageos.settings/1000 for added application org.lineageos.settings
+10-15 10:32:13.856 I/ActivityManager(15668): Start proc 16936:com.android.keychain/1000 for bound-service {com.android.keychain/com.android.keychain.KeyChainService}
+10-15 10:32:13.887 W/ActivityManager(15668): Slow operation: 78ms so far, now at startProcess: done updating pids map
+10-15 10:32:13.888 W/ActivityManager(15668): Slow operation: 66ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:13.921 W/ActivityManager(15668): Slow operation: 99ms so far, now at startProcess: returned from zygote!
+10-15 10:32:13.921 W/ActivityManager(15668): Slow operation: 100ms so far, now at startProcess: done updating battery stats
+10-15 10:32:13.921 W/ActivityManager(15668): Slow operation: 100ms so far, now at startProcess: building log message
+10-15 10:32:13.921 I/ActivityManager(15668): Start proc 16944:com.android.printspooler/u0a86 for bound-service {com.android.printspooler/com.android.printspooler.model.PrintSpoolerService}
+10-15 10:32:13.921 W/ActivityManager(15668): Slow operation: 100ms so far, now at startProcess: starting to update pids map
+10-15 10:32:13.922 W/ActivityManager(15668): Slow operation: 100ms so far, now at startProcess: done updating pids map
+10-15 10:32:14.180 I/lowmemorykiller(  502): Kill 'com.android.cellbroadcastreceiver.module' (16310), uid 10154, oom_score_adj 905 to free 124784kB rss, 49932kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: device is not responding
+10-15 10:32:14.203 W/ActivityManager(15668): Slow operation: 53ms so far, now at startProcess: done starting proc!
+10-15 10:32:14.204 W/ActivityManager(15668): Slow operation: 52ms so far, now at startProcess: asking zygote to start proc
+10-15 10:32:14.261 W/ActivityManager(15668): Slow operation: 109ms so far, now at startProcess: returned from zygote!
+10-15 10:32:14.272 W/ActivityManager(15668): Slow operation: 121ms so far, now at startProcess: done updating battery stats
+10-15 10:32:14.274 W/ActivityManager(15668): Slow operation: 122ms so far, now at startProcess: building log message
+10-15 10:32:14.274 I/ActivityManager(15668): Start proc 16994:com.google.android.googlequicksearchbox:googleapp/u0a106 for broadcast {com.google.android.googlequicksearchbox/com.google.android.googlequicksearchbox.SearchWidgetProvider}
+10-15 10:32:14.274 W/ActivityManager(15668): Slow operation: 122ms so far, now at startProcess: starting to update pids map
+10-15 10:32:14.276 W/ActivityManager(15668): Slow operation: 124ms so far, now at startProcess: done updating pids map
+10-15 10:32:14.283 I/lowmemorykiller(  502): Kill 'com.android.dialer' (16576), uid 10099, oom_score_adj 905 to free 107764kB rss, 48300kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:14.386 W/ActivityManager(15668): Slow operation: 72ms so far, now at startProcess: returned from zygote!
+10-15 10:32:14.387 W/ActivityManager(15668): Slow operation: 73ms so far, now at startProcess: done updating battery stats
+10-15 10:32:14.387 W/ActivityManager(15668): Slow operation: 73ms so far, now at startProcess: building log message
+10-15 10:32:14.387 I/ActivityManager(15668): Start proc 17010:com.google.android.gms.unstable/u0a109 for bound-service {com.google.android.gms/com.google.android.gms.droidguard.DroidGuardService}
+10-15 10:32:14.387 W/ActivityManager(15668): Slow operation: 73ms so far, now at startProcess: starting to update pids map
+10-15 10:32:14.388 W/ActivityManager(15668): Slow operation: 74ms so far, now at startProcess: done updating pids map
+10-15 10:32:14.412 I/ActivityManager(15668): Process com.android.cellbroadcastreceiver.module (pid 16310) has died: cch CEM 
+10-15 10:32:14.548 I/ActivityManager(15668): Process com.android.dialer (pid 16576) has died: cch CEM 
+10-15 10:32:14.579 W/ActivityManager(15668): Slow operation: 81ms so far, now at startProcess: returned from zygote!
+10-15 10:32:14.589 W/ActivityManager(15668): Slow operation: 91ms so far, now at startProcess: done updating battery stats
+10-15 10:32:14.589 W/ActivityManager(15668): Slow operation: 91ms so far, now at startProcess: building log message
+10-15 10:32:14.589 I/ActivityManager(15668): Start proc 17040:org.lineageos.pepito.volumetile/u0a63 for bound-service {org.lineageos.pepito.volumetile/org.lineageos.pepito.volumetile.VolumeTile}
+10-15 10:32:14.589 W/ActivityManager(15668): Slow operation: 91ms so far, now at startProcess: starting to update pids map
+10-15 10:32:14.595 W/ActivityManager(15668): Slow operation: 97ms so far, now at startProcess: done updating pids map
+10-15 10:32:14.637 I/ActivityManager(15668): Start proc 17046:android.process.media/u0a60 for content provider {com.android.providers.downloads/com.android.providers.downloads.DownloadProvider}
+10-15 10:32:14.669 W/ActivityManager(15668): Slow operation: 65ms so far, now at startProcess: done updating pids map
+10-15 10:32:14.681 I/lowmemorykiller(  502): Kill 'com.android.keychain' (16936), uid 1000, oom_score_adj 905 to free 101096kB rss, 47928kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: min watermark is breached
+10-15 10:32:15.006 I/ActivityManager(15668): Process com.android.keychain (pid 16936) has died: cch CEM 
+10-15 10:32:15.241 I/lowmemorykiller(  502): Kill 'org.lineageos.pepito.volumetile' (17040), uid 10063, oom_score_adj 905 to free 95276kB rss, 47808kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:15.339 I/ActivityManager(15668): Start proc 17132:com.android.keychain/1000 for bound-service {com.android.keychain/com.android.keychain.KeyChainService}
+10-15 10:32:15.346 I/ActivityManager(15668): Process org.lineageos.pepito.volumetile (pid 17040) has died: cch CEM 
+10-15 10:32:15.349 W/ActivityManager(15668): Scheduling restart of crashed service org.lineageos.pepito.volumetile/.VolumeTile in 10000ms for connection
+10-15 10:32:15.598 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:15.908 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:15.936 W/ActivityManager(15668): Slow operation: 81ms so far, now at startProcess: returned from zygote!
+10-15 10:32:15.937 W/ActivityManager(15668): Slow operation: 82ms so far, now at startProcess: done updating battery stats
+10-15 10:32:15.937 W/ActivityManager(15668): Slow operation: 82ms so far, now at startProcess: building log message
+10-15 10:32:15.937 I/ActivityManager(15668): Start proc 17191:org.lineageos.twelve/u0a115 for broadcast {org.lineageos.twelve/org.lineageos.twelve.ui.widgets.NowPlayingAppWidgetProvider}
+10-15 10:32:15.937 W/ActivityManager(15668): Slow operation: 82ms so far, now at startProcess: starting to update pids map
+10-15 10:32:15.938 W/ActivityManager(15668): Slow operation: 83ms so far, now at startProcess: done updating pids map
+10-15 10:32:15.940 I/lowmemorykiller(  502): Kill 'com.android.keychain' (17132), uid 1000, oom_score_adj 905 to free 100052kB rss, 47960kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:16.069 I/ActivityManager(15668): Process com.android.keychain (pid 17132) has died: cch CEM 
+10-15 10:32:16.102 I/ActivityManager(15668): Start proc 17208:com.android.dialer/u0a99 for bound-service {com.android.dialer/com.android.voicemail.impl.OmtpService}
+10-15 10:32:16.372 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:16.372 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:16.419 I/ActivityManager(15668): Start proc 17231:com.android.cellbroadcastreceiver.module/u0a154 for broadcast {com.android.cellbroadcastreceiver.module/com.android.cellbroadcastreceiver.CellBroadcastReceiver}
+10-15 10:32:16.441 I/lowmemorykiller(  502): Kill 'com.android.deskclock' (16731), uid 10121, oom_score_adj 905 to free 126524kB rss, 56092kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:16.804 W/ActivityManager(15668): Slow operation: 55ms so far, now at startProcess: returned from zygote!
+10-15 10:32:16.805 W/ActivityManager(15668): Slow operation: 55ms so far, now at startProcess: done updating battery stats
+10-15 10:32:16.805 W/ActivityManager(15668): Slow operation: 56ms so far, now at startProcess: building log message
+10-15 10:32:16.805 I/ActivityManager(15668): Start proc 17261:com.google.android.googlequicksearchbox:search/u0a106 for bound-service {com.google.android.googlequicksearchbox/com.google.frameworks.client.data.android.server.tiktok.assistant.SearchProcessEndpointService}
+10-15 10:32:16.805 W/ActivityManager(15668): Slow operation: 56ms so far, now at startProcess: starting to update pids map
+10-15 10:32:16.806 W/ActivityManager(15668): Slow operation: 57ms so far, now at startProcess: done updating pids map
+10-15 10:32:16.813 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10115, TargetPkg: org.lineageos.twelve
+10-15 10:32:16.822 I/ActivityManager(15668): Process com.android.deskclock (pid 16731) has died: cch CEM 
+10-15 10:32:16.973 I/ActivityManager(15668): Start proc 17279:com.android.localtransport/1000 for bound-service {com.android.localtransport/com.android.localtransport.LocalTransportService}
+10-15 10:32:17.122 I/ActivityManager(15668): Start proc 17291:com.android.musicfx/u0a66 for bound-service {com.android.musicfx/com.android.musicfx.KeepAliveService}
+10-15 10:32:17.341 I/ActivityManager(15668): Start proc 17310:co.aospa.sense/1000 for bound-service {co.aospa.sense/co.aospa.sense.SenseService}
+10-15 10:32:17.483 E/ActivityManager(15668): Unable to find UidObserver by token
+10-15 10:32:17.496 I/ActivityManager(15668): Start proc 17332:com.android.imsserviceentitlement/u0a100 for broadcast {com.android.imsserviceentitlement/com.android.imsserviceentitlement.ImsEntitlementReceiver}
+10-15 10:32:17.516 W/ActivityManager(15668): Slow operation: 64ms so far, now at startProcess: done updating pids map
+10-15 10:32:17.687 I/ActivityManager(15668): Start proc 17357:org.lineageos.jelly/u0a116 for top-activity {org.lineageos.jelly/org.lineageos.jelly.MainActivity}
+10-15 10:32:17.738 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:17.800 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: 10060, SourcePkg: null, TargetUid: 10060, TargetPkg: com.android.mtp
+10-15 10:32:17.999 I/ActivityManager(15668): Start proc 17398:com.google.android.apps.messaging/u0a101 for broadcast {com.google.android.apps.messaging/com.google.android.apps.messaging.shared.receiver.RestoreReceiver}
+10-15 10:32:18.050 I/lowmemorykiller(  502): Kill 'org.lineageos.twelve' (17191), uid 10115, oom_score_adj 935 to free 113784kB rss, 49064kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:18.140 I/lowmemorykiller(  502): Kill 'com.android.cellbroadcastreceiver.module' (17231), uid 10154, oom_score_adj 915 to free 115612kB rss, 48928kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:18.239 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:18.248 I/lowmemorykiller(  502): Kill 'com.android.localtransport' (17279), uid 1000, oom_score_adj 905 to free 95628kB rss, 47840kB anon rss, 84kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:18.377 I/ActivityManager(15668): Process com.android.cellbroadcastreceiver.module (pid 17231) has died: cch  +15 CEM 
+10-15 10:32:18.458 I/ActivityManager(15668): Process org.lineageos.twelve (pid 17191) has died: cch  +35 CEM 
+10-15 10:32:18.484 W/lowmemorykiller(  502): Failed to open /proc/17279/oom_score_adj; errno=2: process 17279 might have been killed
+10-15 10:32:18.487 I/ActivityManager(15668): Process com.android.localtransport (pid 17279) has died: cch  +25 CEM 
+10-15 10:32:18.858 W/ActivityManager(15668): Slow operation: 74ms so far, now at startProcess: returned from zygote!
+10-15 10:32:18.859 W/ActivityManager(15668): Slow operation: 75ms so far, now at startProcess: done updating battery stats
+10-15 10:32:18.859 W/ActivityManager(15668): Slow operation: 76ms so far, now at startProcess: building log message
+10-15 10:32:18.859 I/ActivityManager(15668): Start proc 17445:com.android.webview:sandboxed_process0:org.chromium.content.app.SandboxedProcessService0:0/u0ai9000 for bound-service {org.lineageos.jelly/org.chromium.content.app.SandboxedProcessService0:0}
+10-15 10:32:18.859 W/ActivityManager(15668): Slow operation: 76ms so far, now at startProcess: starting to update pids map
+10-15 10:32:18.862 W/ActivityManager(15668): Slow operation: 78ms so far, now at startProcess: done updating pids map
+10-15 10:32:19.241 I/lowmemorykiller(  502): Kill 'com.android.musicfx' (17291), uid 10066, oom_score_adj 915 to free 95108kB rss, 47932kB anon rss, 136kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:19.342 I/lowmemorykiller(  502): Kill 'com.android.imsserviceentitlement' (17332), uid 10100, oom_score_adj 905 to free 99392kB rss, 48144kB anon rss, 136kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:19.503 I/ActivityManager(15668): Process com.android.musicfx (pid 17291) has died: cch  +15 CEM 
+10-15 10:32:19.565 I/ActivityManager(15668): Process com.android.imsserviceentitlement (pid 17332) has died: cch CEM 
+10-15 10:32:20.458 I/ActivityManager(15668): Start proc 17533:org.lineageos.pepito.volumetile/u0a63 for bound-service {org.lineageos.pepito.volumetile/org.lineageos.pepito.volumetile.VolumeTile}
+10-15 10:32:20.520 I/ActivityManager(15668): Start proc 17536:org.lineageos.settingsconfig/u0a150 for broadcast {org.lineageos.settingsconfig/org.lineageos.settingsconfig.BootReceiver}
+10-15 10:32:20.812 I/ActivityManager(15668): Start proc 17573:org.protonaosp.deviceconfig/u0a140 for broadcast {org.protonaosp.deviceconfig/org.protonaosp.deviceconfig.BootReceiver}
+10-15 10:32:21.069 I/ActivityManager(15668): Start proc 17596:org.lineageos.lineageparts/1000 for broadcast {org.lineageos.lineageparts/org.lineageos.lineageparts.BootReceiver}
+10-15 10:32:21.148 I/lowmemorykiller(  502): Kill 'com.google.android.apps.wellbeing' (16801), uid 10111, oom_score_adj 915 to free 193200kB rss, 70508kB anon rss, 3272kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:21.324 W/ActivityManager(15668): pid 15668 system sent binder code 1 with flags 1 and got error -32
+10-15 10:32:21.336 W/ActivityManager(15668): Failure sending service com.google.android.gms/.icing.service.AppIndexingService to connection android.os.BinderProxy@58270c8 (in com.google.android.apps.wellbeing)
+10-15 10:32:21.336 W/ActivityManager(15668): android.os.DeadObjectException
+10-15 10:32:21.336 W/ActivityManager(15668): 	at android.os.BinderProxy.transactNative(Native Method)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at android.os.BinderProxy.transact(BinderProxy.java:626)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at android.app.IServiceConnection$Stub$Proxy.connected(IServiceConnection.java:124)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at com.android.server.am.ActiveServices.publishServiceLocked(ActiveServices.java:4668)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at com.android.server.am.ActivityManagerService.publishService(ActivityManagerService.java:14848)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:3249)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3288)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at android.os.Binder.execTransactInternal(Binder.java:1369)
+10-15 10:32:21.336 W/ActivityManager(15668): 	at android.os.Binder.execTransact(Binder.java:1323)
+10-15 10:32:21.338 I/ActivityManager(15668): Process com.google.android.apps.wellbeing (pid 16801) has died: cch  +15 CEM 
+10-15 10:32:21.426 I/ActivityManager(15668): Start proc 17628:com.google.android.dialer/u0a103 for broadcast {com.google.android.dialer/com.android.dialer.bootreceiver.DialerBootReceiver}
+10-15 10:32:22.820 I/ActivityManager(15668): Start proc 17690:org.lineageos.aperture/u0a119 for top-activity {org.lineageos.aperture/org.lineageos.aperture.CameraLauncher}
+10-15 10:32:22.844 I/lowmemorykiller(  502): Kill 'com.android.printspooler' (16944), uid 10086, oom_score_adj 905 to free 90480kB rss, 44132kB anon rss, 3988kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:22.943 I/ActivityManager(15668): Process com.android.printspooler (pid 16944) has died: cch  +65 CEM 
+10-15 10:32:22.973 I/ActivityManager(15668): Start proc 17712:com.google.android.projection.gearhead:shared/u0a104 for broadcast {com.google.android.projection.gearhead/com.google.android.apps.auto.wireless.bluetooth.WifiBluetoothReceiver}
+10-15 10:32:23.000 I/ActivityManager(15668): Start proc 17719:com.google.android.projection.gearhead:provider/u0a104 for content provider {com.google.android.projection.gearhead/com.google.android.apps.auto.components.projectionstate.ProjectionStateProvider}
+10-15 10:32:23.043 I/lowmemorykiller(  502): Kill 'com.google.android.apps.messaging' (17398), uid 10101, oom_score_adj 955 to free 165044kB rss, 74408kB anon rss, 4388kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:23.179 I/ActivityManager(15668): Process com.google.android.apps.messaging (pid 17398) has died: cch  +55 CEM 
+10-15 10:32:23.217 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:23.642 I/ActivityManager(15668): Start proc 17761:com.stevesoltys.seedvault/u0a138 for bound-service {com.stevesoltys.seedvault/com.stevesoltys.seedvault.transport.ConfigurableBackupTransportService}
+10-15 10:32:23.717 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:23.958 I/lowmemorykiller(  502): Kill 'com.google.android.googlequicksearchbox:googleapp' (16994), uid 10106, oom_score_adj 945 to free 182856kB rss, 78604kB anon rss, 5308kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:23.990 I/ActivityManager(15668): Start proc 17816:.adservices/u0a174 for broadcast {android.ext.services/com.android.adservices.service.common.AdExtBootCompletedReceiver}
+10-15 10:32:24.159 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 10:32:24.159 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10119, TargetPkg: org.lineageos.aperture
+10-15 10:32:24.190 I/ActivityManager(15668): Process com.google.android.googlequicksearchbox:googleapp (pid 16994) has died: cch  +45 CEM 
+10-15 10:32:24.257 I/lowmemorykiller(  502): Kill 'org.lineageos.settingsconfig' (17536), uid 10150, oom_score_adj 935 to free 84208kB rss, 42936kB anon rss, 4988kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:24.393 I/ActivityManager(15668): Process org.lineageos.settingsconfig (pid 17536) has died: cch  +35 CEM 
+10-15 10:32:24.447 I/ActivityManager(15668): Start proc 17861:com.android.devicediagnostics/u0a78 for broadcast {com.android.devicediagnostics/com.android.devicediagnostics.BootCompleteReceiver}
+10-15 10:32:24.461 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:24.650 W/ActivityManager(15668): Unable to start service Intent { xflg=0x4 cmp=com.google.android.apps.nest.castauth/.contentservice.CastAuthContentService } U=0: not found
+10-15 10:32:24.703 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:24.745 I/ActivityManager(15668): Start proc 17878:com.android.dynsystem/1000 for broadcast {com.android.dynsystem/com.android.dynsystem.BootCompletedReceiver}
+10-15 10:32:24.764 W/ActivityManager(15668): Slow operation: 59ms so far, now at startProcess: done updating pids map
+10-15 10:32:25.004 I/ActivityManager(15668): Start proc 17906:com.android.federatedcompute.services/u0a159 for broadcast {com.android.federatedcompute.services/com.android.federatedcompute.services.FederatedComputeBroadcastReceiver}
+10-15 10:32:25.031 I/ActivityManager(15668): Start proc 17908:com.android.dynsystem:dynsystem/1000 for started-service {com.android.dynsystem/com.android.dynsystem.DynamicSystemInstallationService}
+10-15 10:32:25.061 I/lowmemorykiller(  502): Kill 'com.google.android.dialer' (17628), uid 10103, oom_score_adj 965 to free 149492kB rss, 60036kB anon rss, 5448kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:25.263 W/ActivityManager(15668): Unable to start service Intent { act=com.google.ambient.streaming.action.BIND_SIGNALING xflg=0x4 pkg=com.google.ambient.streaming } U=0: not found
+10-15 10:32:25.264 W/ActivityManager(15668): Unbind failed: could not find connection for android.os.BinderProxy@b6df6fb
+10-15 10:32:25.297 I/ActivityManager(15668): Process com.google.android.dialer (pid 17628) has died: cch  +65 CEM 
+10-15 10:32:25.394 I/ActivityManager(15668): Start proc 17942:com.google.android.apps.wellbeing/u0a111 for broadcast {com.google.android.apps.wellbeing/com.google.android.apps.wellbeing.common.receiver.coalescedreceivers.ContextManagerRestartedCoalescedBroadcast_Receiver}
+10-15 10:32:25.471 I/ActivityManager(15668): Start proc 17947:com.android.inputmethod.latin/u0a112 for bound-service {com.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME}
+10-15 10:32:25.763 I/lowmemorykiller(  502): Kill 'org.protonaosp.deviceconfig' (17573), uid 10140, oom_score_adj 985 to free 83836kB rss, 42200kB anon rss, 5684kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:25.852 I/ActivityManager(15668): Process org.protonaosp.deviceconfig (pid 17573) has died: cch  +85 CEM 
+10-15 10:32:25.859 I/lowmemorykiller(  502): Kill 'org.lineageos.lineageparts' (17596), uid 1000, oom_score_adj 975 to free 89064kB rss, 42508kB anon rss, 5672kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:26.123 I/ActivityManager(15668): Process org.lineageos.lineageparts (pid 17596) has died: cch  +75 CEM 
+10-15 10:32:26.230 I/ActivityManager(15668): Start proc 18030:com.android.healthconnect.controller/u0a155 for broadcast {com.android.healthconnect.controller/com.android.healthconnect.controller.safetycenter.SafetySourceBroadcastReceiver}
+10-15 10:32:26.285 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10112, TargetPkg: com.android.inputmethod.latin
+10-15 10:32:26.285 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10112, TargetPkg: com.android.inputmethod.latin
+10-15 10:32:26.380 I/ActivityManager(15668): Start proc 18058:system:ui/1000 for next-top-activity {android/com.android.internal.app.ResolverActivity}
+10-15 10:32:26.731 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:26.797 I/ActivityManager(15668): Start proc 18103:com.android.managedprovisioning/u0a79 for broadcast {com.android.managedprovisioning/com.android.managedprovisioning.BootReminder}
+10-15 10:32:26.809 W/ActivityManager(15668): pid 16486 com.google.android.gms sent binder code 5 with flags 1 and got error -32
+10-15 10:32:26.812 W/ActivityManager(15668): Slow operation: 62ms so far, now at startProcess: done updating pids map
+10-15 10:32:26.850 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:26.863 I/lowmemorykiller(  502): Kill 'org.lineageos.pepito.volumetile' (17533), uid 10063, oom_score_adj 955 to free 83284kB rss, 41984kB anon rss, 5912kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:27.004 W/ActivityManager(15668): pid 15668 system sent binder code 42 with flags 1 and got error -32
+10-15 10:32:27.006 W/lowmemorykiller(  502): Failed to open /proc/17533/oom_score_adj; errno=2: process 17533 might have been killed
+10-15 10:32:27.007 W/ActivityManager(15668): pid 15668 system sent binder code 12 with flags 1 and got error -32
+10-15 10:32:27.008 W/ActivityManager(15668): Exception when unbinding service org.lineageos.pepito.volumetile/.VolumeTile
+10-15 10:32:27.008 W/ActivityManager(15668): android.os.DeadObjectException
+10-15 10:32:27.008 W/ActivityManager(15668): 	at android.os.BinderProxy.transactNative(Native Method)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at android.os.BinderProxy.transact(BinderProxy.java:626)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at android.app.IApplicationThread$Stub$Proxy.scheduleUnbindService(IApplicationThread.java:1800)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at android.app.IApplicationThread$Delegator.scheduleUnbindService(IApplicationThread.java:277)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at com.android.server.am.ActiveServices.removeConnectionLocked(ActiveServices.java:7183)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at com.android.server.am.ActiveServices.unbindServiceConnectionsLocked(ActiveServices.java:4731)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at com.android.server.am.ActiveServices.unbindServiceLocked(ActiveServices.java:4787)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at com.android.server.am.ActivityManagerService.unbindService(ActivityManagerService.java:14831)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:3235)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3288)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at android.os.Binder.execTransactInternal(Binder.java:1369)
+10-15 10:32:27.008 W/ActivityManager(15668): 	at android.os.Binder.execTransact(Binder.java:1323)
+10-15 10:32:27.009 I/ActivityManager(15668): Process org.lineageos.pepito.volumetile (pid 17533) has died: fg  SVC 
+10-15 10:32:27.170 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:provider' (17719), uid 10104, oom_score_adj 945 to free 109444kB rss, 49388kB anon rss, 6008kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:27.223 I/ActivityManager(15668): Start proc 18131:com.android.messaging/u0a124 for broadcast {com.android.messaging/com.android.messaging.receiver.BootAndPackageReplacedReceiver}
+10-15 10:32:27.285 W/ActivityManager(15668): Slow operation: 103ms so far, now at startProcess: done updating pids map
+10-15 10:32:27.353 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:27.376 I/lowmemorykiller(  502): Kill 'com.google.android.projection.gearhead:shared' (17712), uid 10104, oom_score_adj 955 to free 111992kB rss, 49384kB anon rss, 6076kB swap, 0kB dmabuf_pss, 0kB dmabuf_rss; reason: low watermark is breached
+10-15 10:32:27.448 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:27.514 I/ActivityManager(15668): Process com.google.android.projection.gearhead:shared (pid 17712) has died: cch  +55 CEM 
+10-15 10:32:27.581 I/ActivityManager(15668): Process com.google.android.projection.gearhead:provider (pid 17719) has died: cch  +45 CEM 
+10-15 10:32:28.080 I/ActivityManager(15668): Waited long enough for: ServiceRecord{cb35f38 u0 com.google.android.gms/.chimera.container.FileApkService c:com.google.android.gms}
+10-15 10:32:28.082 I/ActivityManager(15668): Start proc 18181:com.android.ondevicepersonalization.services/u0a158 for broadcast {com.android.ondevicepersonalization.services/com.android.ondevicepersonalization.services.OnDevicePersonalizationBroadcastReceiver}
+10-15 10:32:28.157 I/ActivityManager(15668): Waited long enough for: ServiceRecord{b8d830a u0 com.google.android.gms/.gcm.nts.SchedulerService c:com.google.android.gms}
+10-15 10:32:28.181 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:28.259 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:28.260 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:28.261 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:28.279 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:28.281 W/ActivityManager(15668): Skipping manifest association check for null package. SourceUid: -1, SourcePkg: null, TargetUid: 10109, TargetPkg: com.google.android.gms
+10-15 10:32:28.525 I/ActivityManager(15668): Start proc 18210:com.android.packageinstaller/u0a80 for broadcast {com.android.packageinstaller/com.android.packageinstaller.common.TemporaryFileManager}
