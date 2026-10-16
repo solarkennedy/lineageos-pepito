@@ -39,7 +39,13 @@ notify() {
     /home/kyle/.bin/ntfy-main "$1" "$2" "${3:-default}" || true
 }
 
-RSYNC_COMMON=(-aP --human-readable)
+# -z: the netbook often reaches the builder over weak 2.4 GHz Wi-Fi (~30 KiB/s
+# raw), and the raw system/vendor images are mostly empty ext4 blocks that
+# compress to nothing. --partial-dir, not -P's --partial: an interrupted
+# transfer must never leave a truncated file under the real name — a short
+# system.bin got flashed to new2 that way (10-14). Partials wait in
+# .rsync-partial/ and are resumed from on the next run.
+RSYNC_COMMON=(-az --partial-dir=.rsync-partial --progress --human-readable)
 
 # The images prepare-flash.sh produces per build (desparsified system/vendor,
 # signed boot/recovery, and the Magisk-patched boot variant). The firehose

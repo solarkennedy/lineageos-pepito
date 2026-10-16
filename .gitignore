@@ -31,3 +31,11 @@ prebuilts/*.apk
 
 # Python bytecode (e.g. from a py_compile syntax check)
 __pycache__/
+
+# rsync --partial-dir from scripts/*-remotely.sh (interrupted transfers)
+.rsync-partial/
+
+# MGLRU bench raw captures — multi-MB serial logs and pmsg dumps; the decoded
+# results and the PPR panic pstore are committed, these stay on the netbook.
+diag-tools/mglru-bench/results/**/serial-*.log
+diag-tools/mglru-bench/results/**/pmsg-ramoops-*
