@@ -4,7 +4,7 @@
 pulling it out to the external CCID reader. Downloading new profiles over the reader stays
 fine; the win is `Warp(VZW) ↔ DarkStar(AT&T) ↔ Roamless` switching in the field.
 
-**Status: ✅ CLOSED 2026-07-30 — shipped, but not the way the goal above was written.**
+**Status: 🏁 shipped via OTG reader (2026-07-30); 🔎 RE-OPENED 2026-10-16 on a NEW write path — the MCFG/PDC config-apply route, which was never tested. See "MCFG/MBN write path" below; prior static close-outs (10-14/10-15) remain valid for the diag/offline-EFS routes.**
 The stated goal (switch profiles *while the card sits in the tray*) is **impossible on this
 hardware**: the modem refuses logical channels to the eUICC ISD-R AID, from every client
 including qcrild. What we shipped instead, and what Kyle validated, is **OpenEUICC driving the
@@ -203,6 +203,85 @@ in `logcat -b radio`).
    already known to drive this specific card over the reader.
 4. sepolicy: watch for denials on the telephony/UICC path under Enforcing; enforce-check
    per PLAN.md's `checkpolicy` recipe before the next build.
+
+## 🏁 RE-OPENED 2026-10-14, CLOSED AGAIN 2026-10-15 — no write path to the modem's AID policy
+
+Static RE of the modem (2026-10-14) showed the ISD-R refusal is an AID-security policy inside
+`qmi_uim`/`mmgsdi_csg.c`, with two EFS override items (`/nv/item_files/modem/qmi/uim/
+apdu_security_restrictions` and `apdu_security_aid_list`) that do not exist on any fleet unit, so
+the modem runs its compiled-in default (restrictions enabled, ISD-R refused by a hardcoded
+eUICC-RID recognizer). Whether that recognizer honours `apdu_security_restrictions=0` was never
+proven (q6zip opcode table for this build does not match the public decoder). It no longer
+matters, because every way of creating the item is closed:
+
+- **Diag EFS2 writes to `/nv/**` are denied** by the modem's path ACL (reads work). Every
+  mainstream EFS tool (EfsTools, QPST EFS Explorer, qcom-efs-browser) uses that same channel.
+- **The modem code image is secure-boot signed**, so patching the recognizer is out.
+- **modemst1/modemst2 are TZ-encrypted RMTS snapshots, not an editable filesystem.** The banked
+  dut1 dumps are a 0x40 header (age, payload length, `IMGEFS1n`/`IMGEFS2o` tag) followed by a body
+  at 7.9 bits/byte entropy with no plaintext paths; the two ping-pong copies differ in nearly every
+  byte while holding the same contents. An offline "EFS item-injection writer" would emit
+  plaintext the modem cannot ingest. Whole-partition restore of a dump still works.
+
+**Permanent answer (for the diag + offline-EFS routes): the USB-CCID reader over OTG.**
+Those routes stay closed. The MCFG/PDC route below is the "new write primitive" the reopen
+clause asked for — it writes EFS from *inside* the modem, not over the diag ACL.
+
+## 🔎 MCFG/MBN write path — RE-OPENED 2026-10-16 (static)
+
+The old close-out said "no write primitive into the modem's EFS." That was true for the two
+routes tested (diag EFS2 to `/nv`, offline modemst surgery) but **missed a third: the MCFG
+config-apply path.** Carrier configs (`mcfg_sw.mbn`) carry EFS-file items that the modem's own
+MCFG processor writes into EFS when a config is loaded/activated via the QMI PDC service — this
+never touches the diag `FS_DIAG_VALIDATE_PATH_ACCESS` ACL that blocked us. We already drive PDC
+(`diag-tools/pdc-mbn-loader`, [[mcfg-lane]]).
+
+Static work-up (full detail + tooling in `diag-tools/esim-mbn/`):
+
+- **The modem reads the target items from EFS** (gated, not unconditional). The modem binary
+  embeds both `/nv/item_files/modem/qmi/uim/apdu_security_restrictions` and `…/apdu_security_aid_list`
+  as compiled-in rodata (vaddr 0x883dbe9e / 0x883dbf07). A path string is only compiled in to
+  efs_get/efs_put that item. Caveat: the referencing code is q6zip-paged (same wall as 10-15),
+  so "reads it" is proven but "the read gates the ISD-R decision" is inferred, not read.
+- **MCFG can provision UIM-tree EFS items** — stock configs already carry
+  `/nv/item_files/modem/uim/{mmgsdi,gstk,gba}/*`. Target `/modem/qmi/uim/` is a sibling subtree,
+  same mechanism.
+- **mcfg_sw.mbn format fully reversed** (ELF32-hexagon: ph0 hdr-mirror, ph1 hash-table + RSA sig
+  + 13-cert X.509 chain, ph2 MCFG payload). EFS record is value-first:
+  `marker=2 | vallen | value | reclen | attr=0x1902 | flags=1 | pathlen | path\0`.
+- **Configs are signed** → we can't re-sign (fused root), but hashes are fully repairable. The
+  lane hinges on one cheap on-device unknown: **does this modem enforce the SW-config signature
+  at PDC load?** The modem has `mcfg_auth_img_verify()`/`mcfg_auth_verify_hash()` *and* a
+  `fake_sec_enabled` token (Qualcomm's permissive SW path — why community carrier MBNs load on
+  most MSM8937). Enforcement is in paged code; test it empirically.
+
+**Next (on-device, reversible — reload stock after):** `mbn_tool.py` builds the images.
+1. Hash-only probe: flip one payload byte, fix hashes, leave RSA sig stale, PDC-load. Loads →
+   SW auth NOT enforced (fake-sec) → route open. Rejected → enforced → route dead.
+2. If open: inject `apdu_security_restrictions=00`, load, read it back over diag EFS2 (reads
+   allowed), re-probe ISD-R OPEN_LOGICAL_CHANNEL. ISD-R opens → reader-free switching.
+
+### Static q6zip RE re-attempt (2026-10-15) — decoder located, not cracked, lane closed
+
+One open thread remained: decompress the modem's q6zip-paged code to read whether the ISD-R
+recognizer honours the `apdu_security_restrictions` enable flag (the gated-vs-unconditional
+question). Re-attacked with the prior session's surviving artifacts (full resident Hexagon
+disassembly, analyzed Ghidra project, the modem ELF) and got further than before:
+
+- The q6zip read-only pool is the ELF LOAD segment at `0x89f41000`, about 9.9 MB.
+- The subpage dispatcher is `0x875e9800`–`0x875e9bdc`; it assembles the control words and calls
+  out to helpers for the token work.
+- The opcode logic is split across trampolined resident helpers (`0x87084d64` is a higher-level
+  state machine, `0x875e6368` a recursive buffer manager), none a clean bit-decode loop.
+
+Hand-reading the exact opcode semantics across those trampolines is unreliable because of Hexagon
+packet-boundary ambiguity, which is what made the earlier decompiles unusable. The reliable crack
+is to run the code, but no usable bare-metal Hexagon emulator exists off the shelf, so that means
+building an emulation harness, a large effort. Since all three write paths are closed regardless of
+the answer, the result would be academic. **Lane closed.** If reader-free switching is ever worth
+funding, resume with a Hexagon emulation harness seeded at the dispatcher address above, not more
+hand reverse-engineering.
+
 
 ## Guardrails
 - ⚠️ Profile switch = UICC REFRESH with a new ICCID — treat like a SIM swap. **Never** use

@@ -1,0 +1,6 @@
+# Stock Qualcomm blobs and the modem image are NOT ours to publish (public repo).
+# Only the scripts (*.py) and NOTES.md belong here.
+*.mbn
+*.elf
+*.bin
+*.img
