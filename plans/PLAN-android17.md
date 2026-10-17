@@ -422,6 +422,12 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   the TH2 cache is dropped on DSD transport error and every re-prime period; known-value edges skip the pre-GET;
   WfcBridge derives the mode like `ImsManager.getWfcMode` (carrier default when non-editable/unset, re-sync on
   carrier-config change) instead of hard-coding cellular.
+- 🔴→✅ **2026-10-17 re-run on `55a9fbf6` (validated-Wi-Fi gate, prime length, TH2 cache):** calls PASS (hold 45 s at
+  RSRP −112 stayed `rat=0`; walk-away: disconnect → `wfc_wifi_ok=0` +1.1 s → TH2 −115 +1.3 s → handover +2.2 s,
+  call survived). **BUG found:** after boot `persist.sys.pepito.wfc_mode` stayed 1 with siminfo mode 2 — boot
+  syncMode() runs before the sub is valid, and the CARRIER_CONFIG_CHANGED re-sync was SKIPPED (`Exported Denial`:
+  sender com.android.phone uid 1001, receiver RECEIVER_NOT_EXPORTED). Fixed in Mi8937 `b82254d8` (RECEIVER_EXPORTED;
+  protected broadcast). ⚠️ Not yet built: after flashing, check `wfc_mode=2` right after a REBOOT, no app restart.
 - **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
   visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_wifi_ok` = 1 on home
   Wi-Fi, `vendor.qmux.wfc_th2` = sticky while on Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays
