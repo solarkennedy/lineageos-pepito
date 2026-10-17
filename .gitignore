@@ -39,3 +39,6 @@ __pycache__/
 # results and the PPR panic pstore are committed, these stay on the netbook.
 diag-tools/mglru-bench/results/**/serial-*.log
 diag-tools/mglru-bench/results/**/pmsg-ramoops-*
+
+# Integration-test run output (tests/integration/results/<run>/)
+tests/integration/results/
