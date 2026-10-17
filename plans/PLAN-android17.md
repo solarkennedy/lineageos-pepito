@@ -382,6 +382,14 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   ⚠️ dut1 is left with the switch ON (bit 11 set, marker present): seven bands on its next boot.
   Next, after a full build: Settings flow on dut1 (status rows, dialog, factory greying), then the
   active-SIM B12 data test.
+- **Toggle test 10-17 on dut1 (build 20261017), all through Settings:** off → dialog → row `saving` →
+  "Saved. Restart to apply." → restart → `inactive`, six bands; on → same → `active`, seven bands, voice in
+  service; on-then-off inside one save window → the run's re-check clears the bit again (bit CLEAR, matches
+  the switch). Two bugs found and fixed (pushed, need the next build): **boot race** — init starts the service
+  ~14 s into boot, the first NV read is not DONE yet and it published `unsupported` for the whole boot, greying
+  the switch (`775c1223`: wait for NV 6828 to read DONE with base bands); **needless restart prompt** after
+  flipping back to the boot state (`b1d5f93e`). Also open: switch summary is cut at 10 lines ("…Saving to the").
+  Next build: cold boot should read `active` with no manual `ctl.start`.
 
 ## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, COMMITTED 10-16, unflashed)
 Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261015/` (lineage-23 tree).
