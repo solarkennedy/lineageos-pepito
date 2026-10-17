@@ -359,6 +359,16 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
 - Not done: B12 actually camped / TX power sanity (needs a T-Mobile or regional A-block B12 cell), and
   whether a foreign unit's cal is acceptable to ship. A Settings row would write these four items +
   bit 11; the shipping question is the calibration, not the mechanism. Revert on dut1 = clear bit 11.
+- **Camp test 10-16 ~19:00 — user plane FAILS on B12.** New `nas-probe lteband 0x800 --no-ext
+  --yes-touch-nas` (NAS 0x33 TLV 0x15, power-cycle duration; this modem rejects the ext-mask TLV 0x24)
+  locked LTE to B12 on US Mobile/T-Mobile: camped EARFCN 5035, RSRP −91 dBm, SNR 7–9, registered,
+  internet PDN up with an IPv6 prefix, yet `ping6` over that PDN got 0/10 in three rounds (TX packets
+  climb, RX only background). Control, same method on B66 (EARFCN 66736): 10/10 at 27 ms. Working
+  guess, unproven: the borrowed TX calibration sets B12 power/linearity wrong, so robust-MCS signalling
+  gets through and data does not. **⇒ No Settings switch with borrowed calibration.** dut1 reverted to
+  six bands (NV 6828 bit 11 cleared; the four items stay, harmless).
+  If reopened: read B12 vs B66 TX power (NAS GET_TX_RX_INFO 0x5A), or build B12 tables from dut1's
+  own B13/B17 cal instead of another unit's.
 
 ## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, change STAGED on the builder)
 Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261015/` (lineage-23 tree).
