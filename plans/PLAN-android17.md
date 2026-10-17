@@ -433,6 +433,19 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   process (receiver exported=true). Hold 45 s at RSRP −107..−111: `rat=0`, no handover. Walk-away: disconnect
   14:58:10.14 → wifi_ok=0 +1.1 s → TH2 −115 +1.8 s → handover +5.2 s → call survived on LTE to the remote's
   normal hang-up (510). Handover latency after the write varies 0.9–3.4 s across runs; all well inside 20 s.
+- ✅ **2026-10-17 16:33, re-flashed build `24.0-20261017` (16:18, same tips: Mi8937 `b82254d8`) — PASS on new2:**
+  2 min after boot mode=2/wifi_ok=1/TH2 sticky. Hold (`hold4`): 36 s active, `rat=0` at RSRP −109/−110, no
+  handover, remote hang-up 510. Walk-away (`walk4`): disconnect 16:35:36.37 → bridge TH2 −115 + WfcBridge
+  wifi_ok=0 +0.9–1.2 s → IWLAN→LTE handover 16:35:42.41 (+6.0 s after disconnect, +5.1 s after the write) →
+  call survived on LTE to the remote's hang-up (510). Captures in `/data/local/tmp/wfc/{hold4,walk4}.*` on new2.
+  Mid-call AP WAN pull still NOT run (needs a hand on the router).
+- ⚠️ **Found during walk4 — Wi-Fi does not reconnect with the screen off:** after `svc wifi enable` at 16:36:22
+  the unit stayed DISCONNECTED for 8 min (IMS on LTE, TH2 stock — correct for that state). `WifiScanningService:
+  PNO is not available` → `Failed to successfully start PNO scan for 5 times`; with the screen off the framework
+  schedules no other scans. Screen on → wlan0 IP in 1 s, TH2 sticky +4 s, IMS back on IWLAN +7 s. The same
+  "PNO is not available" is in walk2/walk3; those runs reconnected only because the screen was on. Not a WFC
+  regression, but in real use: come home with the phone in a pocket → it stays on LTE until the screen wakes.
+  Lever candidates: wcnss/pronto PNO in the Wi-Fi HAL, or the framework's screen-off periodic scan fallback.
 - **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
   visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_wifi_ok` = 1 on home
   Wi-Fi, `vendor.qmux.wfc_th2` = sticky while on Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays
