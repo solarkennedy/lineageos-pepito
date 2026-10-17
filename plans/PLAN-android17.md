@@ -416,12 +416,21 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   supplicant disconnect 12:39:07.16 → feeder TH2 −115 at 08.08 → modem `callSessionHandover 18→14` at 10.17 → call
   continued on LTE until the remote hung up normally (510 USER_TERMINATED_BY_REMOTE; the test line ends ~47 s).
   Gap ≈3 s from link loss. ⚠️ adb over Wi-Fi dies with the Wi-Fi leg, so run walk-aways on-device.
+- **Review fixes 2026-10-17 (Mi8937 `pepito-24`, on top of `6bc3da68`, unbuilt):** sticky TH2 also needs the
+  framework's Wi-Fi VALIDATED verdict (WfcBridge → `sys.pepito.wfc_wifi_ok` → `vendor.qmux.wfc_wifi_ok`), so an
+  AP with a dead uplink cannot hold the LTE rescue off; the 2 s sticky poll no longer shortens the 75 s prime;
+  the TH2 cache is dropped on DSD transport error and every re-prime period; known-value edges skip the pre-GET;
+  WfcBridge derives the mode like `ImsManager.getWfcMode` (carrier default when non-editable/unset, re-sync on
+  carrier-config change) instead of hard-coding cellular.
 - **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
-  visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_th2` = sticky while on
-  Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays `rat=0`; `wfc-walkaway.sh` (without the manual
-  rescue) hands over to LTE instead of dropping; set Cellular preferred → `wfc_th2` = stock, call hands over
-  at answer as before. Also check `logcat -s wfc_wlan_bridge` for "wlan0 reports no dBm RSSI" (would mean the
-  SIOCGIWSTATS path needs a /proc/net/wireless fallback).
+  visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_wifi_ok` = 1 on home
+  Wi-Fi, `vendor.qmux.wfc_th2` = sticky while on Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays
+  `rat=0`; `wfc-walkaway.sh` (without the manual rescue) hands over to LTE instead of dropping; set Cellular
+  preferred → `wfc_th2` = stock, call hands over at answer as before. **New:** mid-call pull the AP's WAN (AP
+  up, internet dead) → `wfc_wifi_ok` should fall to 0 when the framework re-validates, `wfc_th2` → stock, call
+  moves to LTE; note how long the framework takes to notice (the 2 s wlan0 poll does not cover this edge).
+  Also check `logcat -s wfc_wlan_bridge WfcBridge` for "wlan0 reports no dBm RSSI" (would mean the
+  SIOCGIWSTATS path needs a /proc/net/wireless fallback) and for the "validated" transitions.
 
 ## Bench result 2026-10-15 — custom boot logo (`splash` partition) boots on dut1
 Memory: `splash-boot-logo`. Tools in `tools/splash/` (README has the format).
