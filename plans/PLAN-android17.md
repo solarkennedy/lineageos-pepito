@@ -428,6 +428,11 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   syncMode() runs before the sub is valid, and the CARRIER_CONFIG_CHANGED re-sync was SKIPPED (`Exported Denial`:
   sender com.android.phone uid 1001, receiver RECEIVER_NOT_EXPORTED). Fixed in Mi8937 `b82254d8` (RECEIVER_EXPORTED;
   protected broadcast). ⚠️ Not yet built: after flashing, check `wfc_mode=2` right after a REBOOT, no app restart.
+- ✅ **2026-10-17 15:00, build with `b82254d8` (14:45) — FULL PASS on new2:** after a plain reboot (no app restart)
+  mode=2/wifi_ok=1/TH2 sticky within 6 s of WfcBridge start; CARRIER_CONFIG_CHANGED now DELIVERED to the boot
+  process (receiver exported=true). Hold 45 s at RSRP −107..−111: `rat=0`, no handover. Walk-away: disconnect
+  14:58:10.14 → wifi_ok=0 +1.1 s → TH2 −115 +1.8 s → handover +5.2 s → call survived on LTE to the remote's
+  normal hang-up (510). Handover latency after the write varies 0.9–3.4 s across runs; all well inside 20 s.
 - **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
   visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_wifi_ok` = 1 on home
   Wi-Fi, `vendor.qmux.wfc_th2` = sticky while on Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays
