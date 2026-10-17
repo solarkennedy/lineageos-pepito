@@ -391,7 +391,7 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   flipping back to the boot state (`b1d5f93e`). Also open: switch summary is cut at 10 lines ("…Saving to the").
   Next build: cold boot should read `active` with no manual `ctl.start`.
 
-## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, COMMITTED 10-16, unflashed)
+## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SHIPPED in 20261017, VALIDATED on new2 10-17)
 Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261015/` (lineage-23 tree).
 - **Mechanism (modem F3, new2 A17):** the in-call IWLAN→LTE move is `qpDplHandOver.c:4291 In Audio call
   [wifi pref], Wifi < D and LTE>LTE2` fired at `InCall 0→1`, with Wi-Fi quality −1 (nothing on our stack arms
@@ -410,6 +410,12 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   `persist.sys.pepito.wfc_mode`; `init.qmux.rc` copies it to `vendor.qmux.wfc_mode`; property_contexts entry;
   `vendor.xml` 311/480 gets `editable_wfc_mode_bool=true` so the Settings row shows. Default (row untouched)
   = cellular preferred = stock behaviour.
+- ✅ **VALIDATED on new2 2026-10-17 (24.0-20261017, Verizon-network SIM, RSRP −106, driven from adb, MO calls to the test number):**
+  Settings mode 2 → `vendor.qmux.wfc_mode=2`, `wfc_th2=sticky` within 3 s (wlan0 −64 dBm, readback −80). **Hold:** 45 s call
+  stayed `rat=0`, RTP on `r_rmnet_data1`, zero handovers. **Walk-away** (on-device script, `svc wifi disable` 20 s in):
+  supplicant disconnect 12:39:07.16 → feeder TH2 −115 at 08.08 → modem `callSessionHandover 18→14` at 10.17 → call
+  continued on LTE until the remote hung up normally (510 USER_TERMINATED_BY_REMOTE; the test line ends ~47 s).
+  Gap ≈3 s from link loss. ⚠️ adb over Wi-Fi dies with the Wi-Fi leg, so run walk-aways on-device.
 - **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
   visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_th2` = sticky while on
   Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays `rat=0`; `wfc-walkaway.sh` (without the manual
