@@ -494,3 +494,32 @@ SIM on LTE + Wi-Fi, ~20–60 min after boot. CT-3 in-line on USB to the netbook,
   overlap. Re-run with the stopwatch paused and the framework unplugged before calling it.
 - Wired cells never suspend (`78db000.usb` wakeup source, suspend_stats 0/0). The decisive
   check is the unplugged airplane bracket vs dut1's A16 9.1 mA — not yet run.
+
+### Matched pair 2026-10-17 pm — dut1 vs Gold, same A17 build, same script
+Both `24.0-20261017-SNAPSHOT-Mi8937_gapps`, no SIM, Wi-Fi on, no serial console, ≥60 min uptime, no
+stopwatch, CT-3 inline to the netbook, charging off (Gold charge counter moved 21 µAh in 14 min ⇒
+battery out of the reading; `current_now` is a stale value on both, ignore it), framework told
+unplugged (`dumpsys battery unplug`), Trebuchet, 45 s settle + 180 s per screen-on cell. Script and
+CSVs: netbook4 `~/scratch/pwr-a17-1017/` (`run-cells2.sh`).
+
+| Cell (median mW) | dut1 A17 | Gold A17 | A16 reference |
+|---|---|---|---|
+| Screen on, 255 (wled 2987) | 1324 | 1171 | dut1 Aug, idle-storm fixed: 1140 |
+| Screen on, 128 (wled 1510) | 1072 | 902 | — (July Gold 931 was before the 0.73 cap) |
+| Screen on, 40 | 910 → 786 (step at 13:58:30) | 741 | — |
+| Screen on, backlight 0 | not run | 667 | — |
+| Screen off, natural | 334 | 324 | Gold: 410 |
+| Screen off, deep idle forced | 331 | 321 | Gold: 348–351 |
+
+- **Screen off: no regression on either phone**; both sit at or below A16's same-rig readings.
+- **Screen on: no regression on Gold.** dut1 carried a flat ~125 mW extra load that stopped at
+  13:58:30, partway through its 40 cell (SIM pulled ~13:45; cause not captured). Without it dut1
+  reads ~1200 / ~950 at 255 / 128, within ~35–50 mW of Gold and ~60 mW of its own A16 1140.
+  The earlier "+190 mW screen-on" was that load, not A17.
+- Gold's backlight costs ~0.18 mW per wled step (1171−902 over 1477 steps), the same as dut1's
+  0.17. Screen on with backlight 0 = 667 mW, i.e. ~345 mW over screen-off for SoC awake +
+  panel + composition.
+- Writing 0 to `wled/brightness` detaches `bkl-trigger`; restore with
+  `echo bkl-trigger > /sys/class/leds/wled/trigger`.
+- Gold's /data has 2200 f2fs dirty segments (dut1 215); no periodic GC bursts showed on Gold.
+- Still open: the unplugged airplane standby bracket against dut1's A16 9.1 mA (real suspend).
