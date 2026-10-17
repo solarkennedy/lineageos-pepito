@@ -48,7 +48,8 @@ notify() {
 RSYNC_COMMON=(-az --partial-dir=.rsync-partial --progress --human-readable)
 
 # The images prepare-flash.sh produces per build (desparsified system/vendor,
-# signed boot/recovery, and the Magisk-patched boot variant). The firehose
+# signed boot/recovery, the Magisk-patched boot variant, and the boot logo
+# splash.bin, the first 128 KiB of the splash partition). The firehose
 # loaders and rawprogram XMLs (pvg100_/pvg100e_-prefixed) are device-constant
 # and seeded once into LOCAL_FLASH_DIR, not re-fetched.
 STAGE_FILTERS=(
@@ -57,6 +58,7 @@ STAGE_FILTERS=(
     --include='recovery.bin'
     --include='system.bin'
     --include='vendor.bin'
+    --include='splash.bin'
     --exclude='*'
 )
 
