@@ -383,7 +383,7 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   Next, after a full build: Settings flow on dut1 (status rows, dialog, factory greying), then the
   active-SIM B12 data test.
 
-## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, change STAGED on the builder)
+## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, COMMITTED 10-16, unflashed)
 Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261015/` (lineage-23 tree).
 - **Mechanism (modem F3, new2 A17):** the in-call IWLAN→LTE move is `qpDplHandOver.c:4291 In Audio call
   [wifi pref], Wifi < D and LTE>LTE2` fired at `InCall 0→1`, with Wi-Fi quality −1 (nothing on our stack arms
@@ -394,7 +394,7 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   gates `None→LTE`). **Dynamic:** Wi-Fi off → TH2 back to −115 one second later → `callSessionHandover 18→14`
   5.4 s after the write, call survives ✅. Feeding Wi-Fi quality (option B) is blocked at the modem's WQE arming
   step — same wall as PLAN-wifi-calling parts 12–13.
-- **Staged (uncommitted) on the builder, `device/xiaomi/Mi8937` + one `mithorium-common` file:**
+- **Committed + pushed 2026-10-16: Mi8937 `6bc3da68`, mithorium-common `4dc209b` (pepito-24), not yet built or flashed:**
   `qmux/wfc_wlan_bridge.c` steers TH2 (−80 while WFC on ∧ Calling preference = Wi-Fi preferred/only ∧ wlan0
   associated ∧ RSSI ≥ −75, hysteresis release < −82; stock −115 otherwise, asserted at boot/WFC-off/disassoc;
   2 s wlan0 poll while sticky; status `vendor.qmux.wfc_th2` = stock|sticky|error); `WfcBridge` mirrors the
