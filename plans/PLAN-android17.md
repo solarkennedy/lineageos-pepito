@@ -369,6 +369,19 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   dut1 reverted to six bands (NV 6828 bit 11 cleared; the four items stay, harmless).
   Next: repeat the B12 lock with an ACTIVE T-Mobile-network SIM (Verizon/Warp never uses B12), ping6 +
   a download/upload, and NAS GET_TX_RX_INFO (0x5A) TX power B12 vs B66. Settings switch only after that.
+- **Switch BUILT 10-16 for community testing (Kyle: publish the calibration, let users try it).**
+  Mi8937 `db3b9f85` (`qmux/modem_b12.c`, `init.modem_b12.rc`, `qmux/b12/` items, `modem_b12.te`,
+  `persist.gotweak.modem_b12=0` default) + LineageParts `be6269cd` ("Bands" category in PVG100 Modem
+  Tweaks: experimental switch + status row). Both pushed to `pepito-24`; module build (gapps lunch) passes
+  incl. neverallows; not yet in a full build. Status prop `vendor.pepito.modem.b12` = active | inactive |
+  saving | restart | factory | unsupported | failed | off. Never overwrites calibration; factory-B12 units
+  (incl. 6210972a itself, via an EFS marker `/data/pepito_modem_b12`) are left alone.
+  Bench-run of the binary on dut1: off → `inactive`, on → marker + bit 11 → `saving` → `restart`.
+  Calibration is per unit: every comparable item family (TX lin, 2777x, the 32/16 B pairs) is distinct on
+  all eight dumped units, by small amounts, so borrowed B12 cal is close, never exact.
+  ⚠️ dut1 is left with the switch ON (bit 11 set, marker present): seven bands on its next boot.
+  Next, after a full build: Settings flow on dut1 (status rows, dialog, factory greying), then the
+  active-SIM B12 data test.
 
 ## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, change STAGED on the builder)
 Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261015/` (lineage-23 tree).
