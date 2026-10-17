@@ -345,6 +345,21 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
   Write refused ⇒ lane closes like eSIM (no write primitive). Priority: below the emergency-only
   gate and WFC Wi-Fi preference.
 
+## Bench result 2026-10-16 — B12 ENABLED on dut1 (lane unparked and answered)
+- **Witness found without decryption:** the `tunning` partition is a plain GNU tar of factory RF/XO cal
+  (`nv/`, `nvm/`); only `modemst1/2` and `fsg` are encrypted `IMGEFS`. The seven-band unit 6210972a's
+  tunning has 78 entries, the six-band units (5ab497bd, dut1, new2) 74. The four extras are all B12 by the
+  per-band index: rfnv **22169, 22170, 24237, 27790**. dut1's live EFS had none of them (only our
+  synthesized 24237), which is why bit 11 + 24237 alone stayed at six bands.
+- **Test 10-16 17:57:** `efs2-probe put` of 6210972a's four items (24237 overwrites the candidate), all
+  VERIFY OK; ~3 min flush; reboot. **DMS 0x45: LTE cap `0x1181a`, seven bands B2 B4 B5 B12 B13 B17 B66.**
+  Radio back in service on LTE (US Mobile, B66) after boot.
+- ⇒ B12 needs NV 6828 bit 11 **and** the B12 rfnv cal set. Items banked at
+  `~/Projects/android-pepito-backups/6210972a/tunning-b12-items/` (not in git: another unit's calibration).
+- Not done: B12 actually camped / TX power sanity (needs a T-Mobile or regional A-block B12 cell), and
+  whether a foreign unit's cal is acceptable to ship. A Settings row would write these four items +
+  bit 11; the shipping question is the calibration, not the mechanism. Revert on dut1 = clear bit 11.
+
 ## Bench result 2026-10-15 — WFC "Wi-Fi preferred" at home (SOLVED on bench, change STAGED on the builder)
 Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261015/` (lineage-23 tree).
 - **Mechanism (modem F3, new2 A17):** the in-call IWLAN→LTE move is `qpDplHandOver.c:4291 In Audio call
