@@ -443,3 +443,34 @@ Memory: `splash-boot-logo`. Tools in `tools/splash/` (README has the format).
   kit's manifest (ota2raw rebuilds it) and has the web flasher write it when present. Check on the
   next build: `out/.../Mi8937/splash.img` exists, the OTA zip has `firmware-update/splash.img` and
   the updater-script line, and release.sh's ota2raw round trip passes.
+
+## Bench result 2026-10-17 — power regression check, CT-3 wired cells (dut1)
+dut1 `c39a6acf`, `24.0-20261017-SNAPSHOT-Mi8937_gapps`, kernel #20 (Oct 16), no serial console, US Mobile
+SIM on LTE + Wi-Fi, ~20–60 min after boot. CT-3 in-line on USB to the netbook, charging off
+(`battery_charging_enabled=0`, battery current ≈ 0) so the meter reads system power only. A
+38 h stopwatch was running (its status-bar chip redraws at 1 Hz). Same-rig A16 references are in
+`PLAN-perf-battery.md` §CT-3.
+
+| Cell | A17 (mW) | A16 reference (mW) |
+|---|---|---|
+| Screen on, Trebuchet, 255 | floor ~1340, settled mean 1346–1453 | dut1 Aug: 1136–1212 |
+| Screen on, Trebuchet, 128 | 1167 (floor ~1095) | Gold: 931 (other unit) |
+| Screen off, natural, USB | 441 mean / 389 median, floor ~335 | Gold: 410 |
+| Screen off, forced deep idle, USB | 409 / 380, floor ~330 | Gold: 348–351, no spikes |
+| Same, framework told unplugged | 402 / 364, floor ~330 | — |
+
+- Screen-off floor (~330 mW) is at or below A16's. The excess is periodic, not floor:
+  1. **Telephony keeps signal-strength reports on while "charging".** USB attached ⇒
+     `DeviceStateMonitor mIsCharging=true` ⇒ `currentSignalStrength` every 2–5 s with the screen
+     off, each one waking `com.android.phone` (SatelliteController re-checks its config every
+     time, ~20 log lines). AOSP behaviour, rig-only; `dumpsys battery unplug` stops it.
+  2. **f2fs background GC on /data every ~29 s** (`f2fs_gc-259:21`, ~1.1 MB/min,
+     `gc_min_sleep_time=30000`): spike + ~10 s at +60–80 mW. `dirty_segments` stayed at 215 across
+     ~10 min, so GC is not making progress. Rig-only in effect (the thread freezes in suspend),
+     but worth a look.
+- GPU floor (`min_pwrlevel` 3 vs 5) A/B at 255: no measurable difference (±noise, ~4 arms).
+- Screen-on 255 is +150–250 mW over dut1's A16 cell. Not attributed: stopwatch chip ticking,
+  LTE + charging-mode signal reports, f2fs GC and the post-boot drift (1453 → 1346 over 10 min) all
+  overlap. Re-run with the stopwatch paused and the framework unplugged before calling it.
+- Wired cells never suspend (`78db000.usb` wakeup source, suspend_stats 0/0). The decisive
+  check is the unplugged airplane bracket vs dut1's A16 9.1 mA — not yet run.
