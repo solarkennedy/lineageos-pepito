@@ -1,5 +1,6 @@
 import json
 import os
+import signal
 import time
 from pathlib import Path
 
@@ -161,6 +162,54 @@ def test_number(pytestconfig):
     if not n:
         pytest.skip(f"no number to dial: --dial, $PEPITO_TEST_NUMBER or {TEST_NUMBER_FILE}")
     return n
+
+
+# --- unattended -------------------------------------------------------------
+# Nothing in this suite may wait on a person. Every test is bounded (DEFAULT_TIMEOUT
+# or @pytest.mark.timeout(s)), so a wedged adb, a call that never connects or a bench
+# that stalls fails that one test and the run carries on.
+
+DEFAULT_TIMEOUT = 180
+
+
+class TestTimeout(Exception):
+    pass
+
+
+@pytest.fixture(autouse=True)
+def _bounded(request):
+    m = request.node.get_closest_marker("timeout")
+    secs = int(m.args[0]) if m else DEFAULT_TIMEOUT
+
+    def expire(signum, frame):
+        raise TestTimeout(f"{request.node.name} exceeded its {secs} s budget")
+
+    old = signal.signal(signal.SIGALRM, expire)
+    signal.alarm(secs)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old)
+
+
+@pytest.fixture(scope="session")
+def _stay_on(dut):
+    """Hold the screen on for the rest of the session once a test needs it: with
+    the screen off this build's Wi-Fi does not reconnect (no PNO), and an app launch
+    reads LaunchState UNKNOWN. Puts the setting back afterwards."""
+    before = dut.sh("settings get global stay_on_while_plugged_in")
+    dut.sh("svc power stayon true")
+    yield
+    dut.sh(f"settings put global stay_on_while_plugged_in {before if before.isdigit() else 0}")
+
+
+@pytest.fixture
+def awake(dut, _stay_on):
+    """Screen on and unlocked, or skip (one unlock attempt per session)."""
+    if not dut.wake_and_unlock():
+        pytest.skip(f"could not unlock {dut.nick} unattended (android-unlock-{dut.nick}); "
+                    "not retrying, wrong patterns count toward the lockout")
 
 
 @pytest.fixture

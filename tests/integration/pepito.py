@@ -53,7 +53,9 @@ class Device:
         self.adb = f"{nick}-adb"
 
     def _run(self, args, timeout):
-        p = subprocess.run([self.adb, *args], capture_output=True, text=True, timeout=timeout)
+        # stdin closed: `adb shell` otherwise reads it, which hangs or eats a terminal.
+        p = subprocess.run([self.adb, *args], capture_output=True, text=True, timeout=timeout,
+                           stdin=subprocess.DEVNULL)
         if p.returncode != 0:
             raise AdbError(f"{self.adb} {' '.join(args)}: rc={p.returncode} {p.stderr.strip()}")
         return p.stdout.replace("\r", "")
@@ -79,6 +81,34 @@ class Device:
             subprocess.run([self.adb, "--root"], capture_output=True, timeout=60)
             if self.sh("id -u") != "0":
                 raise AdbError(f"{self.nick}: adb root failed")
+
+    # --- unattended helpers ---------------------------------------------------
+
+    _unlock_failed = False
+
+    def keyguard_showing(self):
+        return "isKeyguardShowing=true" in self.sh("dumpsys window")
+
+    def wake_and_unlock(self):
+        """Screen on and past the keyguard, with no one at the phone. Uses the
+        roster's android-unlock-<nick> at most ONCE per session: every failed
+        pattern counts as a wrong attempt, and five lock the phone out."""
+        self.sh("input keyevent KEYCODE_WAKEUP")
+        if not self.keyguard_showing():
+            return True
+        if Device._unlock_failed:
+            return False
+        subprocess.run([f"android-unlock-{self.nick}"], capture_output=True, timeout=60,
+                       stdin=subprocess.DEVNULL)
+        time.sleep(1)
+        if self.keyguard_showing():
+            Device._unlock_failed = True
+            return False
+        return True
+
+    def end_call(self):
+        if self.call_state() not in (0, None):
+            self.sh("input keyevent KEYCODE_ENDCALL")
 
     def wait_for(self, cmd, pred, timeout, interval=5):
         """Run `cmd` until pred(output) is true, riding out adb drops (adb over

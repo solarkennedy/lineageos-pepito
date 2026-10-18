@@ -139,8 +139,12 @@ def run_call(dut, imsa_probe, number, artifacts, hold_s, wifi_off_s=None):
         dut.wait_for(f"cat {out}/marks 2>/dev/null || true",
                      lambda m: m.rstrip().endswith(" done"), timeout=hold_s + 90)
     finally:
+        # Leave the phone as found even if the driver wedged or we timed out:
+        # Wi-Fi on and back on its network, no call up.
         if wifi_off_s is not None:
             dut.wait_for("svc wifi enable && echo ok", lambda o: "ok" in o, timeout=120)
+            dut.wait_for("cmd wifi status", lambda o: "Wifi is connected" in o, timeout=120)
+        dut.end_call()
     for name in ("samples", "marks", "logcat"):
         dut.pull(f"{out}/{name}", artifacts / name)
     marks = {}
@@ -169,15 +173,21 @@ def summary(samples):
 
 
 @pytest.fixture
-def on_wlan(dut, sub, imsa_probe, radio_quiet):
-    """A call only proves something if IMS voice starts on WLAN."""
-    rat = dut.imsa(imsa_probe).get("voip_service_rat")
-    if rat != 0:
-        pytest.skip(f"IMS voice not on WLAN (voip_service_rat={rat})")
-    return int(dut.prop("vendor.qmux.wfc_mode") or -1)
+def on_wlan(dut, sub, imsa_probe, radio_quiet, awake):
+    """A call only proves something if IMS voice starts on WLAN. Waits up to 90 s
+    for it (IMS re-registers over IWLAN after Wi-Fi comes back, e.g. after the
+    previous test's walk-away), then skips."""
+    rat = None
+    for _ in range(18):
+        rat = dut.imsa(imsa_probe).get("voip_service_rat")
+        if rat == 0:
+            return int(dut.prop("vendor.qmux.wfc_mode") or -1)
+        time.sleep(5)
+    pytest.skip(f"IMS voice not on WLAN after 90 s (voip_service_rat={rat})")
 
 
 @pytest.mark.call
+@pytest.mark.timeout(HOLD_S + 300)
 def test_call_hold(dut, imsa_probe, test_number, artifacts, on_wlan):
     """Wi-Fi preferred/only: the call stays on WLAN for the whole hold with LTE
     camped. Cellular preferred: stock behaviour, the call moves to LTE at answer
@@ -203,6 +213,7 @@ def test_call_hold(dut, imsa_probe, test_number, artifacts, on_wlan):
 
 @pytest.mark.call
 @pytest.mark.disruptive
+@pytest.mark.timeout(HOLD_S + 420)
 def test_call_walkaway(dut, imsa_probe, test_number, artifacts, on_wlan):
     """Wi-Fi drops mid-call: TH2 goes back to stock and the call hands over to LTE
     instead of the WIFI_LOST drop ~20 s after link loss."""

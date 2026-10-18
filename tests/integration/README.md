@@ -16,6 +16,36 @@ python3 -m pytest --unit dut1 --allow-calls --allow-disruptive   # + Wi-Fi off m
 python3 -m pytest --unit dut1 -k th2 -s            # one test, with its printed timeline
 ```
 
+## Unattended
+
+Every test must run with nobody at the phone or the terminal. The one-shot entry
+point runs the release's test plan (or `--all`), then sends the result to ntfy:
+
+```bash
+tests/integration/run-unattended.sh dut1          # the plan's tests
+tests/integration/run-unattended.sh dut1 --all    # everything, benches included
+```
+
+What makes that hold, and what new tests must keep true:
+
+- **No prompts, no waiting on a person.** stdin is closed for adb and the bench
+  scripts. If a test needs the screen it takes the `awake` fixture: screen held on
+  for the session (`svc power stayon`, restored after) and the keyguard unlocked
+  with `android-unlock-<nick>` — **once** per session; if that fails the rest skip
+  rather than retry, because wrong patterns count toward the lockout.
+- **Everything is bounded.** Each test has a budget (`@pytest.mark.timeout(s)`,
+  default 180 s, enforced in `conftest.py`); hitting it fails that test, kills its
+  child processes, and the run carries on. `run-unattended.sh` caps the whole run.
+- **Leave the phone as found.** Calls are hung up and Wi-Fi is re-enabled *and seen
+  reconnected* in `finally`, even after a timeout; settings changed for a run are
+  restored. With the screen off this build's Wi-Fi doesn't reconnect by itself,
+  which is one reason `awake` holds it on.
+- **Unmet preconditions skip, with the reason** (no SIM, IMS not on WLAN after 90 s,
+  someone else's capture running, a call already up). A skipped required test keeps
+  the release gate red, and the notification lists it.
+- Long or state-changing work that must outlive adb runs on the phone under
+  `setsid` (see `device/`).
+
 ## Tiers
 
 | Marker | What it does to the phone | Opt-in |
@@ -95,3 +125,5 @@ cheap read-only tests in `always`), or no release will ever require it.
 - A test whose precondition isn't met on this unit (no SIM, IMS not on WLAN, LTE
   too weak) should `pytest.skip` with the reason, not fail.
 - Never cycle airplane mode, flash, or reboot from a test.
+- No `input()`, no "press enter", no step that needs a finger on the screen. If a
+  check can't be automated yet, it isn't a test.

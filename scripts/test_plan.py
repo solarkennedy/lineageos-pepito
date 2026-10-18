@@ -20,6 +20,7 @@ Plans live in tests/integration/results/plans/<source id>.json (gitignored).
   test_plan.py show [--json]
   test_plan.py add test_wfc.py::test_call_hold --reason "touches IMS registration"
   test_plan.py done 1        # only once Kyle says he did manual check 1
+  test_plan.py command       # pytest args for the plan (tests/integration/run-unattended.sh)
 """
 import argparse
 import fnmatch
@@ -128,10 +129,13 @@ def known_tests(marker=None):
 OPT_IN = {"call": "--allow-calls", "disruptive": "--allow-disruptive", "bench": "--allow-bench"}
 
 
+def pytest_args(tests):
+    """Opt-in flags + node ids that run exactly `tests`."""
+    return [f for m, f in OPT_IN.items() if set(tests) & known_tests(m)] + list(tests)
+
+
 def pytest_command(tests):
-    """The pytest line that runs exactly `tests`, with the opt-in flags they need."""
-    flags = [f for m, f in OPT_IN.items() if set(tests) & known_tests(m)]
-    return " ".join(["python3 -m pytest --unit <nick>", *flags, *tests])
+    return " ".join(["python3 -m pytest --unit <nick>", *pytest_args(tests)])
 
 
 def show(res, as_json=False):
@@ -183,10 +187,14 @@ def main():
     s = sub.add_parser("manual"); s.add_argument("text"); s.add_argument("--reason", required=True)
     s = sub.add_parser("done"); s.add_argument("n", type=int)
     sub.add_parser("reviewed")
+    sub.add_parser("command", help="print the pytest args for the plan's tests (run-unattended.sh)")
     a = ap.parse_args()
 
     if a.cmd == "show":
         show(resolve(), a.json)
+        return 0
+    if a.cmd == "command":
+        print(" ".join(pytest_args(resolve()["required"])))
         return 0
 
     plan = Plan(on_builder("pushed")["source_id"])

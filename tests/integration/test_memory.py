@@ -75,8 +75,12 @@ def test_lmkd_config(dut):
 def run_bench(dut, artifacts, script, *args, timeout):
     """Run a mglru-bench script against the unit; return its results directory."""
     env = os.environ | {"PEPITO_ADB": dut.adb, "MGLRU_RESULTS": str(artifacts)}
-    p = subprocess.run(["bash", str(BENCH / script), "-t", "itest", *args], env=env,
-                       capture_output=True, text=True, timeout=timeout)
+    try:
+        p = subprocess.run(["bash", str(BENCH / script), "-t", "itest", *args], env=env,
+                           capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    finally:
+        # The bench's bench_done drops `svc power stayon`; the session holds it (conftest _stay_on).
+        dut.sh("svc power stayon true")
     (artifacts / f"{script}.log").write_text(p.stdout + p.stderr)
     assert p.returncode == 0, f"{script} failed:\n{p.stderr[-2000:]}"
     runs = sorted(d for d in artifacts.iterdir() if d.is_dir() and d.name.endswith("-itest"))
@@ -95,7 +99,7 @@ def installed(dut, activities):
 
 
 @pytest.fixture
-def bench_ok(dut):
+def bench_ok(dut, awake):
     jobs = dut.busy_jobs()
     if jobs:
         pytest.skip(f"capture running on {dut.nick}: {jobs.split()}")
@@ -117,6 +121,7 @@ HOG_APPS = [
 
 
 @pytest.mark.bench
+@pytest.mark.timeout(BASE["hog"]["iterations"] * 300 + 120)
 def test_hog_pressure(dut, artifacts, bench_ok):
     """1.2 GB anon hog, then resume warmed apps: lmkd kills, survival, resume latency, stall."""
     b = BASE["hog"]
@@ -139,6 +144,7 @@ def test_hog_pressure(dut, artifacts, bench_ok):
 
 
 @pytest.mark.bench
+@pytest.mark.timeout(1800)
 def test_app_cycle(dut, artifacts, bench_ok):
     """Round-robin launches of the 15-app set: cold-start rate and launch latency."""
     c = BASE["cycle"]
