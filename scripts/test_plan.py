@@ -117,10 +117,21 @@ def resolve(cov=None, ch=None, source_id=None):
             "plan": plan, "required": sorted(required)}
 
 
-def known_tests():
-    out = subprocess.run([sys.executable, "-m", "pytest", "--co", "-q", "-p", "no:cacheprovider"],
+def known_tests(marker=None):
+    """Node ids pytest collects (optionally only those with a marker)."""
+    cmd = [sys.executable, "-m", "pytest", "--co", "-q", "-p", "no:cacheprovider"]
+    out = subprocess.run(cmd + (["-m", marker] if marker else []),
                          cwd=TESTS, capture_output=True, text=True).stdout
     return {l.strip() for l in out.splitlines() if "::" in l}
+
+
+OPT_IN = {"call": "--allow-calls", "disruptive": "--allow-disruptive", "bench": "--allow-bench"}
+
+
+def pytest_command(tests):
+    """The pytest line that runs exactly `tests`, with the opt-in flags they need."""
+    flags = [f for m, f in OPT_IN.items() if set(tests) & known_tests(m)]
+    return " ".join(["python3 -m pytest --unit <nick>", *flags, *tests])
 
 
 def show(res, as_json=False):

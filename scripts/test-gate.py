@@ -184,10 +184,8 @@ def main():
         print(f"  {R}✗ not green.{X}")
     todo = [t for t, (o, _) in results.items() if o != "passed"]
     if todo:
-        flags = " --allow-calls" if any("call" in t for t in todo) else ""
-        flags += " --allow-disruptive" if any("walkaway" in t for t in todo) else ""
         print(f"  {D}{'run the missing tests' if runs else 'flash a build of this source'}, then:{X}")
-        print(f"  {D}  cd tests/integration && python3 -m pytest --unit <nick>{flags} {' '.join(todo)}{X}")
+        print(f"  {D}  cd tests/integration && {test_plan.pytest_command(todo)}{X}")
     if open_manual:
         print(f"  {D}manual checks: do them, then scripts/test_plan.py done <n>{X}")
     return 0 if a.report else 1

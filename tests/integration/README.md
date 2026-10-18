@@ -1,8 +1,12 @@
 # Integration tests
 
 pytest suite that runs against a live bench PVG100 through its `<nick>-adb`
-wrapper. One file per feature; `test_wfc.py` (Wi-Fi calling, including the
-"Wi-Fi preferred" TH2 steering) is the first.
+wrapper. One file per feature:
+
+| File | Covers |
+|---|---|
+| `test_wfc.py` | Wi-Fi calling, including the "Wi-Fi preferred" TH2 steering |
+| `test_memory.py` | MGLRU kill switch, zram, vm tunables, lmkd props, kernel health; the `diag-tools/mglru-bench` hog and app-cycle benches against `baselines/memory.toml` |
 
 ```bash
 cd tests/integration
@@ -19,6 +23,7 @@ python3 -m pytest --unit dut1 -k th2 -s            # one test, with its printed 
 | (none) | getprop, dumpsys, content query, logcat -d | always runs |
 | `call` | dials the test number and hangs up | `--allow-calls` |
 | `disruptive` | toggles Wi-Fi (or another radio) and restores it | `--allow-disruptive` |
+| `bench` | ~15 min of memory pressure: 1.2 GB hogs, apps killed and relaunched, screen held on and unlocked | `--allow-bench` |
 
 `--unit` is required; there is no default phone. The suite checks
 `ro.serialno` against `~/.config/pepito/units.conf` before touching anything,
@@ -72,6 +77,10 @@ release without pushing anything else; any push to a manifest project changes th
 id and starts a new plan. Landing-repo commits (plans, scripts) don't.
 `python3 scripts/test-gate.py` shows where you stand; the release sweep prints the
 same report.
+
+Baselines (`baselines/*.toml`) hold the released configuration and the bench
+limits, each with where its numbers came from. A deliberate change to a tuning
+(a new lmkd prop, a zram size) means updating the baseline in the same commit.
 
 When you add a test file, give it a `[groups.*]` entry in `coverage.toml` (or put
 cheap read-only tests in `always`), or no release will ever require it.

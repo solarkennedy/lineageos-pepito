@@ -20,6 +20,15 @@ always = [
     "test_wfc.py::test_wifi_ok_tracks_wifi",
     "test_wfc.py::test_th2_state_matches_conditions",
     "test_wfc.py::test_bridge_reads_wlan_rssi",
+    # Memory config as released (MGLRU kill switch, zram lz4, vm tunables, lmkd
+    # props) + kernel health. Read-only, ~5 s; catches a tunable dropped by an
+    # unrelated mithorium.mk / init rc edit, so those files need no group below.
+    "test_memory.py::test_kernel_health",
+    "test_memory.py::test_kernel_config",
+    "test_memory.py::test_mglru_follows_kill_switch",
+    "test_memory.py::test_zram",
+    "test_memory.py::test_vm_tunables",
+    "test_memory.py::test_lmkd_config",
 ]
 
 [groups.wfc]
@@ -42,4 +51,26 @@ paths = [
     "kernel/xiaomi/msm8937/net/*",
     "kernel/xiaomi/msm8937/drivers/net/*",
     "kernel/xiaomi/msm8937/drivers/soc/qcom/*",
+]
+
+[groups.memory]
+description = "Memory management: kernel mm/ (MGLRU), mm headers, zram, kernel defconfig, process lifecycle in ActivityManager. Runs the ~15 min mglru-bench pressure benches (--allow-bench)"
+tests = [
+    "test_memory.py::test_hog_pressure",
+    "test_memory.py::test_app_cycle",
+]
+paths = [
+    "kernel/xiaomi/msm8937/mm/*",
+    "kernel/xiaomi/msm8937/include/linux/mm*",
+    "kernel/xiaomi/msm8937/include/linux/*swap*",
+    "kernel/xiaomi/msm8937/include/linux/memcontrol.h",
+    "kernel/xiaomi/msm8937/include/linux/page-flags.h",
+    "kernel/xiaomi/msm8937/include/linux/vmstat.h",
+    "kernel/xiaomi/msm8937/drivers/block/zram/*",
+    "kernel/xiaomi/msm8937/kernel/sched/psi.c",
+    "kernel/xiaomi/msm8937/arch/arm64/mm/*",
+    "kernel/xiaomi/msm8937/arch/arm64/configs/*",
+    "frameworks/base/services/core/java/com/android/server/am/OomAdjuster*",
+    "frameworks/base/services/core/java/com/android/server/am/ProcessList.java",
+    "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java",
 ]
