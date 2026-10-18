@@ -223,7 +223,13 @@ and moves `lineage.updater.uri` to the `lineageos24.0` branch.
 - Gate: a dirty-flash 23.2 → 24.0 (gapps over gapps) must pass on a bench unit first.
 - pepito-24 `device.mk` must point `lineage.updater.uri` at `lineageos24.0/pepito.json`.
 
-- [ ] **Gate for the next 24.0 release (Kyle, 2026-10-14): fix the emergency-calls-only stick first**
+- [x] **Released `20261017` (2026-10-17, vanilla only, tag `pepito-24.0-20261017`)**: first 24.0
+      release dated after the final 23.2, so 23.2 phones are offered it. Ships the emergency-only fix
+      below, the list_del panic + userfaultfd kernel fixes, MGLRU, WFC Wi-Fi preferred (Mi8937
+      `b82254d8`), the B12 switch, the PALM splash/boot animation, and the Updater nested-scroll fix
+      (`ea2d74d`). 24.0 phones on `20261011` still have the crashing Updater dialog: they must
+      sideload this one.
+- [x] **Gate for the next 24.0 release (Kyle, 2026-10-14): fix the emergency-calls-only stick first**
       (`PLAN-emergency-only.md`) and ship it in that release. **STAGED 2026-10-15**: data-centric
       `usage_preference=2` asserted by `ims_enabler` at boot from a new Settings > System > "Modem
       tweaks" switch (default on, restart to apply, readback row); the watchdog toggles moved there
