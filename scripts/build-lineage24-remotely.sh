@@ -230,6 +230,23 @@ ${BUILD_ZIP:+artifact: $(basename "$BUILD_ZIP")
 }fetching product-out next"
 echo "==> Remote build succeeded."
 
+# Stamp the build with the exact source it was made from (scripts/source-id.py:
+# every project's commit, hashed) and file it under the build date + kernel the
+# phone will report, so a tests/integration run on a phone flashed with these
+# images is tied to this source. release-all.sh checks the stamp against the
+# source its test gate passed. Not fatal for a test build.
+STAMP="$LOCAL_FLASH_DIR/build-stamp.json"
+mkdir -p "$LOCAL_FLASH_DIR"
+rm -f "$STAMP"
+if ssh "$TARGET" -- "python3 - stamp --tree '$REMOTE_ROOT'" <"$LANDING_ROOT/scripts/source-id.py" >"$STAMP.tmp" \
+   && SOURCE_ID=$(python3 "$LANDING_ROOT/scripts/test-gate.py" --file-stamp "$STAMP.tmp"); then
+    mv "$STAMP.tmp" "$STAMP"
+    echo "==> Source id $SOURCE_ID (stamp: $STAMP)"
+else
+    rm -f "$STAMP.tmp"
+    echo "!! Could not stamp this build; integration-test runs on it will be UNSTAMPED." >&2
+fi
+
 # GApps priv-apps vs the privapp allowlists, against this exact build. The tree
 # has ro.control_privapp_permissions=enforce: one missing grant stops the boot,
 # so refuse to stage images that would bootloop.

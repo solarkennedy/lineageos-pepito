@@ -17,6 +17,9 @@
 #   4. tag every pepito repo pepito-24.0-<version> and push the tags, so the next
 #      run's changelog anchors here. The tree repos are tagged ON THE BUILD
 #      SERVER, at exactly the commits that were built; the landing repo here;
+#   0. refuse to start unless tests/integration has a green run for the source
+#      about to be built (scripts/test-gate.py; tests/integration/README.md), and
+#      check each build's stamp matches that source before releasing it;
 #   5. (best-effort) shell out to `claude` to turn the raw commit changelog into a
 #      friendly end-user BBCode bullet list for the XDA update post.
 #
@@ -39,6 +42,7 @@
 #   ./scripts/release-all.sh --gapps              # also build + release the gapps variant
 #   ./scripts/release-all.sh --notes-file FILE    # hand-written release body (e.g. the
 #                                                 # first 24.0 release, which has no anchor)
+#   ./scripts/release-all.sh --skip-test-gate     # release without a green integration run
 #
 # Needs $GITHUB_TOKEN_PEPITO (or $GH_TOKEN_VAR) set, for the GitHub release.
 set -euo pipefail
@@ -59,6 +63,7 @@ DRY_RUN=false
 DO_TAG=true
 DO_GAPPS=false
 CUSTOM_NOTES=""
+TEST_GATE=true
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version) VERSION="$2"; shift 2 ;;
@@ -66,7 +71,8 @@ while [[ $# -gt 0 ]]; do
         --no-tag)  DO_TAG=false; shift ;;
         --gapps)   DO_GAPPS=true; shift ;;
         --notes-file) CUSTOM_NOTES="$2"; shift 2 ;;
-        -h|--help) sed -n '2,45p' "${BASH_SOURCE[0]}" | cut -c3-; exit 0 ;;
+        --skip-test-gate) TEST_GATE=false; shift ;;
+        -h|--help) sed -n '2,49p' "${BASH_SOURCE[0]}" | cut -c3-; exit 0 ;;
         *) echo "release-all.sh: unknown arg '$1'" >&2; exit 1 ;;
     esac
 done
@@ -124,6 +130,46 @@ variant_released() {
 [[ "$VERSION" =~ ^[0-9]{8}$ ]] || { echo "error: --version must be YYYYMMDD (got '$VERSION')" >&2; exit 1; }
 export LINEAGE_BUILD_DATE="$VERSION"   # picked up by build-lineage24-remotely.sh → the build
 
+# --- 0b. integration-test gate ----------------------------------------------
+# A release must be a build of source that tests/integration passed on: the gate
+# hashes the source the build below will sync (manifest projects at their pushed
+# tips) and wants a green summary.json for it. Before anything is written, so a
+# failed gate leaves no changelog commit behind. The id it passed is re-checked
+# against each build's stamp (check_built_source), which catches a push that
+# lands while the release is running.
+GATED_ID=""
+STAMP=${LOCAL_FLASH_DIR:-/home/kyle/android/lineage-24/flash-staging}/build-stamp.json
+if $TEST_GATE; then
+    say "Integration-test gate"
+    GATE_ID_FILE=$(mktemp)
+    if "$SCRIPT_DIR/test-gate.py" --id-file "$GATE_ID_FILE"; then
+        GATED_ID=$(cat "$GATE_ID_FILE")
+    elif $DRY_RUN; then
+        echo "(dry run: a real run would stop here)"
+    else
+        rm -f "$GATE_ID_FILE"
+        echo "error: no green integration-test run for the source about to be released." >&2
+        echo "       Flash a build of it, run tests/integration, or pass --skip-test-gate." >&2
+        exit 1
+    fi
+    rm -f "$GATE_ID_FILE"
+else
+    say "Integration-test gate SKIPPED (--skip-test-gate)"
+fi
+
+# check_built_source — after a build: its stamp must name the gated source.
+check_built_source() {
+    [[ -n "$GATED_ID" ]] || return 0
+    local built
+    built=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_id"])' "$STAMP" 2>/dev/null) || built="(no stamp)"
+    if [[ "$built" != "$GATED_ID" ]]; then
+        echo "error: the build is source $built, but the test gate passed $GATED_ID." >&2
+        echo "       Something was pushed (or the builder tree changed) during the release. Not releasing it." >&2
+        exit 1
+    fi
+    echo "Built source $built matches the test gate."
+}
+
 # --- 1. changelog -----------------------------------------------------------
 say "Generating changelog"
 
@@ -169,7 +215,9 @@ if variant_released '-Mi8937\.zip\.sha256sum$'; then
     say "Vanilla zip already on release $VERSION — skipping build + release"
 else
     say "Building VANILLA remotely"
+    rm -f "$STAMP"
     "$SCRIPT_DIR/build-lineage24-remotely.sh"
+    check_built_source
     say "Releasing VANILLA"
     "$SCRIPT_DIR/release-remotely.sh" --notes-file "$NOTES_FILE" --tag "$VERSION"
 fi
@@ -181,7 +229,9 @@ elif variant_released '-Mi8937_gapps\.zip\.sha256sum$'; then
     say "GApps zip already on release $VERSION — skipping build + release"
 else
     say "Building GAPPS remotely"
+    rm -f "$STAMP"
     "$SCRIPT_DIR/build-lineage24-remotely.sh" --gapps
+    check_built_source
     say "Releasing GAPPS"
     "$SCRIPT_DIR/release-remotely.sh" --gapps --notes-file "$NOTES_FILE" --tag "$VERSION"
 fi

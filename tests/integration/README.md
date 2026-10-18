@@ -38,6 +38,44 @@ and the call/radio tests skip if `diag_mdlog` or `strace` is running on the unit
 Each run writes `results/<date>-<nick>/` (gitignored): one directory per test
 with whatever it pulled (call samples, marks, logcat).
 
+## Release gate
+
+`scripts/release-all.sh` will not release source that hasn't passed here.
+
+1. Every `build-lineage24-remotely.sh` build is stamped with its source id (a hash
+   of every project's commit, `scripts/source-id.py`) and filed in
+   `~/.local/share/pepito/build-stamps/` under the build date and kernel the phone
+   will report.
+2. A run writes `results/<run>/summary.json`: the unit, the phone's build, the
+   source id found for it, and each test's outcome. A phone on a build that was
+   never stamped (built before stamping existed, or not by
+   `build-lineage24-remotely.sh`) gives
+   `source_id: null`, which the gate ignores. A dirty builder tree stamps as
+   `<id>+dirty`, which never matches a release.
+3. `scripts/test-gate.py` hashes the source the release build will sync (manifest
+   projects at their pushed tips) and wants every test in that release's test plan
+   to have PASSED in the latest run on that source that did not skip it, and every
+   manual check in the plan done. Runs on different units and flavors combine.
+
+The plan (`scripts/test_plan.py show`) is not the whole suite:
+
+- `coverage.toml`: the read-only `always` tests, plus each group whose path
+  patterns match a file changed since the last `pepito-24.0-*` tag (upstream
+  moved ⇒ everything);
+- the release-sweep skill's review of the changelog, stored per source id in
+  `results/plans/`: `add` a test the patterns missed, `waive` a matched one with a
+  reason, `manual` checks for changes no test covers (`done <n>` once you've done
+  them).
+
+So the order is: push, build, flash, review the plan, run what it asks for, then
+release without pushing anything else; any push to a manifest project changes the
+id and starts a new plan. Landing-repo commits (plans, scripts) don't.
+`python3 scripts/test-gate.py` shows where you stand; the release sweep prints the
+same report.
+
+When you add a test file, give it a `[groups.*]` entry in `coverage.toml` (or put
+cheap read-only tests in `always`), or no release will ever require it.
+
 ## Writing tests
 
 - Anything that has to keep running when adb drops (Wi-Fi off kills adb over

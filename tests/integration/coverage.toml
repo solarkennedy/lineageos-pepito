@@ -1,0 +1,45 @@
+# Which integration tests a release needs, by what changed since the last release.
+#
+# scripts/test_plan.py diffs every manifest project from its previous
+# pepito-24.0-* tag to its pushed tip and matches each changed file, written as
+# "<project path>/<file>", against the `paths` patterns below (fnmatch: `*`
+# also matches `/`). A group whose patterns hit makes its tests required.
+# The release-sweep skill then reads the changelog and may add tests, waive a
+# matched one with a reason, or add manual checks (see tests/integration/README.md).
+#
+# If upstream lineage-24.0 moved since the last release (a SYNC_ALL build), every
+# test here is required.
+
+# Cheap, read-only, run on every release: proves the build boots far enough for
+# IMS and the WFC plumbing to come up.
+always = [
+    "test_wfc.py::test_bridge_daemon_state",
+    "test_wfc.py::test_wfcbridge_app_running",
+    "test_wfc.py::test_mode_mirrors_siminfo",
+    "test_wfc.py::test_vendor_props_follow_system_props",
+    "test_wfc.py::test_wifi_ok_tracks_wifi",
+    "test_wfc.py::test_th2_state_matches_conditions",
+    "test_wfc.py::test_bridge_reads_wlan_rssi",
+]
+
+[groups.wfc]
+description = "Wi-Fi calling: IWLAN bridge + TH2 steering, WfcBridge, IMS/QMI plumbing, carrier config, telephony framework, Wi-Fi/QMI kernel paths"
+tests = [
+    "test_wfc.py::test_call_hold",
+    "test_wfc.py::test_call_walkaway",
+]
+paths = [
+    "device/xiaomi/Mi8937/qmux/*",
+    "device/xiaomi/Mi8937/WfcBridge/*",
+    "device/xiaomi/Mi8937/sepolicy/*qmux*",
+    "device/xiaomi/Mi8937/sepolicy/*property_contexts",
+    "device/xiaomi/mithorium-common/overlay/packages/apps/CarrierConfig/*",
+    "device/xiaomi/mithorium-common/libshim/*",
+    "frameworks/opt/telephony/*",
+    "vendor/xiaomi/*ims*",
+    "vendor/xiaomi/*qcril*",
+    "vendor/xiaomi/*qmi*",
+    "kernel/xiaomi/msm8937/net/*",
+    "kernel/xiaomi/msm8937/drivers/net/*",
+    "kernel/xiaomi/msm8937/drivers/soc/qcom/*",
+]

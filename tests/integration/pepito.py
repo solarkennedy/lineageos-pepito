@@ -3,12 +3,15 @@
 The wrapper (pepito-adb) picks the transport and verifies ro.serialno itself; we
 check it once more against the roster so a test can never act on the wrong phone.
 """
+import json
 import os
 import re
 import subprocess
 import time
 from pathlib import Path
 
+STAMPS_DIR = Path(os.environ.get("PEPITO_BUILD_STAMPS",
+                                 Path.home() / ".local/share/pepito/build-stamps"))
 UNITS_CONF = Path(os.environ.get("PEPITO_UNITS", Path.home() / ".config/pepito/units.conf"))
 DEV_DIR = "/data/local/tmp/itest"
 # QMI probes from diag-tools/nas-probe need the force-ipcr shim to reach the modem.
@@ -23,6 +26,21 @@ def roster():
         if len(f) >= 6 and not line.startswith("#") and "=" not in f[0]:
             units[f[0]] = f[1]
     return units
+
+
+def find_stamp(date_utc, kernel_uts):
+    """The build stamp (scripts/source-id.py, filed by build-lineage24-remotely.sh)
+    for the build a phone reports, matched on system build time + kernel UTS_VERSION
+    (a --boot-only build keeps the system date but brings a new kernel)."""
+    for f in sorted(STAMPS_DIR.glob("*.json")):
+        try:
+            s = json.loads(f.read_text())
+        except (OSError, ValueError):
+            continue
+        b = s.get("build", {})
+        if b.get("date_utc") == date_utc and b.get("kernel_uts") == kernel_uts:
+            return f, s
+    return None, None
 
 
 class AdbError(RuntimeError):
@@ -75,6 +93,16 @@ class Device:
                 pass
             time.sleep(interval)
         raise TimeoutError(f"{self.nick}: gave up waiting on `{cmd}` after {timeout}s")
+
+    def build_identity(self):
+        p = self.props("ro.lineage.version", "ro.build.date.utc", "ro.build.fingerprint")
+        m = re.search(r"\) (#\d+ .+)$", self.sh("cat /proc/version"))
+        return {
+            "lineage_version": p.get("ro.lineage.version"),
+            "date_utc": int(p["ro.build.date.utc"]) if p.get("ro.build.date.utc", "").isdigit() else None,
+            "fingerprint": p.get("ro.build.fingerprint"),
+            "kernel_uts": m.group(1) if m else None,
+        }
 
     # --- state readers -------------------------------------------------------
 

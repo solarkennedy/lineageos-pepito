@@ -1,10 +1,11 @@
+import json
 import os
 import time
 from pathlib import Path
 
 import pytest
 
-from pepito import DEV_DIR, AdbError, Device, roster
+from pepito import DEV_DIR, AdbError, Device, find_stamp, roster
 
 HERE = Path(__file__).parent
 DEFAULT_PROBES = Path.home() / "android/lineage-23/diag-tools/nas-probe"
@@ -50,15 +51,83 @@ def dut(pytestconfig):
     d.sh(f"mkdir -p {DEV_DIR}")
     d.serial = serial
     d.build = d.prop("ro.lineage.version")
+    d.identity = d.build_identity()
+    pytestconfig._pepito_dut = d
     return d
 
 
+def _run_dir(config, nick):
+    if not hasattr(config, "_pepito_run_dir"):
+        p = HERE / "results" / f"{config._pepito_started}-{nick}"
+        p.mkdir(parents=True, exist_ok=True)
+        config._pepito_run_dir = p
+    return config._pepito_run_dir
+
+
 @pytest.fixture(scope="session")
-def run_dir(dut):
-    p = HERE / "results" / f"{time.strftime('%Y%m%d-%H%M%S')}-{dut.nick}"
-    p.mkdir(parents=True, exist_ok=True)
+def run_dir(dut, pytestconfig):
+    p = _run_dir(pytestconfig, dut.nick)
     (p / "meta.txt").write_text(f"unit {dut.nick} serial {dut.serial}\nbuild {dut.build}\n")
     return p
+
+
+# --- run summary: the sentinel the release gate reads (scripts/test-gate.py) ---
+
+_CONFIG = None  # pytest_runtest_logreport gets no config; set at session start
+_RANK = {"passed": 0, "skipped": 1, "failed": 2, "error": 3}
+
+
+def pytest_configure(config):
+    config._pepito_started = time.strftime("%Y%m%d-%H%M%S")
+    config._pepito_outcomes = {}
+
+
+def pytest_runtest_logreport(report):
+    # setup/teardown failures are "error"; a skip in setup is the test's outcome.
+    if report.when == "call" or report.outcome != "passed":
+        outcome = report.outcome if report.when == "call" or report.skipped else "error"
+    else:
+        return
+    key = report.nodeid.split("tests/integration/")[-1]
+    out = _CONFIG._pepito_outcomes
+    if _RANK[outcome] >= _RANK.get(out.get(key), -1):
+        out[key] = outcome
+
+
+def pytest_sessionstart(session):
+    global _CONFIG
+    _CONFIG = session.config
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Write results/<run>/summary.json: which build (and, via its build stamp,
+    which source id) ran which tests with what outcome. Only full outcomes count:
+    a run interrupted with ^C is recorded but the gate ignores it."""
+    config = session.config
+    dut = getattr(config, "_pepito_dut", None)
+    if dut is None or not config._pepito_outcomes:
+        return
+    ident = dut.identity
+    stamp_file, stamp = find_stamp(ident["date_utc"], ident["kernel_uts"])
+    summary = {
+        "schema": 1,
+        "started": config._pepito_started,
+        "finished": time.strftime("%Y%m%d-%H%M%S"),
+        "unit": dut.nick,
+        "serial": dut.serial,
+        "build": ident,
+        "source_id": stamp["source_id"] if stamp else None,
+        "stamp": str(stamp_file) if stamp_file else None,
+        "options": {k: config.getoption(k) for k in ("--allow-calls", "--allow-disruptive")},
+        "exitstatus": int(exitstatus),
+        "tests": dict(sorted(config._pepito_outcomes.items())),
+    }
+    p = _run_dir(config, dut.nick) / "summary.json"
+    p.write_text(json.dumps(summary, indent=1) + "\n")
+    tr = config.pluginmanager.get_plugin("terminalreporter")
+    if tr:
+        sid = summary["source_id"] or "UNSTAMPED (no build stamp for this build; the release gate will ignore it)"
+        tr.write_line(f"pepito: summary {p}  source {sid}")
 
 
 @pytest.fixture

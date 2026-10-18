@@ -51,6 +51,9 @@ Do not flash, reboot a phone into EDL, or start a release without being asked.
 ./scripts/release-all.sh [--gapps] [--dry-run]   # changelog, build + release each flavor, tag every repo
 ```
 
+`release-all.sh` first requires a green `tests/integration` run on a build of
+the exact pushed source (`scripts/test-gate.py`, `tests/integration/README.md`).
+
 A release publishes **one zip per flavor**: the OTA zip with `README.md` and
 the EDL kit (`edl/`) packed in and re-signed. Users rebuild the raw images from
 it with `tools/ota2raw`. `release.sh` runs on the build server and must run
