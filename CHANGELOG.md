@@ -1,121 +1,12 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
-## 20261017 (2026-10-17)
+## 20261017 (2026-10-18)
 
-### device/Mi8937 (since pepito-24.0-20261011)
-- WfcBridge: receive CARRIER_CONFIG_CHANGED (RECEIVER_EXPORTED)
-- Mi8937: Wi-Fi preferred — gate on validated Wi-Fi, fix prime length, TH2 cache
-- modem_b12: no restart prompt when the modem is back where it booted
-- modem_b12: wait for the modem to serve NV before judging the unit
-- Mi8937: honour Wi-Fi calling "Wi-Fi preferred" while LTE is up
-- Mi8937: LTE Band 12 switch (modem_b12)
-- Mi8937: every OTA writes the boot logo
-- WfcBridge: call the app PVG100 WFC Bridge
-- Mi8937: boot animation that continues from the PALM splash logo
-- qmux: publish the WLAN feeder status to a public prop for Modem tweaks
-- qmux: ims_enabler probes IDL minors up to 512 so the NAS phase can connect
-- qmux: run the VoWiFi feeder for the whole boot so stale WLAN always clears
-- qmux: ims_enabler asserts NAS usage_preference from the Modem tweaks switch
-
-### device/mithorium-common (since pepito-24.0-20261011)
-- mithorium-common: show the Wi-Fi calling preference row on Verizon
-- mithorium-common: persist.gotweak.mglru kill switch for the multi-gen LRU
-- mithorium-common: lmkd swap accounting for zram and no watermark-only cached kills
-
-### kernel (msm8937) (since pepito-24.0-20261011)
-- BACKPORT: mm: multi-gen LRU: retry pages written back while isolated
-- BACKPORT: Multi-gen LRU: fix workingset accounting
-- BACKPORT: Multi-gen LRU: fix per-zone reclaim, skip ineligible CMA pages
-- BACKPORT: mm: multi-gen LRU: fix crash during cgroup migration
-- BACKPORT: mm/mglru: don't sync disk for each aging cycle
-- mm: multi-gen LRU: use xa_load() for the swap-cache shadow lookup
-- mm: multi-gen LRU: drop the lru_gen_use_mm() list_empty warning
-- proc: process_reclaim: skip unevictable pages before isolating them
-- mm: multi-gen LRU: xa_is_value() for the swap-cache shadow in do_swap_page()
-- mi8937_defconfig: enable the multi-gen LRU
-- mm: multi-gen LRU: use shrink_page_list()'s force_reclaim for the reference check
-- FROMLIST: mm: multi-gen LRU: design doc
-- FROMLIST: mm: multi-gen LRU: admin guide
-- FROMLIST: mm: multi-gen LRU: debugfs interface
-- FROMLIST: mm: multi-gen LRU: thrashing prevention
-- FROMLIST: mm: multi-gen LRU: kill switch
-- FROMLIST: mm: multi-gen LRU: optimize multiple memcgs
-- FROMLIST: mm: multi-gen LRU: support page table walks
-- FROMLIST: mm: multi-gen LRU: exploit locality in rmap
-- FROMLIST: mm: multi-gen LRU: minimal implementation
-- FROMLIST: mm: multi-gen LRU: groundwork
-- BACKPORT: mm/swapcache: support to handle the shadow entries
-- mm: Convert delete_from_swap_cache to XArray
-- mm: Convert add_to_swap_cache to XArray
-- UPSTREAM: arm64: cpufeature: introduce helper cpu_has_hw_af()
-- BACKPORT: mm/lru: introduce TestClearPageLRU()
-- FROMLIST: mm: x86: add CONFIG_ARCH_HAS_NONLEAF_PMD_YOUNG
-- FROMLIST: mm: x86, arm64: add arch_has_hw_pte_young()
-- BACKPORT: include/linux/mm_inline.h: fold page_lru_base_type() into its sole caller
-- UPSTREAM: mm: VM_BUG_ON lru page flags
-- BACKPORT: mm: add __clear_page_lru_flags() to replace page_off_lru()
-- BACKPORT: mm/swap.c: don't pass "enum lru_list" to del_page_from_lru_list()
-- BACKPORT: mm: don't pass "enum lru_list" to lru list addition functions
-- BACKPORT: include/linux/mm_inline.h: shuffle lru list addition and deletion functions
-- BACKPORT: mm/vmscan.c: use add_page_to_lru_list()
-- BACKPORT: mm: use self-explanatory macros rather than "2"
-- UPSTREAM: mm/vmscan.c: use update_lru_size() in update_lru_sizes()
-- msm: mdss: idle-wait in the DSI event and display threads
-- bpf: do not kmem-charge pages that are mmap()ed to user space (4.19)
-- mm: userfaultfd: commit the memcg charge before the page goes on the LRU
-
-### lineage-sdk (since pepito-24.0-20261011)
-- profiles: tag Bluetooth calls so A17 system_server accepts them
-
-### LineageParts (since pepito-24.0-20261011)
-- LineageParts: shorter Band 12 summary; escape the quotes in its dialog
-- LineageParts: LTE Band 12 switch in PVG100 Modem Tweaks
-- LineageParts: credit Palm in the Life Mode summary
-- LineageParts: plainer PVG100 Modem Tweaks summary
-- LineageParts: pin Life Mode ahead of the PVG100 tweaks pages
-- LineageParts: GoTweaks row for the multi-generation LRU (persist.gotweak.mglru)
-- LineageParts: name the tweaks pages PVG100 and keep them together
-- LineageParts: add live modem status rows to Modem tweaks
-- Modem tweaks: a settings section for the modem levers the port asserts
-- Pepito Tweaks: emergency-only watchdog recovery toggles
-
-### Updater (since pepito-24.0-20261011)
-- Updater: don't nest a scroller in the action dialog's text
-
-### landing (docs/scripts) (since pepito-24.0-20261011)
-- plans: WFC Wi-Fi preferred re-run on the 16:18 build; screen-off Wi-Fi does not reconnect (no PNO)
-- tests/integration: pytest suite against a bench unit, starting with Wi-Fi calling
-- PLAN-android17: matched dut1/Gold A17 power cells — no regression on the wired cells
-- plans: WFC Wi-Fi preferred full pass on new2 with the boot-mirror fix
-- plans: WFC re-validation on 55a9fbf6; boot-mirror bug fixed in b82254d8
-- PLAN-android17: WFC Wi-Fi preferred review fixes pushed; WAN-pull added to validation
-- PLAN-android17: A17 power regression check, CT-3 wired cells on dut1
-- plans: WFC Wi-Fi preferred validated on new2 (hold + walk-away)
-- PLAN-android17: B12 switch toggle test through Settings; boot-race and restart-prompt fixes
-- plans: WFC Wi-Fi preferred committed (Mi8937 6bc3da68, mithorium-common 4dc209b)
-- PLAN-android17: B12 Modem Tweaks switch built and pushed (Mi8937 db3b9f85, LineageParts be6269cd)
-- PLAN-android17: B12 data result void — dut1's SIM is not activated; control plane works
-- PLAN-android17: B12 camp test — attaches on EARFCN 5035 but no user data; dut1 reverted
-- PLAN-android17: B12 enabled on dut1 from the seven-band unit's tunning cal items
-- build-lineage24-remotely: fetch splash.bin with the other staged images
-- PLAN-android17: boot logo plumbing pushed, check list for the next build
-- Ship the boot logo with every install: OTA, EDL kit and web flasher
-- tools/splash: render-bootanimation.py; PLAN-android17: boot logo design
-- plans: 10-15 bench results — Modem tweaks data-centric switch, B12 parked, WFC Wi-Fi preference
-- tools/splash: make-bootanimation.py, a boot animation that continues from the logo
-- prepare-flash: a foreign /data boot-loops, it is not auto-formatted
-- remotely scripts: rsync -z with --partial-dir, never a truncated image
-- MGLRU lane: plan, bench harness and results through the 20261016 release
-- esim: MCFG/PDC write path tested on dut1 -> CLOSED (mcfg_sw sig enforced)
-- esim: reopen lane on the MCFG/PDC write path; add mcfg_sw.mbn patcher
-- tools/splash: read the splash partition and replace the boot logo
-- flash-staging: target units from the roster, pin adb/EDL to the serial
-- flasher: advanced Back up / Flash tabs and a Partitions reference
-- flasher: Back up / Flash / Restore tabs, partial restore, .img images
-- AGENTS: bench phones can be unlocked at will with android-unlock-<nick>
-- PLAN-android17: next-release gate = emergency-only fix; 23.2 closed at 20261013
-- plans: list_del panic lane — root cause, fix, close (10-12 → 10-14)
-- release-all: point at the 24.0 XDA thread and remind to update it
+### landing (docs/scripts) (since pepito-24.0-20261017)
+- PLAN-android17: 24.0-20261017 released (vanilla)
+- tests/integration: unattended by construction
+- tests/integration: memory subsystem tests from the MGLRU work
+- Release test gate: build stamps, run summaries, per-release test plan
 ## 20261011 (2026-10-12)
 
 ### device/Mi8937
