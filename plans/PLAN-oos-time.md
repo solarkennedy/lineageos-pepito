@@ -64,8 +64,8 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
 
 | # | Experiment | Cost | Decides |
 |---|---|---|---|
-| E0 | **Sampler v11**: QMI-polled reg/PLMN/RSRP/IMS every 15 s via `nas-probe`, plus Wi-Fi state, SIM, and a `summarize.py` that emits per-episode class + recovery latency + daily totals (§0 split) | half a day, bench | makes every later number comparable |
-| E1 | **Decode what already exists**: silver 10-09 park (PLMN while parked) and silver 09-18 "−140" run (RRC state) | hours, no phone | H1, H2 |
+| E0 | **Sampler v11** ✅ 10-20 11:02 on new2: `nas-probe sig` (NAS 0x4F sig info + 0x43 cell location: serving RSRP, **srxlev**, neighbours) replaces the framework RSRP; `summarize.py` (per-episode class + recovery latency + daily totals) still TODO | done / half a day | makes every later number comparable |
+| E1 | **Decode what already exists**: silver 10-09 park (PLMN while parked; capture location not yet found — may be logcat-only) and the stock hold run. ⚠️ the 09-18 `silver-spot2` F3 covers only 17:21–17:22; the stock **hold-to-−133** capture is `captures/silver-letgo-20260919/silver-letgo.qmdl` (29 MB, lineage-23 tree, undecoded) | hours, no phone | H1, H2 |
 | E2 | new2 baseline ≥ 2 field days on v11, data-centric on, nudge off, Tailscale DNS off | field | the post-data-centric split (H3 size) |
 | E3 | EFS-sync A/B on new2 (as queued 10-19) | field, 2 days | H4 |
 | E4 | **Two-phone excess-OOS** with the second SIM: silver stock vs new2, same pocket | field, ≥ 3 days | the prize; the only route-independent number |
@@ -100,3 +100,18 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
 - **2026-10-20** — plan opened from the AP-side let-go audit (PLAN-emergency-only, same date). State
   carried in: new2 on `20261017` gapps, data-centric on, nudge off, sampler v10 running since 10-19 20:42
   (framework-sourced RSRP — superseded by E0), EFS-sync A/B queued, second SIM on order.
+- **2026-10-20 11:05 — new2 back on the bench; harvest + E0.** Pulled: sampler v10 10-19 20:42 → 10-20 10:55
+  (`/tmp/new2-1020/sample-v10.log`), persisted logcat 10-19 17:06 → 10-20 10:28 (38 WOULD-NUDGE, **0 RADIO_POWER**),
+  `ap-release-census` (COMMAND class 0; DSRM GET_DATA_CALL_LIST→CLEANUP cycling at 10:54 on the T-Mo camp, 2 skipped
+  for poor signal). Build `20261017` gapps, usage=2, nudge off, uptime 1 d 22 h, qcrild never restarted.
+  **Episodes today (QMI reg/plmn, framework RSRP):** 07:23–08:39 **at home, Wi-Fi up**: Verizon −115 → AT&T limited →
+  T-Mo DENIED (ch 975) ↔ 311480 LIMITED on 5230 at −120…−125, 08:09 Kyle left (Wi-Fi 0), 08:14–08:22 HOLE (lte=4
+  POWER_SAVE), 08:30 VZW limited emg, 08:34–08:39 T-Mo denied emg, **08:39 registered** = 76 min, ~45 of them at home
+  masked by WFC. 10:53–11:01 second T-Mo DENIED camp at home (8 min, WFC up, IMS registered over IWLAN), self-recovered.
+  **Instrument facts from the first `sig` reads (B13 EARFCN 5230, PCI 308):** `srxlev=14` at rsrp −112 ⇒ **q-RxLevMin
+  = −126** (confirms F6); `s_nonintra=6` (12 dB) ⇒ inter-frequency measurement starts at RSRP ≤ −114; serving layer
+  `prio=0`, inter-freq layers EARFCN 2050 `prio=7` and 1550 `prio=5`, `thrX_high=6`. So from −114 down the modem is
+  already measuring higher-priority Verizon layers and anything else it can hear. Framework RSRP read −109 while the
+  modem said −112/−113 (framework lags, as predicted).
+  Tools: `nas-probe sig` (source + v11 sampler in `diag-tools/nas-probe/` here; build via
+  `~/android/lineage-23/diag-tools/nas-probe/build-nosysroot.sh`). Old binary kept on new2 as `nas-probe.v10`.
