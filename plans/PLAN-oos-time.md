@@ -64,8 +64,8 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
 
 | # | Experiment | Cost | Decides |
 |---|---|---|---|
-| E0 | **Sampler v11** ✅ 10-20 11:02 on new2: `nas-probe sig` (NAS 0x4F sig info + 0x43 cell location: serving RSRP, **srxlev**, neighbours) replaces the framework RSRP; `summarize.py` (per-episode class + recovery latency + daily totals) still TODO | done / half a day | makes every later number comparable |
-| E1 | **Decode what already exists**: silver 10-09 park (PLMN while parked; capture location not yet found — may be logcat-only) and the stock hold run. ⚠️ the 09-18 `silver-spot2` F3 covers only 17:21–17:22; the stock **hold-to-−133** capture is `captures/silver-letgo-20260919/silver-letgo.qmdl` (29 MB, lineage-23 tree, undecoded) | hours, no phone | H1, H2 |
+| E0 | **Sampler v11** ✅ 10-20 11:02 on new2: `nas-probe sig` (NAS 0x4F sig info + 0x43 cell location: serving RSRP, **srxlev**, neighbours) replaces the framework RSRP; `summarize.py` ✅ (time-weighted per-episode class mix + daily totals; recovery latency needs the second phone) | done | makes every later number comparable |
+| E1 | **Decode what already exists** — ⚠️ 10-20 result: the stock hold F3 (`scap6_live/recovery.qmdl`, 09-19 morning) was never pulled out of the session scratchpad and is **gone**; `silver-letgo-20260919.qmdl` is 3 min of silver-on-A16 *registered* (17:18–17:21, Srxlev 17–19, RSRP −108…−116), not a let-go; the 09-18 `silver-spot2` F3 is one minute at 17:21. Surviving stock-side evidence = the written 09-19 summary in PLAN-emergency-only (21-min OOS hold: BPLMN hammering, `PLMN 310-260 is Forbidden`, `emc_attached=0`, no emergency camp) — answers the **non-forbidden** half of H1 (stock prefers OOS-search over a foreign limited camp). The **forbidden** half (10-09 stock park PLMN) has no located capture; needs re-running on silver with diag | done as far as it goes | H1 half-answered, H2 open |
 | E2 | new2 baseline ≥ 2 field days on v11, data-centric on, nudge off, Tailscale DNS off | field | the post-data-centric split (H3 size) |
 | E3 | EFS-sync A/B on new2 (as queued 10-19) | field, 2 days | H4 |
 | E4 | **Two-phone excess-OOS** with the second SIM: silver stock vs new2, same pocket | field, ≥ 3 days | the prize; the only route-independent number |
@@ -115,3 +115,12 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   modem said −112/−113 (framework lags, as predicted).
   Tools: `nas-probe sig` (source + v11 sampler in `diag-tools/nas-probe/` here; build via
   `~/android/lineage-23/diag-tools/nas-probe/build-nosysroot.sh`). Old binary kept on new2 as `nas-probe.v10`.
+- **2026-10-20 11:40 — E1 closed as far as the archive allows (see row), E0 complete, first number.** `summarize.py`
+  on the v10 log (QMI reg/PLMN classes, time-weighted):
+  **10-20 so far: covered 634 min, OUT 149 min (23.5 %) = FOREIGN 105 + HOME-LIMITED 23 + HOLE 21.** Seven episodes:
+  two at home on Wi-Fi (40 + 34 min, lost at −115/−120), four out of area (3, 1, 26, 33 min, lost at −104…−122),
+  one open at 10:42. The three biggest out-of-area episodes are 70–80 % FOREIGN camp, i.e. the addressable class,
+  not holes. Loss RSRPs are framework values (v10); from now on v11 gives the modem's own. Sampler stalls 5–12 min
+  when the phone dozes off Wi-Fi — the summarizer caps a sample's coverage at 5 min, so OUT is a floor.
+  Stock-side comparison still has no instrument (E4 needs the second SIM); 10-12 memory note: a stick exit came on a
+  *different* Verizon carrier (B66 67086), so the backoff is per-cell, which the v11 neighbour list can now watch.
