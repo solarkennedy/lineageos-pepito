@@ -1025,3 +1025,67 @@ minor 321 (nas-probe hard-codes it); cap raised to 512 (`Mi8937` `d08e4c86`, pus
 readback prop 2, zero avc. **Reflashed with the fix 2026-10-15 14:00: boot-time run now clean** — `vendor.pepito.modem.usage=2`,
 `ims_enabler=ok`, `ims_msisdn=kept`, modem usage=2 REGISTERED on 311/480, no avc. Settings status row should read "Applied: data-centric". ⚠️ new2's NV is already 2, so the "fresh voice-centric unit gets written at boot" path is still unexercised —
 the first flash of dut1/silver should log `nas.usage_preference: set to 2 (verified)` + 1 NV write.
+
+### 2026-10-20 — AP-side "let go" audit: every way the ROM can ask the modem to release a cell
+**Question (Kyle):** stock A8 is hands-off; does our ROM *ask* the modem to disconnect early (D1: release at
+−121…−126 vs stock −140)? We already found one such lever (`wfc_wlan_bridge` never sent WLAN_NOT_AVAILABLE,
+fixed `18771530`). This is the complete enumeration, each item with the trigger, how it reaches the modem,
+whether A8 had it, and what our logs say. Tool: `diag-tools/ap-release-census/ap-release-census.sh <unit>`
+(read-only radio-log census, three buckets). Source checked on the builder (24.0 tree); bench = dut1
+c39a6acf (24.0 `20261017`, 2.8 d uptime, US Mobile SIM registered voice/data-OOS).
+
+**A. COMMAND class — framework requests that force system selection / attach (the only true "disconnect" asks)**
+
+| # | Request → modem | A17 triggers | A8 | Our evidence | Verdict |
+|---|---|---|---|---|---|
+| A1 | `RADIO_POWER` off/on (DMS LPM→ONLINE) | airplane; DSRM `RADIO_RESTART`; **`rilConnected` (every qcrild/HAL reconnect: RIL.java sends radio OFF, SST turns it back on)**; EmergencyWatchdog "radio" nudge; thermal/carrier power reasons (nothing on this device wires them) | airplane + DcTracker data-stall radio restart (tx/rx-counter based, far less trigger-happy than A12+ DSRM, which fires on NetworkMonitor DNS validation) | dut1 13.5 h: 0. qcrild/imsqmidaemon/wfc_bridge/netmgrd all started at ~14 s after boot, never restarted. Field 09-15/16 (Tailscale DNS): DSRM chose RADIO_RESTART ×6, ≥1 executed; **DSRM skips when level ≤ POOR** (`isRecoveryNeeded`), Verizon RSRP thresholds −115/−105/−95/−85 (+inflate) ⇒ **cannot fire below ≈ −115 dBm**, i.e. not at the D1 release point | aggravator at mid-RF with broken DNS, **not D1**. F6 skip-list still **unshipped** (no `data_stall_recovery_*` anywhere in device/vendor trees) |
+| A2 | `NV_RESET_CONFIG(1)` = modem reboot | DSRM `RESET_MODEM` (step 4, after 2×180 s), `Phone.rebootModem` | DcTracker had no modem-reset step | field 09-15/16: chosen ×2 (skipped). On pepito a modem restart wedges MSS (`radio-rmts-buffer-rootcause`) | **ship F6: skip RESET_MODEM** (see below) |
+| A3 | `SET_ALLOWED_NETWORK_TYPES_BITMAP` (NAS 0x33 mode_pref) | SIM loaded (`sendSubscriptionSettings`), user toggle, Allow-2G, carrier config; SST "re-register" toggle to GLOBAL and back (`EVENT_GET_ALLOWED_NETWORK_TYPES`) — **dead code, no caller**; DSRM `RE_REGISTER` skipped by default (`{f,f,true,f,f}`) | same family | L1: **no 0x33 at init on either stack** (qcril only writes on change; mode_pref identical dut1 vs stock). dut1 13.5 h: 0. L3 fault windows: 0 | closed (boot/user only) |
+| A4 | `SET_NETWORK_SELECTION_AUTOMATIC` (0x33 net_sel_pref) — the framework's own comment: a duplicate "will push current PLMN to low priority" | SIM loaded with sub change; `restoreSavedNetworkSelection` at every SIM load when no manual PLMN saved; EF_CSP (only if manual); SatelliteController (not configured); EmergencyWatchdog "auto" nudge | **never**: stock is a CDMA-LTE phone type (`telephony.lteOnCdmaDevice=1`, `ro.telephony.default_network=9`) and `GsmCdmaPhone` skips network-selection calls in CDMA mode | dut1 13.5 h: 0 (`QUERY_NETWORK_SELECTION_MODE` ×29 is a read). L3 fault windows: no 0x33 | boot-only; **not at the release moment**. Structural class difference noted |
+| A5 | `SET_INITIAL_ATTACH_APN` / `SET_DATA_PROFILE` (IA APN change ⇒ modem detach/re-attach) | APN db change, carrier-config load, SIM load, `forceUpdateIa` | A8 had `setInitialAttachApn` too | dut1: 0; L3 fault windows: only 2 `WDS 0x20` data setups, no profile writes | closed |
+| A6 | `DEACTIVATE_DATA_CALL` on the **IMS PDN** (IMS down ⇒ voice-centric CM "voice not available" ⇒ the stick) | DNC tears the IMS PDN down for `ROAMING_DISABLED` (**IMS is not exempt**, only satellite is), `NOT_IN_SERVICE` (soft; retried, not torn down, if in-call), data-disabled (policy-gated), IWLAN handover (legacy mode: qcril itself reports RAT=IWLAN) | A8 DcTracker also tore down on roaming-off | foreign camps are LIMITED (no PDN) so the roaming path rarely applies on Verizon; **the handover path is the bug we found** (`18771530`). Residual: **every Wi-Fi flap** at the edge of home coverage = WLAN_AVAILABLE/NOT_AVAILABLE pair ⇒ IMS re-REGISTER over LTE at the cell edge (screen-off Wi-Fi never reconnects — no PNO — so flaps are real) | **the one open COMMAND-class lever**; census counts the bridge sends per day |
+| A7 | `ENABLE_MODEM` | `PhoneConfigurationManager` at boot | n/a | 0 | closed |
+| A8 | `START_NETWORK_SCAN`, `SET_SYSTEM_SELECTION_CHANNELS`, `SET_BAND_MODE` | Settings "Available networks" only | n/a | 0; L3: NO scan during faults | closed |
+| A9 | `SET_USAGE_SETTING` (0x33 usage TLV) — AOSP default `config_default_cellular_usage_setting=1` = **voice-centric** | `Phone.updateUsageSetting` at every SIM load | n/a (A12+) | **gated to AIDL radio HAL ≥ 2.0** (`RIL.canMakeRequest`); our HIDL compat path never sends it; dut1 reads `vendor.pepito.modem.usage=2` | closed — ⚠️ if the radio HAL is ever moved to AIDL this starts fighting `ims_enabler` |
+
+**B. STATE class — persistent policy the modem then acts on by itself (this is where "A8 is more hands-off" can bite, without any disconnect command)**
+
+| # | State | Ours vs stock | Verdict |
+|---|---|---|---|
+| B1 | NAS sys-sel prefs (mode/band/acq/roam/net_sel/srv_domain) | identical (L1/L2; `NAS 0x33` absent at init on both) | closed |
+| B2 | `usage_setting` voice- vs data-centric | stock voice-centric; ours = tweak (`persist.gotweak.modem_data_centric`, on dut1) | **the lever for what the modem does when IMS voice is lost**; §5a A/B is the test |
+| B3 | DSD WLAN-available | the found bug; fixed; residual = flap rate (A6) | open via census |
+| B4 | Signal-report contract `NAS 0x6c CONFIG_SIG_INFO2` (threshold lists, deltas disabled, re-sent on every carrier-config/service-state change) + `0x03` indication set | different (L1 rows 2/9) | cadence of indications ⇒ the 0x43/0x31/0xac read bursts. Cannot release a cell. Power item, not D1 |
+| B5 | UIM 1x session activation (fails harmlessly) | A16-only | closed (L5) |
+| B6 | IMSS provisioning (six `0x53` writes missing) | stock-only | affects IMS **re-registration speed** (§5b lever 1) — how long "voice unavailable" lasts, not the release RSRP |
+| B7 | GTP cell positioning in the modem | **stock izat.conf: `GTP_CELL=BASIC`, `GTP_CELL_PROC=MODEM`, `NLP_MODE=4`; ours `GTP_MODE=DISABLED`, `NLP_MODE=1`** | stock made the modem do *more* positioning cell work, not less. Closed (not a release lever either way) |
+| B8 | Thermal TMD | L4 closed: AOSP thermal HAL only, no thermal-engine, zero TMD traffic; the false-SEVERE skin sensor has no path to the modem | closed |
+| B9 | NV 6828 / B12 rfnv (B12 tweak, dut1 only) | boot NV write | adds a candidate band; not a release lever |
+
+**C. READ class** — `GET_CELL_LOCATION_INFO 0x43` ×10 stock, `0x31/0xac` ×48 (L1 row 3; 2.5 req/s bursts in faults, L3 10-05) and `GET_ACTIVITY_INFO` (batterystats, 55/13.5 h). Reads cannot release a cell. L3 verdict stands: **during the fault the AP is a passenger.**
+
+**D. Our own runtime writers** (everything else we add is a boot oneshot): `wfc_wlan_bridge` (DSD 0x20/0x21 on Wi-Fi edges) and `EmergencyWatchdogController` — fires **only** in `EMERGENCY_LIMITED` (never while registered), 90 s debounce, nudge **off by default** (dut1: watchdog=1, `ewd_nudge` unset ⇒ detection-only). Neither can release a registered cell. `ims_enabler` (0x33 usage, IMSS test_mode/qipcall), `wfc_efswrite`, `modem_b12` = boot only.
+
+**E. What the release moments themselves say.** 09-17 09:48:31 and the 10-05 fault windows: modem-triggered
+deregistration with **no AP command of any class** (no RADIO_POWER, no DSRM, no 0x33, no scan, no PDN write).
+09-16 09:12 walk: a registered cell on A16 **held to −125**. ⇒ D1 is not an AP *command*. What is left for D1:
+(i) n=1 RF/body confound — L6 cage never run; (ii) per-unit modem EFS generation (`nas/aggression_management`,
+MBN rev — stock-diff 09-30); (iii) **CM-driven release**: at the fringe the IMS PDN/registration fails first,
+the voice-centric CM declares voice unavailable and the *modem itself* lets go / backoff-forbids the HPLMN —
+it looks exactly like an early release and would be absent on stock only because stock's IMS re-registers in
+seconds (B6). §5a (data-centric) is the direct test: if the release RSRP moves toward −140 under usage=2, D1
+was the CM, not RF and not the AP.
+
+**Actions (none started):**
+1. **F6 now:** `data_stall_recovery_should_skip_bool_array = {false,false,true,false,true}` (skip RESET_MODEM;
+   keep RADIO_RESTART — it is the un-stick action and it already self-gates on POOR signal) in
+   `mithorium-common/overlay/packages/apps/CarrierConfig/res/xml/vendor.xml` (shared with siblings; losing the
+   modem-reboot step costs them nothing). Also the Tailscale resolver stays off on cellular.
+2. **Census on new2 after a field day** (`ap-release-census.sh new2`; new2 was unreachable 10-20 08:50). If the
+   COMMAND bucket is 0 across the fault windows, the "ROM asks the modem to disconnect" hypothesis is closed on
+   A17 and only B2/B3/B6 remain as AP levers. Add the bridge-send count to the daily sampler line.
+3. L6 cage for a real D1 number; §5a A/B for the CM-release reading of D1.
+
+### 2026-10-20 — HANDOFF: forward work moves to `PLAN-oos-time.md`
+This file stays as the mechanism record. New goal-driven plan (one metric: excess OOS minutes vs a stock
+witness; FACT/HYPOTHESIS/DECISION tags; ordered experiments E0–E7; gated ship list) is `plans/PLAN-oos-time.md`.
