@@ -124,3 +124,19 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   when the phone dozes off Wi-Fi — the summarizer caps a sample's coverage at 5 min, so OUT is a floor.
   Stock-side comparison still has no instrument (E4 needs the second SIM); 10-12 memory note: a stick exit came on a
   *different* Verizon carrier (B66 67086), so the backoff is per-cell, which the v11 neighbour list can now watch.
+- **2026-10-20 14:28 — E2 walk #1 starts (new2).** Sampler v11 alive (pid 1415, 818 lines), registered 5230/PCI 308
+  at −112, srxlev 14, battery 100 %, nudge off, data-centric on, no other change. Route class: Kyle's walk.
+  To pull on return: `new2-adb pull /data/local/tmp/rec/sample-v11.log` → `summarize.py`; compare "lost at" RSRP/srxlev
+  (now modem-sourced) against the 07:23 and 10:42 home episodes.
+- **2026-10-20 14:45 — silver prepped for the E1 re-run (stock A8 v1AML-0, 4373dd0f, no SIM, 38 % charging).**
+  Root = `/su` (stdin mode `echo cmd | /su`; uid 0 but CapEff 0xc0 = setuid/setgid only — good for dmesg, useless
+  for killing). Native `diag_mdlog` runs fine **as shell** and stops with `diag_mdlog -k` as shell; dry run wrote
+  5 MB in 12 s on `Diag-road.cfg` (staged at `/data/local/tmp/Diag-road.cfg`), mux clean (no −107).
+  Script: `diag-tools/nas-probe/silver-e1-park.sh arm|status|stop|pull <label>|decode <dir>`.
+  **Protocol (needs the SIM, so after the new2 walk):** (1) SIM new2 → silver, wait for `gsm.sim.state=LOADED`
+  and voice REG_HOME + IMS registered; (2) `silver-e1-park.sh arm`; (3) by hand on silver: Settings → Mobile
+  network → **Enhanced 4G LTE Mode OFF**; (4) `status` every few min; let it park ≥ 10 min; (5) Enhanced 4G ON, wait
+  for voice; (6) `pull e1-park1` then `decode <dir>`; read `reg_sim`/`emc_attached`/PLMN lines in the park window.
+  **Decides H1's forbidden half:** park on 311480 LIMITED ⇒ real refuse-foreign policy (copy it); park on 310410/310260
+  ⇒ no separate policy, it was all IMS (F2). Also gives the stock-side *loss* RSRP if the bench cell wobbles.
+  ⚠️ silver's battery collapses under sustained OOS at 95–97 % — keep it on the charger for this bench run.
