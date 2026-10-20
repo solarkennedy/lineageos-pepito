@@ -4,13 +4,65 @@
 pulling it out to the external CCID reader. Downloading new profiles over the reader stays
 fine; the win is `Warp(VZW) ↔ DarkStar(AT&T) ↔ Roamless` switching in the field.
 
-**Status: 🏁 CLOSED — shipped via OTG reader (2026-07-30). The MCFG/PDC write path (re-opened & tested 2026-10-16) is also closed: the modem enforces the mcfg_sw signature at load-commit (`QMI_ERR_AUTHENTICATION_FAILED`), so no modified config can be made valid. All three EFS write routes are now closed by signing or ACL. See "MCFG/MBN write path" below.**
+**Status: 🔓 RE-OPENED 2026-10-19 (vendor ISD-R AID route, see next section). Previously: 🏁 CLOSED — shipped via OTG reader (2026-07-30). The MCFG/PDC write path (re-opened & tested 2026-10-16) is also closed: the modem enforces the mcfg_sw signature at load-commit (`QMI_ERR_AUTHENTICATION_FAILED`), so no modified config can be made valid. All three EFS write routes are now closed by signing or ACL. See "MCFG/MBN write path" below.**
 The stated goal (switch profiles *while the card sits in the tray*) is **impossible on this
 hardware**: the modem refuses logical channels to the eUICC ISD-R AID, from every client
 including qcrild. What we shipped instead, and what Kyle validated, is **OpenEUICC driving the
 CCID reader over USB-OTG** — profiles managed on the phone with no PC, which was the practical
 point. Committed to the ROM (see "SHIPPED" below). Read that section and the VERDICT first;
 the sections after them are the investigation trail, kept for evidence.
+
+## 🔓 2026-10-19 — RE-OPENED: the block is AID-specific; vendor ISD-R AIDs pass
+
+The modem's refusal is a recognizer on the GSMA eUICC AID, not a ban on eSIM. Some
+removable cards (ESTKme, LinksField) answer on a **non-GSMA ISD-R AID** (list:
+euicc-manual.osmocom.org/docs/lpa/applet-id-oem/). `nas-probe isdr-scan` (new, read-only:
+open + close a logical channel per AID) on dut1 c39a6acf, build 20261017, plain USIM in the
+tray (see the note under the table about which card):
+
+| AID | Card | Result |
+|---|---|---|
+| `A00000015141434C00` | ARA-M (control) | channel opened, SW 9000 |
+| `A0000000DEADBEEF0001` | junk (control) | QMI err 80, card SW **6A82** — modem passed it, card: not found |
+| `A0000005591010FFFFFFFF8900000100` | GSMA ISD-R | **QMI err 82 ACCESS_DENIED**, no SW (modem blocked) |
+| `A0000005591010FFFFFFFF8900050500` | 5ber | err 82 (blocked) |
+| `A0000005591010FFFFFFFF8900000177` | Xesim | err 82 (blocked) |
+| `A0000005591010000000008900000300` | eSIM.me | err 82 (blocked) |
+| `A06573746B6D65FFFF4953442D522030` | ESTKme SE0 | err 80 + SW 6A82 — **passed to card** |
+| `A06573746B6D65FFFF4953442D522031` | ESTKme SE1 | passed to card |
+| `A06573746B6D65FFFFFFFF4953442D52` | ESTKme AUX | passed to card |
+| `A000000559104C696E6B736669656C64` | LinksField | passed to card |
+
+The card in the tray for both runs was the **EIOTCLUB** eUICC (ATR "WECu104e",
+active profile on T-Mobile's network), not a plain USIM. It answers on **none** of the
+vendor AIDs (all 6A82), so it only has the GSMA ISD-R the modem blocks.
+**EIOTCLUB cannot be switched in the tray on this phone**; only a card with a
+non-GSMA AID (ESTKme) can.
+
+⇒ The recognizer matches roughly the RID+PIX prefix **`A0000005591010`** (eSIM.me's
+`…1010 00000000 89…` is blocked too, so it is broader than the 12-byte
+`…FFFFFFFF89` prefix the 10-15 RE pointed at). LinksField shares the RID `A000000559`
+but has `104C…` after it and passes.
+
+**Rule mapped exactly (same day, `isdr-scan <aid...>`, EIOTCLUB card in the tray):**
+the modem blocks any AID that **starts with the 7 bytes `A0000005591010`** (GSMA eUICC
+RID `A000000559` + PIX `1010`), whatever its length or the bytes after it. That covers
+ISD-R, ECASD (`…8900000200`), ISD-Ps (`…89000010xx`) and the bare 7-byte prefix.
+Changing any one of the 7 bytes (`…1011…`, `…1110…`, `…1020…`, RID `…0558…`) passes,
+and so do the shorter prefixes `A000000559` and `A00000055910`. There is no allow-list:
+every AID outside that prefix reaches the card. The card itself returned 6A82 to the
+partial-AID selects (`A000000559`, `A00000055910`), so selecting ISD-R by a partial AID
+does not work on the EIOTCLUB card.
+**Buying rule:** a card can be managed in the tray only if its ISD-R answers on an AID
+that does not start with `A0000005591010`.
+
+**Next:** buy an **ESTKme** card (store.estk.me; AID configurable, SE0 is current) and
+re-run `nas-probe isdr A06573746B6D65FFFF4953442D522030` with it in the tray. A SW 9000
+plus a BF20 reply means reader-free switching works. Then re-add OpenEUICC (dropped for
+24.0, Mi8937 `6c1fb8f1`): upstream master (89d677e, 2026-09) has an editable ISD-R AID
+list (`IsdrAidListActivity`, `isdrAidListFlow`) passed into lpac. Unverified:
+whether ESTKme's AID also needs the card in SE0 mode, and whether qcrild's
+telephony APDU path behaves the same as our direct QMI client (it did for the GSMA AID).
 
 ## What was measured (2026-07-30, DUT1 over USB, `nas-probe isdr`)
 

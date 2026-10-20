@@ -101,3 +101,68 @@ EFS dump. NEVER airplane-cycle around UIM changes ([[sim-uicc-toggle-trap]]).
 - `efs_scan.py` — dump EFS-file items (path+shape) from an mcfg_sw.mbn.
 Stock `.mbn` and `modem.elf` are gitignored (public repo; not ours to publish).
 Stock configs: build tree / `android-pepito-backups/<serial>/.../modem_config/`.
+
+## 2026-10-19 — a different route: non-GSMA ISD-R AIDs pass the modem
+
+All the work above tried to change the modem's eUICC policy. `nas-probe isdr-scan`
+shows the policy only blocks AIDs starting `A0000005591010`. ESTKme and LinksField
+ISD-R AIDs reach the card. Results and next steps: `plans/PLAN-esim-lpa.md`, 2026-10-19
+section.
+
+## 2026-10-19 — fail-open probe set: modem mcfg_sw auth is FAIL-CLOSED
+
+Question (make_failopen_probes.py): does `mcfg_auth_img_verify` have an aboot-style
+fail-open branch — does malforming the hash-table header's size/pointer fields make
+the verifier skip the check and accept non-stock content? Ran all 9 probes on dut1
+(c39a6acf) via `pdc-mbn-loader load`, TMO config base, SIM in.
+
+RESULT — no fail-open:
+  v0 stock control  -> ind_error=0  (accepted)
+  v1 stale sig      -> ind_error=90
+  v2 sig_size=0xFFFFFFFF, v3 =0x10000, v4 =0, v5 cert_size=0xFFFFFFFF,
+  v6 cert_size=0, v7 image_size=0xFFFFFFFF, v8 sig+cert=0  -> ALL ind_error=90
+
+Only the byte-identical stock blob is accepted. Every non-stock variant (stale sig
+or malformed length fields) is rejected. No length-field skip. Lane stays closed.
+
+Caveat: rejections came back 90 = QMI_ERR_INCOMPATIBLE_STATE_V01, not 34
+(AUTHENTICATION_FAILED) as on 10-16. On this modem the SW config slot was
+NOT_PROVISIONED (GET_SELECTED SW ind_error=16, active SW = none; the 4 stock
+configs sit as type=HW incl. active tmo/commerci:648768). So loads as SW type into
+an empty/incompatible SW slot terminal at 90. Can't fully separate "fail-closed at
+the header-field check" from "rejected upstream before the fields are parsed" — but
+no malformation produced acceptance, so the fail-open hypothesis is dead either way.
+To get a clean 34 you'd need the modem in the SW-provisioned state 10-16 had.
+
+Loader gotchas learned this run:
+- Every `load` needs a UNIQUE config id (3rd arg); re-using a registered id ->
+  ind_error=41 (QMI_ERR_INVALID_ID) from chunk 1, received=0 (no reassembly).
+- `load` writes modem EFS: requires `--yes-write-modem-efs`.
+- Only ACCEPTED (ind_error=0) loads leave a persistent PDC entry; 90-rejected ones
+  leave nothing. Stock HW config set never touched (SW active stayed <none>).
+
+## 2026-10-19 (corrected/valid) — fail-open RE-RUN reaching the authenticator: still FAIL-CLOSED
+
+The first 2026-10-19 run above was a FALSE NEGATIVE: probes flipped a payload byte but
+left the mcfg version UNCHANGED, so a same-version/different-content config hit the modem's
+version/anti-rollback gate -> terminal ind_error=90 (QMI_ERR_INCOMPATIBLE_STATE) BEFORE the
+authenticator. Also loaded as SW type while stock mcfg_sw configs live in the HW bucket here.
+
+Fixed both: (1) make_failopen_probes.py now BUMPS the 4-byte mcfg version (payload+0x14 and
+its 2 trailer copies; 0x07010558->0x07010559) instead of flipping a byte -> modem treats it
+as a new config and proceeds to auth; (2) added `--hw`/`--sw` to pdc-mbn-loader `load`
+(rebuilt via build-nosysroot.sh; old binary .bak-20261019) and loaded with --hw.
+
+VALID RESULT (dut1 c39a6acf, US Mobile/T-Mobile SIM 310240, TMO config base, HW bucket):
+  v0 stock                              -> ind_error=0   (accepted; auth path works)
+  v1 ver-bump, well-formed header       -> ind_error=34  (AUTH control: authenticator REACHED)
+  v2 sig_size=0xFFFFFFFF ... v8 sig+cert=0 (all 7 header malformations) -> ALL ind_error=34
+
+=> mcfg_sw authenticator is FAIL-CLOSED. With auth genuinely reached (proved by v1=34, not
+the earlier 90), malforming the hash-table header sig_size/cert_size/image_size (max/over/zero)
+does NOT make the verifier skip the check -- no aboot-VB1.0-style length-field fail-open in the
+modem MCFG path. This SUPERSEDES the 90-run above and is a real negative. Lane stays closed.
+
+Methodology note: to reach 34 (real auth verdict) you MUST (a) bump the mcfg version, not just
+edit content (else 90 compat gate), and (b) load --hw (stock mcfg_sw sits in the HW bucket on
+this modem; SW bucket is NOT_PROVISIONED -> also 90). Both are now baked into the tooling.

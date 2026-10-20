@@ -1,0 +1,26 @@
+eSIM MCFG fail-open probe set  (base: mcfg_sw.mbn)
+Load each on dut1 with pdc-mbn-loader (load <probe> <uniq-id> --hw), record
+terminal ind_error.  Each load needs a UNIQUE id; use --hw (stock mcfg_sw
+sits in the HW bucket here).  Probes bump the mcfg version so the modem
+reaches the authenticator (a same-version edit stops at ind_error=90).
+Expected if FAIL-CLOSED (likely): v0=0, everything else=34.
+A fail-open shows as ind_error=0 on any v2..v8 -> go to Tier B.
+
+v0_control_stock     untouched stock (expect ind_error=0, registers)
+                     none (stock, version unchanged)  size=40932B
+v1_control_stale     flip 1 payload byte, fix hashes, well-formed header, RSA sig stale (expect 34; reproduces 10-16)
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
+v2_sigsize_max       sig_size=0xFFFFFFFF (direct aboot 'length exceeds buffer' analog)
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
+v3_sigsize_over      sig_size=0x00010000 (over the ~6.5KB seg, not 0xFFFFFFFF)
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
+v4_sigsize_zero      sig_size=0 (verifier may treat as 'no signature -> skip')
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
+v5_certsize_max      cert_chain_size=0xFFFFFFFF
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
+v6_certsize_zero     cert_chain_size=0 (no chain -> skip chain/root check?)
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
+v7_imagesize_max     image_size=0xFFFFFFFF (inflate overall declared size)
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
+v8_sig_cert_zero     sig_size=0 AND cert_chain_size=0 together
+                     mcfg ver 0x07010558->0x07010559 (3 copies)  size=40932B
