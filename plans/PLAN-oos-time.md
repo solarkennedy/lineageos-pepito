@@ -65,7 +65,7 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
 | # | Experiment | Cost | Decides |
 |---|---|---|---|
 | E0 | **Sampler v11** ✅ 10-20 11:02 on new2: `nas-probe sig` (NAS 0x4F sig info + 0x43 cell location: serving RSRP, **srxlev**, neighbours) replaces the framework RSRP; `summarize.py` ✅ (time-weighted per-episode class mix + daily totals; recovery latency needs the second phone) | done | makes every later number comparable |
-| E1 | **Decode what already exists** — ⚠️ 10-20 result: the stock hold F3 (`scap6_live/recovery.qmdl`, 09-19 morning) was never pulled out of the session scratchpad and is **gone**; `silver-letgo-20260919.qmdl` is 3 min of silver-on-A16 *registered* (17:18–17:21, Srxlev 17–19, RSRP −108…−116), not a let-go; the 09-18 `silver-spot2` F3 is one minute at 17:21. Surviving stock-side evidence = the written 09-19 summary in PLAN-emergency-only (21-min OOS hold: BPLMN hammering, `PLMN 310-260 is Forbidden`, `emc_attached=0`, no emergency camp) — answers the **non-forbidden** half of H1 (stock prefers OOS-search over a foreign limited camp). The **forbidden** half (10-09 stock park PLMN) has no located capture; needs re-running on silver with diag | done as far as it goes | H1 half-answered, H2 open |
+| E1 | ✅ **10-21 silver re-run: forbidden half ANSWERED — no refuse-foreign policy; stock loops voice-centric LTE-disable (900 s) + PLMN block (3515 s) on an IMS registration without voice, never recovers (>3 h). See log.** Earlier: **Decode what already exists** — ⚠️ 10-20 result: the stock hold F3 (`scap6_live/recovery.qmdl`, 09-19 morning) was never pulled out of the session scratchpad and is **gone**; `silver-letgo-20260919.qmdl` is 3 min of silver-on-A16 *registered* (17:18–17:21, Srxlev 17–19, RSRP −108…−116), not a let-go; the 09-18 `silver-spot2` F3 is one minute at 17:21. Surviving stock-side evidence = the written 09-19 summary in PLAN-emergency-only (21-min OOS hold: BPLMN hammering, `PLMN 310-260 is Forbidden`, `emc_attached=0`, no emergency camp) — answers the **non-forbidden** half of H1 (stock prefers OOS-search over a foreign limited camp). The **forbidden** half (10-09 stock park PLMN) has no located capture; needs re-running on silver with diag | done as far as it goes | H1 half-answered, H2 open |
 | E2 | new2 baseline ≥ 2 field days on v11, data-centric on, nudge off, Tailscale DNS off — **day 1 (10-20) done: OUT 10.9 %, all losses at modem srxlev 0–6** | field | the post-data-centric split (H3 size) |
 | E3 | EFS-sync A/B on new2 (as queued 10-19) | field, 2 days | H4 |
 | E4 | **Two-phone excess-OOS** with the second SIM: silver stock vs new2, same pocket | field, ≥ 3 days | the prize; the only route-independent number |
@@ -159,3 +159,34 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   Walk-day verdict: today's excess is home-fringe coverage + foreign camping at fringe, not an AP-side let-go.
   E2 day 2 continues (leave the sampler). ⚠️ E1 re-run on silver needs new2's SIM, which ends E2's baseline and
   mimics the park on new2 — sequence is Kyle's call. Silver: 48 % on USB, SIM slot empty, Diag cfg staged.
+- **2026-10-21 03:17–06:45 — E1 re-run on silver (stock A8), SIM moved from new2 at 03:19. H1's forbidden half ANSWERED:
+  there is no separate stock "refuse foreign camp" policy; the whole hold is voice-centric domain selection reacting to
+  an IMS registration without voice.** new2's sampler was stopped 03:17 (day-2 partial: 197 min, OUT 0). Silver went
+  `REG_DENIED_EM rc=13` at 03:25 **hands-off** (VoLTE switch confirmed ON: `volte_vt_enabled=1`), diag armed by hand
+  03:26 (the script's `LOADED` gate blocks on this A8's `READY`), 1.4 GB / 14 files banked in
+  `~/android/lineage-23/diag-tools/captures/silver-e1-park1-20261021-partial/` (decoded `*.f3.txt`; filter with
+  `diag-tools/nas-probe/f3grep.py`). **Stock never recovered: 3 h 20 min OOS and counting at 06:45**, framework
+  SEARCHING since 03:35, brief limited camps each cycle. The stock modem's own words, one cycle (03:36):
+  1. `MMR_REG_REQ PLMN(311-480) RAT(LTE)` → `Camped on PCI 308 / 5230` → **ATTACH ACCEPT** 03:36:03.66, IMS PDN up
+     (3 v6 P-CSCFs), `ims_voice_avail=1`, VoPS=1.
+  2. SIP REGISTER 03:36:05.38 → **401 → 200 OK** 03:36:06.53 (`UE Registered`, "Service Route non existent in 200 OK",
+     `No feature tag added to Contact`, all 6 feature tags state 0) → IMS reports `IMS REG status 0 call_type_mask=0x1`
+     (voice not registered; SMS service goes 2, VoIP stays 0).
+  3. `cmsds.c: IMS registration is failed. cause code 1` → `Permanent IMS reg failure` → **`Disabling LTE as device is
+     voice centric`** (`ue_usage_setting=0`, `lte_disable_duration=900`) → `PLMN being blocked 19 1 132` (=311-480),
+     `blocking_interval 3515` → `reg_sim: 311-480 Added as voice is not available` / `Adding PLMN to backoff forbidden
+     PLMN list` → `Requested PLMN backoff forbidden, removing LTE from rat priority list` → REG_REQ 311-480 on UMTS,
+     then GSM (nothing), then `MMR_REG_REQ PLMN(310-410)` limited (AT&T PCI 444 / 5780 & 700, `LIMITED_SERVICE on
+     310-410`, also `310-260` once and `311-480` limited at 03:42/03:51/03:54) — i.e. **stock camps limited on AT&T
+     too; the "stock refuses foreign camp" reading of 09-19 was wrong**, it just spends most of the cycle SEARCHING.
+  4. 15:03 later (03:51:09) LTE re-enabled → camps 308 → **0.1 s after camping, before any attach, cmsds re-fires the
+     stored `Permanent IMS reg failure`** → block again; the new REGISTER (03:51:11) only retransmits. Loop forever.
+  Reading: this is [[voice-not-available-backoff]] in the stock modem, identical path (`cmsds` → `reg_sim` backoff list).
+  The lever is exactly the shipped one: data-centric (`ue_usage_setting`) removes the `Disabling LTE as device is voice
+  centric` branch — the F2 mechanism, now proven on a stock witness, not only on our ROM. Open on stock only: why
+  Verizon's 200 OK carries no voice feature tag for silver (device/IMEI-side VoLTE entitlement after the SIM move, or
+  silver's IMS provisioning) — not pursued, out of scope for OOS time. H2 (stock prefers OOS-search over foreign camp)
+  is false as a *policy*; it is the voice-centric LTE-disable cycle. E7 (locate a policy item) is moot → drop.
+  ⚠️ silver reads 48 % with charger status FULL on the hub (did not charge overnight) — fine for the bench, don't take
+  it out. Next on silver: a recovery test is worth one more capture (airplane toggle by hand: does the stored permanent
+  failure clear, or only a reboot?), then `silver-e1-park.sh stop` and move the SIM back to new2 to resume E2.
