@@ -190,3 +190,8 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   ⚠️ silver reads 48 % with charger status FULL on the hub (did not charge overnight) — fine for the bench, don't take
   it out. Next on silver: a recovery test is worth one more capture (airplane toggle by hand: does the stored permanent
   failure clear, or only a reboot?), then `silver-e1-park.sh stop` and move the SIM back to new2 to resume E2.
+- **2026-10-21 06:50 — full-capture cycle table (03:26–05:13):** LTE re-enable + `MMR_REG_REQ 311-480` at 03:36, 03:51,
+  04:06, 04:22, 04:38, 04:53, 05:10 (15–16 min period = `lte_disable_duration 900` + acquisition). Most retries re-fire the
+  stored failure 0.4 s after camping; at **04:53** (after the 3515 s PLMN block had lapsed) a genuine new SIP REGISTER ran
+  — 401 → 200 OK, `UE Registered`, and *still* `Permanent IMS reg failure` 50 ms later. ⇒ reproducible, not a one-off: the
+  Verizon IMS core registers silver without voice every time, and the voice-centric modem turns that into permanent OOS.
