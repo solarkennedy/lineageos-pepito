@@ -66,7 +66,7 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
 |---|---|---|---|
 | E0 | **Sampler v11** ✅ 10-20 11:02 on new2: `nas-probe sig` (NAS 0x4F sig info + 0x43 cell location: serving RSRP, **srxlev**, neighbours) replaces the framework RSRP; `summarize.py` ✅ (time-weighted per-episode class mix + daily totals; recovery latency needs the second phone) | done | makes every later number comparable |
 | E1 | **Decode what already exists** — ⚠️ 10-20 result: the stock hold F3 (`scap6_live/recovery.qmdl`, 09-19 morning) was never pulled out of the session scratchpad and is **gone**; `silver-letgo-20260919.qmdl` is 3 min of silver-on-A16 *registered* (17:18–17:21, Srxlev 17–19, RSRP −108…−116), not a let-go; the 09-18 `silver-spot2` F3 is one minute at 17:21. Surviving stock-side evidence = the written 09-19 summary in PLAN-emergency-only (21-min OOS hold: BPLMN hammering, `PLMN 310-260 is Forbidden`, `emc_attached=0`, no emergency camp) — answers the **non-forbidden** half of H1 (stock prefers OOS-search over a foreign limited camp). The **forbidden** half (10-09 stock park PLMN) has no located capture; needs re-running on silver with diag | done as far as it goes | H1 half-answered, H2 open |
-| E2 | new2 baseline ≥ 2 field days on v11, data-centric on, nudge off, Tailscale DNS off | field | the post-data-centric split (H3 size) |
+| E2 | new2 baseline ≥ 2 field days on v11, data-centric on, nudge off, Tailscale DNS off — **day 1 (10-20) done: OUT 10.9 %, all losses at modem srxlev 0–6** | field | the post-data-centric split (H3 size) |
 | E3 | EFS-sync A/B on new2 (as queued 10-19) | field, 2 days | H4 |
 | E4 | **Two-phone excess-OOS** with the second SIM: silver stock vs new2, same pocket | field, ≥ 3 days | the prize; the only route-independent number |
 | E5 | IMSS `0x53` parity on the bench: write the six items via a `qmux` oneshot, measure IMS re-registration time after `ims_test_mode` 1→0 | bench day | H3 lever |
@@ -140,3 +140,22 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   **Decides H1's forbidden half:** park on 311480 LIMITED ⇒ real refuse-foreign policy (copy it); park on 310410/310260
   ⇒ no separate policy, it was all IMS (F2). Also gives the stock-side *loss* RSRP if the bench cell wobbles.
   ⚠️ silver's battery collapses under sustained OOS at 95–97 % — keep it on the charger for this bench run.
+- **2026-10-20 20:10 — E2 walk #1 harvested (new2 home, sampler v11 still alive, pid 1415).** Log 11:02→20:04,
+  1126 samples, 9 doze gaps of 8–12 min (banked `~/android/lineage-24/field-logs/new2/sample-v11-20261020.log`,
+  v10 alongside). `summarize.py`: **covered 502 min, OUT 55 (10.9 %) = FOREIGN 26 + HOME-LIMITED 21 + HOLE 5 +
+  IMS-DOWN 3**, nine episodes (walk: 15:03 2 min, 15:06 8 min; home evening: 16:45, 17:26, 17:31, 18:10 12 min,
+  18:53, 19:25, 19:35 **29 min**). First modem-sourced loss numbers:
+  - **F6 holds with the modem's own srxlev (n=9, D1 not observed):** every loss with a readable serving cell came at
+    srxlev 0–6 (RSRP −116…−124); the rest showed `nocell` in the sample before (already searching). No loss while
+    the home cell had srxlev > 6. Home cell PCI 308 / 5230 sits at −112…−124 all evening, srxlev 13 at best.
+  - **FOREIGN camp is the strong-neighbour case on the walk** (AT&T 310410 PCI 265 at −85, srxlev 41, while VZW had
+    just dropped at −114) **and the fringe case at home** (AT&T srxlev 3–16, T-Mo 310260 forbidden at srxlev 0–8).
+  - **HOME-LIMITED is almost all searching, not backoff:** only 6 samples (~90 s) all day were limited on a
+    readable home cell with srxlev ≥ 0, 2 of them at srxlev 13 (20:02:56–20:03:11, followed by a one-minute AT&T
+    detour before registration at 20:04:26). ⇒ H3 (post-loss re-registration backoff) is bounded at ~2 min today.
+  - Re-registrations land in connected mode (`idle=0`, srxlev reads 0) at −112…−119, i.e. the same level as the
+    losses: the fringe cell flaps, the modem follows it.
+  - Radio logcat ring reached back only to 20:02; reject causes for the 18:19 / 19:25 tails are gone (logd 2M TODO).
+  Walk-day verdict: today's excess is home-fringe coverage + foreign camping at fringe, not an AP-side let-go.
+  E2 day 2 continues (leave the sampler). ⚠️ E1 re-run on silver needs new2's SIM, which ends E2's baseline and
+  mimics the park on new2 — sequence is Kyle's call. Silver: 48 % on USB, SIM slot empty, Diag cfg staged.
