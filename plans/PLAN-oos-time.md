@@ -164,7 +164,7 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   an IMS registration without voice.** new2's sampler was stopped 03:17 (day-2 partial: 197 min, OUT 0). Silver went
   `REG_DENIED_EM rc=13` at 03:25 **hands-off** (VoLTE switch confirmed ON: `volte_vt_enabled=1`), diag armed by hand
   03:26 (the script's `LOADED` gate blocks on this A8's `READY`), 1.4 GB / 14 files banked in
-  `~/android/lineage-23/diag-tools/captures/silver-e1-park1-20261021-partial/` (decoded `*.f3.txt`; filter with
+  `~/android/lineage-23/diag-tools/captures/silver-e1-park1-20261021/` (decoded `*.f3.txt`; filter with
   `diag-tools/nas-probe/f3grep.py`). **Stock never recovered: 3 h 20 min OOS and counting at 06:45**, framework
   SEARCHING since 03:35, brief limited camps each cycle. The stock modem's own words, one cycle (03:36):
   1. `MMR_REG_REQ PLMN(311-480) RAT(LTE)` → `Camped on PCI 308 / 5230` → **ATTACH ACCEPT** 03:36:03.66, IMS PDN up
@@ -195,3 +195,10 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   stored failure 0.4 s after camping; at **04:53** (after the 3515 s PLMN block had lapsed) a genuine new SIP REGISTER ran
   — 401 → 200 OK, `UE Registered`, and *still* `Permanent IMS reg failure` 50 ms later. ⇒ reproducible, not a one-off: the
   Verizon IMS core registers silver without voice every time, and the voice-centric modem turns that into permanent OOS.
+- **2026-10-21 07:50 — reboot test (Kyle's call): no help.** Pre-reboot diag stopped and banked (3.3 GB, 35 files); silver
+  rebooted 07:50:07, diag re-armed 07:50:48 (`scap-e1b/`). 07:51:04, ~20 s after boot: REGISTER 401 → 200 OK, `No feature tag
+  added to Contact`, all feature tags state 0 → `Permanent IMS reg failure` → `Disabling LTE as device is voice centric` →
+  `PLMN being blocked` → `LIMITED_SERVICE on 311-480`, then AT&T / T-Mo limited camps and searching, same cycle. Still OOS
+  at 08:10. ⇒ the no-voice registration is **network/entitlement-side for silver** (not stored modem state; a reboot does not
+  clear it) — consistent with Verizon registering the moved SIM on an IMEI it will not give VoLTE. **E1 CLOSED**, diag stopped
+  08:12, capture dir renamed `silver-e1-park1-20261021/`. Next: SIM back to new2, relaunch sampler v11 (E2 day 2).
