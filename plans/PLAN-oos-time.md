@@ -202,3 +202,24 @@ Out of scope (settled, do not reopen): modem static RE (dry, PLAN-stock-diff §6
   at 08:10. ⇒ the no-voice registration is **network/entitlement-side for silver** (not stored modem state; a reboot does not
   clear it) — consistent with Verizon registering the moved SIM on an IMEI it will not give VoLTE. **E1 CLOSED**, diag stopped
   08:12, capture dir renamed `silver-e1-park1-20261021/`. Next: SIM back to new2, relaunch sampler v11 (E2 day 2).
+- **2026-10-21 08:45 — CORRECTION (subagent on silver): the no-voice registration was a BENCH ARTIFACT, not Verizon
+  entitlement.** Carrier config for 311480 was fine (`carrier_volte_available_bool=true`, provisioned true), RadioInfo
+  "VoLTE provisioned ON", `volte_vt_enabled=1`. The gate was the **modem's persisted IMS service status for voice = 0**
+  (QImsService `type=1 status=0`, `disabledFeature=1`, `isVolteEnabled=false`) — left behind by the previous SIM in silver
+  (310-240, no carrier config → framework pushed `REQUEST_SET_SERVICE_STATUS enabled:0`, which the modem keeps), and after
+  the SIM swap the phone process never re-pushed it (no `ImsConfig setFeatureValue feature=0` from phone after the 07:50
+  boot). Airplane cycle alone did NOT fix it (08:35: re-registered, features still disabled). **Fix = Settings → Cellular →
+  Advanced → Enhanced 4G LTE Mode OFF then ON** (08:37:55 / 08:38:31): `REQUEST_SET_SERVICE_STATUS SrvType:0 Network:14
+  enabled:2`, 08:39:24 IMS registered with voice (`updateFeatureCapabilities voice true`), `VOICE_REGISTRATION_STATE
+  REG_HOME rat 14`, **silver IN_SERVICE on 311-480 (US Mobile) and stable** through 08:43. Side effects: logcat buffers
+  enlarged to 4 MB (reset at reboot); a stray tap opened "Automatically select network" and was cancelled (auto-select
+  still ON, no selection request sent). `volte_vt_enabled2=0`/`wfc_ims_enabled2=0` (subId-2 keys) left as-is.
+  **What still stands from E1:** the modem-side mechanism is real and now fully instrumented on stock — IMS registered
+  without voice ⇒ `cmsds` permanent failure ⇒ voice-centric LTE disable (900 s) + PLMN block (3515 s) ⇒ limited camps on
+  AT&T/T-Mo/own PLMN + searching, forever, reboot-proof; no separate refuse-foreign policy (H1 forbidden half, H2 as policy:
+  still dead). **What falls:** "Verizon won't give silver VoLTE" and any inference about field stick *frequency* from today —
+  the park was induced by stale modem state, which is also a **confound for the 09-19 / 10-09 silver stock-park captures**
+  (silver may have carried this disabled voice status then too; check which SIM it had). Today's run is, in effect, the E1
+  protocol executed the other way round (voice service off → park; on → recovers within ~1 min), which is itself a result:
+  on stock, flipping Enhanced 4G back ON recovers the hold immediately — the park is purely the IMS-voice state.
+  Silver is now a working stock VoLTE witness: ready for E4 when the second SIM arrives.
