@@ -1042,3 +1042,39 @@ charger keeps its 1 MHz flash switching frequency) — leak in the qpnp turn-off
 Bench gotchas: a face-down unit refuses to wake (proximity); `svc power stayon usb` + swipe + unlock;
 Aperture starts over the keyguard as the secure camera. Aperture's live prefs are NOT the legacy
 `shared_prefs` XML (editing `photo_flash_mode` there did nothing).
+
+### §9 addendum 4 — 2026-10-22 PM: the user's video deconstructed; ON mode traced; no-strobe = battery/PMIC droop (most likely)
+
+**Reporter's facts (via Kyle):** battery **44 %**, flash **ON**, preflash visible, **no strobe, picture dark.**
+
+**Video = a screen recording of Aperture's own preview** (11.8 fps, audio track is digital silence, so no click
+to place). Frame brightness (first 13 s): shutter tapped at ~6.8 s → preview lit by the preflash torch for
+**~1.1 s** (two overexposed frames, then the preview AE settles) → preview dark at ~8.0 s → one fully black
+frame at ~8.3–8.45 s (the capture freeze) → dark preview. A 100 ms strobe would never show in a stalled
+preview, so the video cannot separate "HIGH never issued" from "HIGH issued, hardware cut"; the dark photo
+says no light reached the exposure. Their preflash is ~1.1 s vs 0.4 s on new2.
+
+**ON mode traced on new2 (100 %, two shots):** identical to AUTO — LOW 120 mA 0.40 s → OFF → HIGH 1000 mA at
+SOF −29 ms → OFF at +69 ms. CameraX `flashMode = 1, flashType = 0`. Photos strobe-lit. So the daemon's ON
+sequence is correct on a healthy cell; the reporter's unit differs in *state*, not in sequence.
+
+**Why 44 % can kill the strobe and not the preflash:** the PMI8950 flash block has `qcom,vph-pwr-droop-enabled`
+at **3000 mV** (register 0xd35a = 0xd1 confirms it is armed on new2). The 1 A strobe on an aged cell (ESR 0.3–0.5 Ω
+plus the system load) sags VPH below 3.0 V → the PMIC cuts the flash in hardware, no log, no IRQ. The 120 mA torch
+preflash never sags that far. **Stock parity confirmed from the Palm GPL 3.18 source**
+(`Pepito_GPL_SourceCode/.../msm-pmi8950.dtsi:536-606`): same droop 3000/10, thermal derate 100, self-check,
+charger-support, and — like ours — **no `qcom,power-detect-enabled`**, so neither stock nor we derate the
+strobe to what the battery can supply; both just let the PMIC cut it. ⇒ not a ROM regression by config;
+our heavier A17/4.19 system load during capture could make the sag deeper than stock (unmeasured).
+
+**Mitigation candidate (unbuilt):** enable `qcom,power-detect-enabled` so `msm_flash_query_current` →
+`qpnp_flash_led_get_max_avail_current` → charger `FLASH_CURRENT_MAX` derates the pulse instead of
+hard-cutting it. Blocker: `flash_current_max` reads **0** on new2 at 100 % because
+`smbchg_calc_max_flash_current()` bails on the legacy BCL current read (`CONFIG_MSM_BCL_PERIPHERAL_CTL_LEGACY`);
+OCV and resistance ARE available from `qpnp-fg.c`. With power-detect on and that 0, every strobe would be
+refused ("battery too low for flash") — fix the calc (fall back to FG `current_now`) before flipping the flag.
+
+**To confirm before touching anything:** (1) ask the reporter whether the strobe works at ≥80 % and how old
+the battery is (cycle count / `charge_full`); (2) bench: dut1 (72 % SoH) discharged to ~45 %, flash ON,
+`msm_flash.c` dyndbg — expect HIGH issued, photo dark, `voltage_now` sag; (3) optional: the preflash length
+on a weak cell (1.1 s vs 0.4 s) hints AEC convergence suffers too.
