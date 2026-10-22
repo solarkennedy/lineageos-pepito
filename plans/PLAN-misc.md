@@ -1200,3 +1200,12 @@ Aperture (rb1_2/rb2_1 "no photo"); `pepito-unlock` failed on gold over USB becau
 the bouncer is up (fixed copy: wake, swipe 360,1000→360,300, then draw on the known grid 73,465–647,1039).
 Raw data: `/tmp/flashsync/soak-agent/` (every shot's .txt/.dmesg/.logcat/.jpg) and `/tmp/flashsync/agent/`
 (drivers: shot.sh, rebootsoak.sh, vph.sh, stall.sh, summ.py, timeline.py).
+
+### §9 addendum 7 — 2026-10-22: "Flash power" tweak STAGED (unbuilt) — `staging/flash-power/`
+
+Kyle's call: don't clamp everyone; give users the choice. Three patches (kernel `msm_flash.c`
+module param `flash_cap_ma` applied in `msm_flash_high()`; `init.gotweaks.rc` trigger on
+`persist.gotweak.flash_ma`; LineageParts ListPreference "Flash power" Full/Reduced/Low =
+0/700/400 mA under a new Camera category, default Full). Applies live, preflash/torch untouched,
+no new sepolicy grant (vendor_init already writes sysfs_type). README has the apply + validate
+steps; gold's first-two-shots-after-boot droop is the acceptance test.

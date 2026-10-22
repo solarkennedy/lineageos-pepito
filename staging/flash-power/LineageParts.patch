@@ -1,0 +1,144 @@
+diff -ruN a/packages/apps/LineageParts/res/values/arrays.xml b/packages/apps/LineageParts/res/values/arrays.xml
+--- a/res/values/arrays.xml	2026-10-22 16:54:50.853751968 -0700
++++ b/res/values/arrays.xml	2026-10-22 16:54:51.109746752 -0700
+@@ -507,4 +507,15 @@
+         <item>1</item>
+         <item>0</item>
+     </string-array>
++    <!-- PVG100 System Tweaks: camera flash power (persist.gotweak.flash_ma; 0 = no cap) -->
++    <string-array name="go_tweak_flash_power_entries">
++        <item>Full (1000 mA, stock)</item>
++        <item>Reduced (700 mA)</item>
++        <item>Low (400 mA)</item>
++    </string-array>
++    <string-array name="go_tweak_flash_power_values" translatable="false">
++        <item>0</item>
++        <item>700</item>
++        <item>400</item>
++    </string-array>
+ </resources>
+diff -ruN a/packages/apps/LineageParts/res/values/strings.xml b/packages/apps/LineageParts/res/values/strings.xml
+--- a/res/values/strings.xml	2026-10-22 16:54:50.809752865 -0700
++++ b/res/values/strings.xml	2026-10-22 16:54:51.113746670 -0700
+@@ -101,6 +101,9 @@
+     <string name="go_tweak_zram_zstd_summary">Compresses background apps\' memory more tightly, so more fits. It costs more processor time: switching back to apps is slower, and under pressure the system may close apps it would otherwise have kept. Not recommended. Off by default. Takes effect after a restart.</string>
+     <string name="go_tweak_gpu_perf_floor_title">GPU performance floor</string>
+     <string name="go_tweak_gpu_perf_floor_summary">Keeps the graphics chip at a higher minimum speed while it is drawing, so scrolling and animations start smoothly instead of stuttering on the first frames. No cost while the screen is still; slightly more power during video and other light graphics. On by default. Applies immediately.</string>
++    <string name="go_tweaks_camera_category">Camera</string>
++    <string name="go_tweak_flash_power_title">Flash power</string>
++    <string name="go_tweak_flash_power_summary">%1$s. Lower this if flash photos come out dim or unlit: a worn battery cannot supply the full strobe, and the PVG100 then cuts it to a trickle. Takes effect on the next photo.</string>
+     <string name="go_tweaks_battery_category">Extreme Battery Saver</string>
+     <string name="go_tweak_battery_saver_cpu_title">Disable fast CPU cluster</string>
+     <string name="go_tweak_battery_saver_cpu_summary">While Battery Saver is on, switches off the four faster processor cores and runs on the four slower ones. Saves power, but the phone feels slower. Does nothing when Battery Saver is off. On by default. Applies immediately.</string>
+diff -ruN a/packages/apps/LineageParts/res/xml/go_tweaks_settings.xml b/packages/apps/LineageParts/res/xml/go_tweaks_settings.xml
+--- a/res/xml/go_tweaks_settings.xml	2026-10-22 16:54:50.744754189 -0700
++++ b/res/xml/go_tweaks_settings.xml	2026-10-22 16:54:51.107746793 -0700
+@@ -43,6 +43,19 @@
+     </PreferenceCategory>
+ 
+     <PreferenceCategory
++        android:title="@string/go_tweaks_camera_category">
++
++        <ListPreference
++            android:key="go_tweak_flash_power"
++            android:title="@string/go_tweak_flash_power_title"
++            android:dialogTitle="@string/go_tweak_flash_power_title"
++            android:entries="@array/go_tweak_flash_power_entries"
++            android:entryValues="@array/go_tweak_flash_power_values"
++            android:defaultValue="0" />
++
++    </PreferenceCategory>
++
++    <PreferenceCategory
+         android:title="@string/go_tweaks_battery_category">
+ 
+         <SwitchPreferenceCompat
+diff -ruN a/packages/apps/LineageParts/src/org/lineageos/lineageparts/perf/GoTweaksSettings.java b/packages/apps/LineageParts/src/org/lineageos/lineageparts/perf/GoTweaksSettings.java
+--- a/src/org/lineageos/lineageparts/perf/GoTweaksSettings.java	2026-10-22 16:54:50.690755289 -0700
++++ b/src/org/lineageos/lineageparts/perf/GoTweaksSettings.java	2026-10-22 16:54:51.132746283 -0700
+@@ -23,6 +23,7 @@
+ import android.text.format.DateFormat;
+ import android.widget.Toast;
+ 
++import androidx.preference.ListPreference;
+ import androidx.preference.Preference;
+ import androidx.preference.PreferenceScreen;
+ import androidx.preference.SwitchPreferenceCompat;
+@@ -91,6 +92,7 @@
+     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
+     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
+     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
++    private static final String KEY_FLASH_POWER = "go_tweak_flash_power";
+     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
+     private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
+     private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
+@@ -178,6 +180,15 @@
+             "persist.gotweak.battery_saver_gpu_enable";
+     private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
+ 
++    /**
++     * Camera main-strobe cap in mA, "0" = no cap (stock 1000 mA). Applied live by
++     * init.gotweaks.rc to /sys/module/msm_flash/parameters/flash_cap_ma; the next
++     * photo uses it. Why a lever at all: PLAN-misc.md §9 addendum 6 - on a worn
++     * battery the full strobe sags VPH under the PMIC's 3.0 V droop threshold and
++     * the LED is cut to 200 mA, so the flash fires but the photo is dim.
++     */
++    private static final String PROP_FLASH_MA = "persist.gotweak.flash_ma";
++
+     /** Read fresh by EmergencyWatchdogController (XiaomiParts); applies live. */
+     private static final String PROP_EMERGENCY_WATCHDOG =
+             "persist.gotweak.emergency_watchdog";
+@@ -191,6 +202,7 @@
+     private SwitchPreferenceCompat mBatterySaverCpuPref;
+     private SwitchPreferenceCompat mBatterySaverGpuPref;
+     private SwitchPreferenceCompat mEmergencyWatchdogPref;
++    private ListPreference mFlashPowerPref;
+     private Preference mPlayCertStatusPref;
+     private Preference mPlayCertIdPref;
+ 
+@@ -212,6 +224,7 @@
+         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
+         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
+         mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
++        mFlashPowerPref = prefSet.findPreference(KEY_FLASH_POWER);
+ 
+         setUpPlayCertPrefs(prefSet);
+ 
+@@ -253,10 +266,26 @@
+         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
+         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
+         mEmergencyWatchdogPref.setOnPreferenceChangeListener(this);
++
++        // "0" (no cap) when unset; any value not in the list falls back to it.
++        final String flashMa = SystemProperties.get(PROP_FLASH_MA, "0");
++        mFlashPowerPref.setValue(
++                mFlashPowerPref.findIndexOfValue(flashMa) >= 0 ? flashMa : "0");
++        updateFlashPowerSummary();
++        mFlashPowerPref.setOnPreferenceChangeListener(this);
+     }
+ 
+     @Override
+     public boolean onPreferenceChange(final Preference preference, final Object newValue) {
++        // Applies live: init.gotweaks.rc's `on property:` trigger writes the
++        // msm_flash cap at once; the next photo uses it.
++        if (preference == mFlashPowerPref) {
++            SystemProperties.set(PROP_FLASH_MA, (String) newValue);
++            mFlashPowerPref.setValue((String) newValue);
++            updateFlashPowerSummary();
++            return true;
++        }
++
+         final boolean enabled = (Boolean) newValue;
+         final String value = enabled ? "1" : "0";
+ 
+@@ -597,4 +626,10 @@
+                 .setNegativeButton(R.string.go_tweaks_reboot_later, null)
+                 .show();
+     }
++
++    private void updateFlashPowerSummary() {
++        final CharSequence entry = mFlashPowerPref.getEntry();
++        mFlashPowerPref.setSummary(getString(R.string.go_tweak_flash_power_summary,
++                entry != null ? entry : mFlashPowerPref.getEntries()[0]));
++    }
+ }

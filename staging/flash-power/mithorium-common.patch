@@ -1,0 +1,33 @@
+diff -ruN a/device/xiaomi/mithorium-common/rootdir/etc/init.gotweaks.rc b/device/xiaomi/mithorium-common/rootdir/etc/init.gotweaks.rc
+--- a/rootdir/etc/init.gotweaks.rc	2026-10-22 16:54:50.547758203 -0700
++++ b/rootdir/etc/init.gotweaks.rc	2026-10-22 16:54:51.104746854 -0700
+@@ -92,3 +92,14 @@
+     write /sys/devices/system/cpu/cpu1/online 1
+     write /sys/devices/system/cpu/cpu2/online 1
+     write /sys/devices/system/cpu/cpu3/online 1
++
++# Camera flash power ("Flash power" in PVG100 System Tweaks). The main strobe
++# is 1000 mA (stock). On a worn battery the 1 A pulse plus system load sags
++# VPH below the PMI8950's 3.0 V droop threshold and the PMIC silently drops
++# the LED to its 200 mA clamp - the photo comes out dim or unlit although the
++# flash visibly fired (PLAN-misc.md §9 addendum 6: 6/6 on the first two shots
++# after every boot on gold, also at "100 % + charging" on a 500 mA port).
++# persist.gotweak.flash_ma caps the strobe via msm_flash's module parameter;
++# 0 or unset = no cap = full stock power. Applies live, next photo.
++on property:persist.gotweak.flash_ma=*
++    write /sys/module/msm_flash/parameters/flash_cap_ma ${persist.gotweak.flash_ma}
+diff -ruN a/device/xiaomi/mithorium-common/sepolicy/vendor/gotweaks.te b/device/xiaomi/mithorium-common/sepolicy/vendor/gotweaks.te
+--- a/sepolicy/vendor/gotweaks.te	2026-10-22 16:54:50.628756553 -0700
++++ b/sepolicy/vendor/gotweaks.te	2026-10-22 16:54:51.106746813 -0700
+@@ -41,3 +41,11 @@
+ # what runs our trigger. Checked before relying on one, same as the two
+ # gotchas above.
+ allow vendor_init sysfs_devices_system_cpu:file rw_file_perms;
++
++# Flash power cap: init.gotweaks.rc writes /sys/module/msm_flash/parameters/
++# flash_cap_ma (plain `sysfs` label, no genfs entry) from the vendor_init
++# domain. Covered by system/sepolicy/private/vendor_init.te's
++# `allow vendor_init { sysfs_type -sysfs_usermodehelper }:file rw_file_perms`
++# (checked 2026-10-22); no device grant needed. If a future base policy
++# narrows that, label the node (genfs_contexts) and grant it here like
++# sysfs_kgsl above.

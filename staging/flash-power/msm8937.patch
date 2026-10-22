@@ -1,0 +1,37 @@
+diff -ruN a/kernel/xiaomi/msm8937/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c b/kernel/xiaomi/msm8937/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c
+--- a/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c	2026-10-22 16:54:50.470759772 -0700
++++ b/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c	2026-10-22 16:54:51.102746894 -0700
+@@ -654,6 +654,21 @@
+ 	return 0;
+ }
+ 
++/*
++ * User-selectable cap on the main-strobe current, in mA (0 = no cap, the DT
++ * qcom,current / requested value applies as before).  Exposed as
++ * /sys/module/msm_flash/parameters/flash_cap_ma and written by
++ * init.gotweaks.rc from persist.gotweak.flash_ma ("Flash power" in PVG100
++ * System Tweaks).  Why: on a worn cell the 1 A strobe plus system load sags
++ * VPH below the PMI8950's 3.0 V droop threshold and the PMIC silently drops
++ * the LED to its 200 mA clamp (PLAN-misc.md §9 addendum 6); a lower strobe
++ * stays above the threshold.  Torch / preflash (msm_flash_low) are untouched.
++ */
++static uint flash_cap_ma;
++module_param(flash_cap_ma, uint, 0644);
++MODULE_PARM_DESC(flash_cap_ma,
++	"cap on the main flash current in mA (0 = device-tree default)");
++
+ static int32_t msm_flash_high(
+ 	struct msm_flash_ctrl_t *flash_ctrl,
+ 	struct msm_flash_cfg_data_t *flash_data)
+@@ -680,6 +695,11 @@
+ 				pr_debug("LED flash_current[%d] clamped %d\n",
+ 					i, curr);
+ 			}
++			if (flash_cap_ma && curr > (int32_t)flash_cap_ma) {
++				pr_debug("LED flash_current[%d] %d capped to %u\n",
++					i, curr, flash_cap_ma);
++				curr = flash_cap_ma;
++			}
+ 			CDBG("high_flash_current[%d] = %d", i, curr);
+ 			led_trigger_event(flash_ctrl->flash_trigger[i],
+ 				curr);
