@@ -1107,3 +1107,9 @@ CPU load (gold reached 54 °C / health=Overheat under the loops; strobes still l
 the reporter's 1.1 s preflash vs our 0.4 s points the same way: slow AEC on their unit). Next = the
 reporter runs `flash-trace.sh` (deterministic on their unit) — the HIGH-vs-SOF line and the EXIF bit will
 say whether HIGH is issued at all, and where it lands. Bench: retry gold cold-boot + immediate shot.
+
+**Addendum 5, reboot retry (Kyle asked):** warm-rebooted gold from adb, first shot at uptime ~118 s, then two
+more, then a secure-camera instance started over the keyguard and shot after unlock (`--keep`): **4/4 FIRED and
+lit** (HIGH at SOF −118…−152 ms, OFF −12…−46 ms; post-boot gap preflash→HIGH 487 ms, made of ~240 ms
+framework→HAL latency on the still request). The one failing shot (3.70 V, −835 mA, Kyle's cold boot) stays
+unreproduced on the bench; the reporter's unit is the deterministic one — ship them `flash-trace.sh`.

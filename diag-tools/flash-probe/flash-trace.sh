@@ -11,6 +11,8 @@
 #     --auto SECS   start Aperture, wait SECS, press the camera key for you
 #                   (set the flash mode to ON in Aperture FIRST; it is remembered)
 #     -o FILE       write the report there (default: flash-trace-<serial>-<date>.txt)
+#     --keep        do not close a running camera app first (HAL frame timing then needs
+#                   the app to have been started after `persist.vendor.camera.hal.debug 4`)
 #
 # Classification (from `dmesg`):
 #   LOW .. OFF .. HIGH .. OFF   = normal: preflash, then the main strobe was commanded
@@ -28,12 +30,13 @@
 #   3. when asked, open Camera, set flash ON, take ONE photo, press Enter
 #   4. send back the flash-trace-*.txt, .dmesg, .logcat and .jpg files
 set -u
-SER=""; AUTO=""; OUT=""
+SER=""; AUTO=""; OUT=""; KEEP=""
 while [ $# -gt 0 ]; do
 	case "$1" in
 		-s) SER="$2"; shift 2 ;;
 		--auto) AUTO="$2"; shift 2 ;;
 		-o) OUT="$2"; shift 2 ;;
+		--keep) KEEP=1; shift ;;
 		*) echo "unknown arg $1" >&2; exit 2 ;;
 	esac
 done
@@ -58,7 +61,8 @@ echo "reg_dump before: $(sh 'cat /sys/class/leds/led:switch/reg_dump | tr "\n" "
 } | tee "$OUT"
 
 # the HAL reads its log level when the camera is opened -- close the app first so it reopens
-sh 'am force-stop org.lineageos.aperture; mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug; echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug 4; dmesg -c > /dev/null; logcat -c'
+[ -z "$KEEP" ] && sh 'am force-stop org.lineageos.aperture'
+sh 'mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug; echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug 4; dmesg -c > /dev/null; logcat -c'
 "${A[@]}" logcat -v monotonic > "$OUT.logcat" 2>/dev/null &
 LCPID=$!
 # clock offset: kernel printk time vs logcat monotonic time
