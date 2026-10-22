@@ -19,6 +19,11 @@
 #   LOW .. OFF, no HIGH         = the camera daemon never asked for the strobe
 #   HIGH with "Invalid state"   = the driver dropped the strobe (state machine desync)
 #   HIGH present but photo dark = the PMIC cut the pulse in hardware (droop/thermal/fault)
+#   flash INT latched bit 0x10   = VPH-droop clamp: VPH sagged below 3.0 V during the strobe and the
+#                                  PMIC dropped the LED to clamp-curr (200 mA) -> uniformly dim photo,
+#                                  EXIF still "FIRED" (normal strobes latch 0x0c)
+#   "Skipping sof"/"Remap pending request" in the capture window = the camera daemon slipped a frame
+#                                  -> strobe lands on the wrong frame, EXIF "not fired", dark/banded photo
 #
 # Reference runs (2026-10-22, 24.0 20261017, new2/dut1/gold): LOW ~0.45 s before the snapshot
 # frame, OFF ~0.25 s before, HIGH 30-115 ms before, OFF 0-70 ms after; photo EXIF "FIRED",
@@ -62,7 +67,7 @@ echo "reg_dump before: $(sh 'cat /sys/class/leds/led:switch/reg_dump | tr "\n" "
 
 # the HAL reads its log level when the camera is opened -- close the app first so it reopens
 [ -z "$KEEP" ] && sh 'am force-stop org.lineageos.aperture'
-sh 'mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug; echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug 4; dmesg -c > /dev/null; logcat -c'
+sh 'mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug; echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug 4; echo 1 > /sys/kernel/debug/flashLED/enable_debug; dmesg -c > /dev/null; logcat -c'
 "${A[@]}" logcat -v monotonic > "$OUT.logcat" 2>/dev/null &
 LCPID=$!
 # clock offset: kernel printk time vs logcat monotonic time
@@ -90,6 +95,9 @@ sleep 1; kill $LCPID 2>/dev/null
 sh 'echo "file msm_flash.c -p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug ""'
 
 {
+LATCH=$(sh 'cd /sys/kernel/debug/regmap/spmi0-03 2>/dev/null && echo 0xd318 > address && echo 1 > count && cat data' | sed -E 's/.*: *//')
+sh 'echo 0 > /sys/kernel/debug/flashLED/enable_debug'
+echo "flash INT latched (0xd318): ${LATCH:-?}   (0c = normal strobe; bit 0x10 = VPH-droop clamp)"
 echo "reg_dump after:  $(sh 'cat /sys/class/leds/led:switch/reg_dump | tr "\n" " "')"
 echo "battery after:   voltage_now=$(sh cat /sys/class/power_supply/battery/voltage_now) status=$(sh cat /sys/class/power_supply/battery/status)"
 echo "newest photo:    $NEWEST"
@@ -127,6 +135,10 @@ case "$T" in
 	"")        echo "NO FLASH IOCTLS AT ALL: no photo taken, or the camera did not open the flash subdev." ;;
 	*)         echo "sequence '$T' -- read the trace." ;;
 esac
+case "$LATCH" in 1?|3?|5?|7?|9?|[bBdDfF]?) echo "VPH DROOP CLAMP latched (0xd318=$LATCH): the strobe ran at the 200 mA clamp current -> dim photo with EXIF FIRED. Battery/charger could not hold VPH >= 3.0 V under the 1 A pulse + system load." ;; esac
+if [ -n "${SOF:-}" ]; then
+	grep -E 'Skipping sof|Remap pending request|reporting error frame' "$OUT.logcat" | awk -v s="$SOF" '{d=($1-s/1e9)*1000; if (d>-400 && d<150) {printf "FRAME SLIP near the snapshot (%+.0f ms): ", d; $1=$2=$3=$4=""; print}}'
+fi
 grep -q 'Invalid state' "$OUT.dmesg" && echo "DRIVER DROPPED A REQUEST (Invalid state) -- state-machine desync, see flash-torch-state-machine notes."
 } | tee -a "$OUT"
 echo "report: $OUT  (also send: $OUT.dmesg $OUT.logcat $OUT.jpg)"

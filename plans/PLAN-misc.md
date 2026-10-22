@@ -1113,3 +1113,90 @@ more, then a secure-camera instance started over the keyguard and shot after unl
 lit** (HIGH at SOF −118…−152 ms, OFF −12…−46 ms; post-boot gap preflash→HIGH 487 ms, made of ~240 ms
 framework→HAL latency on the still request). The one failing shot (3.70 V, −835 mA, Kyle's cold boot) stays
 unreproduced on the bench; the reporter's unit is the deterministic one — ship them `flash-trace.sh`.
+
+### §9 addendum 6 — 2026-10-22 evening: REPRODUCED on gold, two distinct mechanisms (VPH-droop clamp = the natural one; daemon frame slip)
+
+**New instruments (all live, no rebuild):**
+- `file leds-qpnp-flash.c +p` dyndbg logs every PMIC flash register write with a timestamp. A normal HIGH writes
+  `0x4F`→0xD342 (1000 mA) and `0x80`→0xD347 (strobe on) within 4 ms of the ioctl; OFF clears 0xD347 within 0.1 ms.
+  So the ioctl times ARE the LED times (minus the PMIC ramp), and the driver always programmed 1000 mA, including
+  in every failing shot below.
+- `echo 1 > /sys/kernel/debug/flashLED/enable_debug` makes the driver clear and arm the flash INT latch before each
+  strobe; afterwards read it via `cd /sys/kernel/debug/regmap/spmi0-03; echo 0xd318 > address; echo 1 > count; cat data`
+  (regmap debugfs is read-only, so no threshold experiments). **Every lit strobe latched `0x0c`; every
+  uniformly-dim strobe latched `0x1c`** — bit 0x10 is the VPH-droop event.
+- VPH ADC: `/sys/bus/iio/devices/iio:device1/in_voltage7_input` (PM8937 vadc), ~3.5 ms per read from a shell loop
+  that echoes into /dev/kmsg — catches the sag shape, not the µs transients the 10 µs droop comparator sees.
+- Stall injector: a shell loop on `/dev/kmsg` that `kill -STOP`s a camera process the moment a given `msm_flash_config
+  type N` line appears, then `-CONT`s it after D seconds.
+- ⚠️ `diag-tools/flash-probe/flash-trace.sh` now arms that latch and prints `flash INT latched (0xd318)`, a
+  **VPH DROOP CLAMP** verdict when bit 0x10 is set, and any `Skipping sof`/`Remap pending request`/`reporting error
+  frame` line within −400…+150 ms of the snapshot SOF as **FRAME SLIP**.
+- Bench fact: gold's USB is SDP, `usb/current_max` = 500 mA. With the camera running, the battery covers the rest even
+  while status says "Charging" (that is why the 12:17 failure read "Charging, −835 mA").
+
+**Attempts (gold, 24.0 `20261017`, flash ON, dark room unless noted; dim = meanY ≤ 52 vs 117–124 lit):**
+| # | condition | shots | failures |
+|---|---|---|---|
+| 1 | warm, Full/charging, relaunch each shot (incl. 2 after flash-mode cycling) | 12 | 0 |
+| 2 | first shot after 40 min asleep, 24.5 °C, Full, −438 mA, GMS phenotype storm in logcat (`b0`) | 1 | **1** (EXIF 25, uniform Y 51) |
+| 3 | battery only (`charging_enabled`=0), 97→87 %, 26–36 °C | 10 | 0 (VPH min 3.26–3.38 V) |
+| 4 | battery only + 4× `yes` nice 0, 85→79 % | 3 | 0 (VPH min 3.11–3.14 V) |
+| 5 | battery only + 8× `yes` nice −10, 81→73 % | 3 | **2** (EXIF 25, uniform Y 45–46, latch 1c) |
+| 6 | 500 mA USB + 8× `yes` nice 19 (current only, no starvation), 71 % | 3 | **3** latch 1c (Y 45, 46, 91), VPH min 3.05–3.34 V |
+| 7 | late still request: SIGSTOP provider or cameraserver 300 ms at preflash end (gap 402–443 ms, like the 12:17 shot) | 2 | 0 |
+| 8 | SIGSTOP mm-qcamera-daemon 300 ms at preflash end | 1 | 0 |
+| 9 | SIGSTOP mm-qcamera-daemon right after HIGH for 40 / 60 / 80 ×3 / 150 ms | 6 | **6** (EXIF 24 Y 86 banded / EXIF 24 Y 75 banded / EXIF 16 Y 24–40, a third of the frame black / no photo) |
+| 10 | SIGSTOP provider right after HIGH, 100 / 150 ms | 2 | 0 |
+| 11 | ion system-heap pool drained before the shot | 4 | 0 (snapshot alloc stayed 8 ms) |
+| 12 | `adb reboot`, unlock, shoot from uptime ~60 s: shots 1–2 of each boot (×3 boots) | 6 | **6** (rb1_1 Y 85; rb1_2 no photo + SOF skip + error frame, latch 1c; rb2_1 no photo, latch 1c; rb2_2 Y 47, latch 1c; rb3_1 Y 52, latch 1c, VPH 3.11; rb3_2 Y 48, latch 1c, VPH 3.07) |
+| 13 | same boots, shots 3+ (uptime ≥ ~105 s) | 10 | 0 (latch 0c) |
+(Kyle's addendum-5 reboot retry shot first at uptime ~118 s, which is why it was 4/4 lit.)
+
+**Mechanism 1 (the natural one, reproduced 5× + b0): PMIC VPH-droop clamp.** When the 1 A strobe plus a heavy
+system load comes out of the battery (boot/GMS storm, CPU load, a 500 mA USB port), VPH dips below the
+`qcom,vph-pwr-droop-threshold` 3000 mV for >10 µs and the PMI8950 drops the LED to `qcom,clamp-curr` = 200 mA for the
+rest of the pulse. Signature: kernel sequence normal (LOW→OFF→HIGH 1000 mA→OFF, strobe register written on time),
+HIGH lands at SOF −92…−150 ms like lit shots, EXIF **25 (FIRED)** (the daemon cannot see the clamp), photo
+**uniformly** dim (no rolling-shutter band: 200/1000 mA ≈ 20 % light, meanY 45–52 vs 120), latch 0xd318 = **1c**.
+Example `rb3_2` (2nd shot, uptime 95 s, 66 %, 3.77 V, −701 mA, 41 °C), SOF-relative: takePicture −930, precapture
+trigger −919, LOW −857, AE 4→5 −828, OFF −664, AE 5→4 −590, PRE_CAPTURE completed −273 (CameraX slow under boot
+load), still request submitted −270, BLOB request in HAL −126, HIGH −99 (strobe reg on −95), set_parms −57, OFF +7,
+BLOB SOF 0, onCaptureStarted +74. VPH 3.72 V before, 3.07 V sampled during the strobe; lit shots on the same boot
+3.92 → 3.23 V. b0 (100 %, Full, on USB) fits the same class: a full battery does not protect gold when the battery is
+the one supplying the load.
+
+**Mechanism 2 (induced; seen naturally once): camera-daemon frame slip.** If mm-qcamera-daemon misses a SOF in the
+~100 ms between booking the BLOB request and its frame, MCT logs `Skipping sof (current_frame, kernel_frame)`,
+`Remap pending request by N`, `Delay all frame by N`, and the BLOB moves to a later sensor frame while the strobe
+(already ON) does not. Signature: kernel sequence normal, EXIF **24 / 16 (not fired)** = the daemon's own flash state
+for the frame it actually captured, photo dark and **banded** (rolling-shutter edge of the strobe). Example
+`stD40high`: LOW −483, OFF −284, still request −230, HIGH −123, daemon stopped ~4 ms later for 64 ms, set_parms −112,
+OFF −15, `Skipping sof`/`Remap by 1` −4, SOF 0 → EXIF 24, meanY 86 with columns 40…125. **This is the 12:17 failure's
+signature** (EXIF 24, meanY 41). Natural instance: `rb1_2` (2nd shot after boot), SOF skip at −6 ms, the daemon cut
+the strobe to 25 ms (HIGH −148, OFF −123), AXI OUTPUT_ERROR on the BLOB frame, HAL "reporting error frame", no
+photo saved. Merely delaying the still request (rows 7, 10) does NOT break the shot: the 406 ms gap of the 12:17 shot
+is a symptom of load, not the cause.
+
+**Correlate:** in every natural failure the HAL's picture-channel buffer allocation (`request: 3657` → `set_parms`)
+took 60–135 ms instead of 8–13 ms, and HIGH fired 56–98 ms before the BLOB's set_parms instead of 15–41 ms: the
+system was under memory/CPU pressure. Draining the ion pool alone did not recreate it (row 11).
+
+**What this means for the reporter (100 % + charging, deterministic):** most likely Mechanism 1 on a worn cell
+(higher ESR ⇒ the sag crosses 3.0 V at any SoC, and a charger cannot follow a 10 µs edge). Stock has the same
+droop/clamp config (addendum 4), so it would clamp too. Our A17 system draws more current during capture, which
+deepens the sag (unmeasured on stock). The updated `flash-trace.sh` now separates the two classes: latch `1c` +
+EXIF FIRED + uniform dim = droop; FRAME SLIP line + EXIF not fired + banded = daemon.
+
+**Mitigation candidates (none built, need Kyle):** (a) raise `qcom,clamp-curr` 200 → ~500 mA, so a clamped strobe is
+still half power (watch for a brown-out if the sag gets deeper); (b) lower `qcom,current` 1000 → ~750 mA for the main
+flash (less sag, −0.4 EV); (c) `qcom,power-detect-enabled` after fixing smbchg `flash_current_max` (addendum 4);
+(d) for Mechanism 2, give mm-qcamera-daemon a camera task profile / higher priority (it runs nice 0 in the root
+cgroup; stock does the same).
+
+Bench gotchas: with `charging_enabled`=0 the unit counts as unplugged, so `svc power stayon` stops working;
+right after boot a photo whose save is still pending can be lost when the next `flash-trace.sh` run force-stops
+Aperture (rb1_2/rb2_1 "no photo"); `pepito-unlock` failed on gold over USB because the uiautomator dump runs before
+the bouncer is up (fixed copy: wake, swipe 360,1000→360,300, then draw on the known grid 73,465–647,1039).
+Raw data: `/tmp/flashsync/soak-agent/` (every shot's .txt/.dmesg/.logcat/.jpg) and `/tmp/flashsync/agent/`
+(drivers: shot.sh, rebootsoak.sh, vph.sh, stall.sh, summ.py, timeline.py).
