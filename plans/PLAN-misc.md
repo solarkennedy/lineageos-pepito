@@ -980,3 +980,65 @@ framework re-sends `ENABLE_UICC_APPLICATIONS` 4× (5 s apart) and qcril answers
   `qcril_qmi_pdc_set_sim_info`, the PDC/MBN carrier-config loader's SIM-info file, and only
   gets real values once an MBN db is loaded (`persist.vendor.radio.{sw,hw}_mbn_loaded` are
   0 here — the parked MCFG lane, `PLAN-mcfg.md`). Nothing to fix on its own.
+
+### §9 addendum 3 — 2026-10-22 bench measurement on 24.0 `20261017` (new2): the strobe DOES land in the frame; the no-strobe case is still unreproduced
+
+Trigger: a user reported the flash "out of sync with the shutter again" with a video. The video
+was not on disk anywhere (Downloads/Videos/repo/tmp searched) — still needed. The 08-01 DT fix
+(`6b6afaf52bd4`) has shipped in every release since 23.2 `20260802`, so the report is on a build
+that carries it.
+
+**Instrument that works:** kernel dynamic debug on the flash subdev, NOT the sysfs poller —
+`flash-sample.sh` polls at ~80 ms and MISSED every one of the ~100 ms strobes (it reported
+"torch only" for shots whose photos were strobe-lit). Recipe (root):
+```
+mount -t debugfs none /sys/kernel/debug 2>/dev/null
+echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control
+dmesg -c >/dev/null; <take photos>; dmesg | grep msm_flash_config   # types: 0 INIT 1 RELEASE 2 OFF 3 LOW 4 HIGH
+```
+Kernel printk time ≠ logcat `-v monotonic` time: measure the offset with `log -t MARK a; echo MARK > /dev/kmsg`
+(new2: logcat = dmesg + 1.277 s). `/proc/uptime` = monotonic + suspended time (new2: +85125 s).
+HAL frame timeline: `setprop persist.vendor.camera.hal.debug 4` (numeric) → `handleMetadataWithLock:
+valid frame_number = N, capture_time = <SOF ns>` and `processCaptureRequest ... stream format = 33` = the BLOB
+request. Aperture's CameraX runs on the camera2-pipe backend (logcat tag `CXCP`, enable with `log.tag.CXCP DEBUG`).
+⚠️ `adb shell 'pkill -f foo.sh; dmesg'` kills itself (the pattern matches the wrapper shell) — run dmesg separately.
+
+**Measured sequence, AUTO flash, dark room, 3 kernel-traced shots (all identical):**
+| event | t rel. to snapshot SOF |
+|---|---|
+| key press / takePicture | −0.9 s |
+| precapture trigger → AE_STATE PRECAPTURE | −0.65 s |
+| `CFG_FLASH_LOW` (torch 120 mA preflash) | −0.60 s, lasts ~0.40 s |
+| `CFG_FLASH_OFF` (preflash end, AE back to FLASH_REQUIRED) | −0.20 s |
+| CameraX submits the still request | −0.19 s |
+| `CFG_FLASH_HIGH` (1000 mA, not clamped) | **−30 ms** |
+| snapshot SOF (`capture_time`), exposure 21–33 ms, readout skew 33–40 ms | 0 |
+| `CFG_FLASH_OFF` | **+68 ms** |
+| shutter notify → CameraX `onCaptureStarted` → Aperture plays the click | +70 ms (+ audio latency) |
+| JPEG encode starts | +0.2 s |
+
+So the strobe window (−30…+68 ms) covers the whole rolling-shutter frame (−21…+61 ms) with only
+~9 ms / ~7 ms of margin on either side. All six test photos: EXIF flash=25 (fired), strobe-lit, no band.
+What a bystander sees: a long dim preflash, a dark gap (70–170 ms), a 100 ms strobe, then the
+click ~100–150 ms after the strobe. Whether stock looks different is UNKNOWN — no stock witness on the bench.
+
+**No-strobe candidates (the case Kyle wants chased), none reproduced on new2 at 100 %:**
+1. **PMIC VPH droop** — `qcom,vph-pwr-droop-enabled` at 3000 mV (pmi8950.dtsi): hardware cuts the strobe
+   when the 1 A pulse sags an aged/cold/low cell below 3.0 V. No log, no IRQ. Battery-dependent, stock has
+   the same node. Test = dut1 (72 % SoH) at low SoC with the kernel trace on: HIGH issued, photo dark.
+2. **Timing margin** — the daemon's window has <10 ms slack each side; the qpnp strobe runs from a
+   workqueue (`schedule_work`, no debug hook), so scheduling latency under load could push the light
+   out of the frame while the LED visibly fires. Instrument = the photo itself: a uniform white sheet
+   at 30 cm, flash ON, row-brightness profile shows where the strobe fell relative to readout.
+3. **AUTO skips HIGH after preflash metering** (close bright subject) — would look like "flash fired,
+   shot taken without it". Needs a close subject in front of the lens to test.
+4. Ruled out: `qcom,power-detect-enabled` / die-temp derate are OFF (`max_allowed_current` reads 0 =
+   no derate), so `flash_current_max=0` on the battery psy is harmless; the `open_fault` latch tests a
+   variable that is still 0 on the torch-off path, so it can never trip; msm_flash re-INITs its state on
+   every camera open, so a stale LOW state cannot drop HIGH.
+
+Side finding: `/sys/class/power_supply/battery/flash_active` stays 1 after the camera closes (the
+charger keeps its 1 MHz flash switching frequency) — leak in the qpnp turn-off path, harmless but note.
+Bench gotchas: a face-down unit refuses to wake (proximity); `svc power stayon usb` + swipe + unlock;
+Aperture starts over the keyguard as the secure camera. Aperture's live prefs are NOT the legacy
+`shared_prefs` XML (editing `photo_flash_mode` there did nothing).
