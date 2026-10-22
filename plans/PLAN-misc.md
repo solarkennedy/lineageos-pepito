@@ -1078,3 +1078,32 @@ refused ("battery too low for flash") — fix the calc (fall back to FG `current
 the battery is (cycle count / `charge_full`); (2) bench: dut1 (72 % SoH) discharged to ~45 %, flash ON,
 `msm_flash.c` dyndbg — expect HIGH issued, photo dark, `voltage_now` sag; (3) optional: the preflash length
 on a weak cell (1.1 s vs 0.4 s) hints AEC convergence suffers too.
+
+### §9 addendum 5 — 2026-10-22 PM2: reporter says 100 % + charging ALSO fails ⇒ droop dead; fleet sweep; one bench reproduction
+
+**New tool: `diag-tools/flash-probe/flash-trace.sh [-s SERIAL] [--auto SECS]`** — arms `msm_flash.c` dyndbg +
+HAL debug (closes Aperture first so the HAL re-reads its level), records logcat, measures the kernel↔logcat
+clock offset with a marker, then prints the LOW/OFF/HIGH/OFF ioctls relative to the snapshot frame's SOF,
+grades the photo (EXIF fired bit + mean luminance) and gives a verdict. Reporter instructions in the header.
+⚠️ two copies running against one unit interleave their reports (happened once on gold).
+
+**Fleet sweep, flash ON, dark room, all 24.0 `20261017`:**
+| unit | cell | shots | HIGH vs SOF | photo |
+|---|---|---|---|---|
+| new2 | 276 mΩ, 100 % | 2 (ON) + 6 (AUTO) | −30…+68 ms | all FIRED, lit |
+| dut1 | 697 mΩ, 522 mAh, charging | 1 idle + 2 under 4× `yes` load | −93…+13 ms | all FIRED, lit |
+| gold | 161–419 mΩ, 3.7–4.1 V | 1 + 2 idle + 3 under load | −115…−5 … −88…+19 ms | **shot 1 NOT FIRED, dark**; rest lit |
+| silver | stock A8, unrooted | — | not traceable | (ask Kyle for a visual ON shot) |
+
+**The one reproduction (gold shot 1, 11 min after boot, −835 mA system draw at 3.70 V, 37 °C):** kernel saw
+LOW 178 ms → OFF → **406 ms gap** → HIGH 74 ms → OFF — HIGH was commanded, but EXIF `flash=24` (daemon's
+`CAM_FLASH_STATE` for the captured frame = not fired, see `mm_jpeg_exif.c:334`) and the photo is dark
+(meanY 41 vs 120–150). So the strobe was applied to a *different frame* than the one the JPEG came from:
+the daemon's flash sequencing slipped relative to the capture — "flash after the shutter", literally.
+Not the PMIC (EXIF is the daemon's own belief; it cannot see a hardware cut). Could not re-trigger it with
+CPU load (gold reached 54 °C / health=Overheat under the loops; strobes still landed).
+
+**Status:** mechanism = daemon frame-slip, trigger unknown (first-launch / startup load is the only hint;
+the reporter's 1.1 s preflash vs our 0.4 s points the same way: slow AEC on their unit). Next = the
+reporter runs `flash-trace.sh` (deterministic on their unit) — the HIGH-vs-SOF line and the EXIF bit will
+say whether HIGH is issued at all, and where it lands. Bench: retry gold cold-boot + immediate shot.
