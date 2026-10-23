@@ -1,5 +1,23 @@
 [
   {
+    "datetime": 1792792165,
+    "type": "UNOFFICIAL",
+    "version": "24.0",
+    "files": [
+      {
+        "filename": "lineage-24.0-20261023-UNOFFICIAL-Mi8937.zip",
+        "sha256": "efe29c6788c6acd7d93f199c0e2758e9a3f9f35f9584f5a74a8df82e22fb0a8e",
+        "size": 1230923304,
+        "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261023/lineage-24.0-20261023-UNOFFICIAL-Mi8937.zip",
+        "os_sdk_level": 37,
+        "os_patch_level": "2026-10-01",
+        "ota_property_files": "metadata:69:352,metadata.pb:489:258"
+      }
+    ],
+    "changelog": "### device/Mi8937\n- Mi8937: keep Wi-Fi auto bug reports off\n- Mi8937: make the Wi-Fi overlays apply; allow software PNO\n\n### device/mithorium-common\n- mithorium-common: gotweaks: persist.gotweak.flash_ma caps the camera flash current\n\n### kernel (msm8937)\n- msm: camera-legacy: flash: flash_cap_ma module parameter caps the main strobe current\n\n### LineageParts\n- LineageParts: \"Flash power\" row in PVG100 System Tweaks\n- LineageParts: \"Reconnect to Wi-Fi with screen off\" switch in Tweaks\n\n### Upstream LineageOS 24.0\n- Android security patch level 2026-10-01 (unchanged)\n- 2 Android fixes from Google, cherry-picked by LineageOS (mostly the monthly security bulletin)\n- Rebased onto upstream LineageOS 24.0 as of 2026-10-23: 56 upstream commits in 12 of our repos; 62 other projects updated (164 commits), 6 of them now LineageOS forks",
+    "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261023"
+  },
+  {
     "datetime": 1792350288,
     "type": "SNAPSHOT",
     "version": "24.0",
