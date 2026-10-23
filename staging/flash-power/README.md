@@ -1,4 +1,4 @@
-# "Flash power" tweak — staged 2026-10-22; VALIDATED on gold 2026-10-22 (local build, unpushed)
+# "Flash power" tweak — COMMITTED + pushed 2026-10-23 (kernel 83cdd53e, mithorium-common a06315e, LineageParts d0ba0336); default Full (1000 mA). Patches below kept for the record.
 
 User-selectable cap on the camera's main strobe current, as a row in PVG100 System Tweaks
 (Camera → Flash power: Full 1000 mA / Reduced 700 mA / Low 400 mA, default Full). Nobody is
