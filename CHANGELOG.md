@@ -1,5 +1,53 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
+## 20261023 (2026-10-23)
+
+### device/Mi8937 (since pepito-24.0-20261017)
+- Mi8937: keep Wi-Fi auto bug reports off
+- Mi8937: make the Wi-Fi overlays apply; allow software PNO
+
+### LineageParts (since pepito-24.0-20261017)
+- LineageParts: "Reconnect to Wi-Fi with screen off" switch in Tweaks
+
+### Upstream LineageOS 24.0
+- Android security patch level 2026-10-01 (unchanged)
+- 2 Android fixes from Google, cherry-picked by LineageOS (mostly the monthly security bulletin)
+- Rebased onto upstream LineageOS 24.0 as of 2026-10-23: 56 upstream commits in 12 of our repos; 62 other projects updated (164 commits), 6 of them now LineageOS forks
+
+### landing (docs/scripts) (since pepito-24.0-20261017)
+- source-id.py changes: anchor on the newest release tag by name (a monthly rebase makes describe miss it); --cherry-pick the commit list
+- tests/integration: test_system.py — post-flash smoke from the 2026-10-23 rebase (stamped build, patch level age, platform crashes + SELinux denials since boot vs baselines/selinux.toml, GApps privileged, cell service, QS slider/torch, 3-button nav with Launcher3, Updater + Tweaks pages); required on every release
+- tests/integration: drop the ntfy push from run-unattended.sh (prints the result instead); test_kernel_health reads only kernel pstore records (pmsg-ramoops holds adbd's echo of the test's own grep after a reboot)
+- PLAN-android17: first upstream rebase (2026-10-23) — 12 forks clean, full-sync build 20261023 smoke-tested on dut1
+- PLAN-android17: Wi-Fi overlay side effect — auto bug reports went live on userdebug, overridden off (Mi8937 475d43d4); list of user-visible Wi-Fi default changes
+- PLAN-android17: screen-off Wi-Fi PNO root-caused (Wi-Fi overlays never applied: shared theme dir), HW PNO silent on Pronto, SW PNO switch staged (Mi8937 9f192ab7, LineageParts fe578954) and validated on dut1 incl. reboot; per-scan energy 0.22 J
+- PLAN-misc §12: Huckleberry launch traced — WebView/Capacitor app, no V8 code cache for its bundles, post-wake launches gated on network timeouts while Wi-Fi reconnects; TTS waste not critical-path, sched_boost no lever
+- Monthly upstream rebase tooling: REBASE.md runbook, scripts/upstream.py (drift/rebase/snapshot/tree-changelog), manifests/upstreams.conf
+- Flash power validated on gold (local 24.0 build): kernel cap moved to techpack/camera-legacy (the serving msm_flash copy), 24.0 patches re-staged; PLAN-misc §9 addendum 8
+- Flash power tweak staged: kernel strobe cap + init trigger + PVG100 System Tweaks row (unbuilt); PLAN-misc §9 addendum 7
+- PLAN-misc §9 addendum 6: flash failure reproduced on gold (VPH-droop clamp after boot/under load; daemon frame slip induced); flash-trace.sh reports the droop latch and frame slips
+- flash-trace.sh --keep; PLAN-misc §9: gold reboot retry 4/4 fired, reproduction stays with the reporter
+- flash-trace.sh: kernel+HAL flash trace with SOF alignment and photo grading; PLAN-misc §9 addendum 5 fleet sweep + gold reproduction
+- PLAN-misc §9: user video deconstructed, ON-mode trace, no-strobe = PMIC VPH droop on a weak cell (stock-parity), power-detect mitigation sketch
+- PLAN-misc §9: 10-22 flash/shutter measurement on 24.0 — strobe lands in frame, no-strobe case still open
+- PLAN-oos-time: E1 correction — silver park was stale modem IMS voice status, fixed by Enhanced 4G off/on; mechanism stands
+- PLAN-oos-time: E1 closed — reboot re-makes the no-voice IMS registration on stock; capture banked
+- PLAN-oos-time: E1 cycle table — 04:53 fresh REGISTER reproduces the no-voice registration
+- PLAN-oos-time: E1 silver re-run — stock modem loops voice-centric LTE-disable on IMS-without-voice; f3grep.py helper
+- PLAN-oos-time: E2 walk #1 harvested — modem-sourced loss srxlev 0-6, HOME-LIMITED is searching not backoff
+- E1 re-run tooling: silver-e1-park.sh (stock diag arm/pull/decode), f3_timeline.py; walk + silver prep logged
+- PLAN-oos-time: summarize.py (time-weighted OOS split), E1 archive result, first daily number
+- nas-probe: 'sig' command (NAS 0x4F sig info + 0x43 cell location), sampler v11; PLAN-oos-time E0 done
+- plans: AP-side let-go audit, ap-release-census tool, new PLAN-oos-time
+- esim: fail-open MBN signature probes + notes
+- PLAN-android17: 20261017 gapps released
+- ota: restore the 20261017 changelog after the gapps resume run
+- ota: 20261017 gapps
+- changelog: 20261017
+- PLAN-android17: 24.0-20261017 released (vanilla)
+- tests/integration: unattended by construction
+- tests/integration: memory subsystem tests from the MGLRU work
+- Release test gate: build stamps, run summaries, per-release test plan
 ## 20261017 (2026-10-17)
 
 ### device/Mi8937 (since pepito-24.0-20261011)
