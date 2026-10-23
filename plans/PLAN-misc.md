@@ -1265,3 +1265,44 @@ n=2 early shots, near-full brightness). It is n=2 at one SoC; 400 is the safe fl
 droop at all, so the reporter's "100 % + charging" failure means a worse cell than gold's.
 Raw data: `/tmp/flashsync/validate/` (per-shot .txt/.dmesg/.logcat/.jpg, vshot.sh/vboot.sh/discharge.sh,
 settings screenshots).
+
+## 12. Huckleberry (and WebView/Capacitor apps generally) slow to open — MEASURED 2026-10-22, mostly app-side
+
+new2, 24.0 `20261017` gapps, WebView `com.android.webview` 154.0.8037.57, Huckleberry 0.9.314. Perfetto
+(sched + freq + atrace + Chromium `track_event` incl. v8) on cold launches; `am start-activity -W`.
+
+**What the app is.** Capacitor/Ionic Angular: 6.5 MB `main.js` + ~40 chunks served from `http://localhost/` via
+`shouldInterceptRequest`; `@capgo/capacitor-updater` OTA bundles; `SplashScreen.launchAutoHide=false` (JS hides it).
+
+| run | condition | TotalTime |
+|---|---|---|
+| cold1 | untraced, just after unlock | 25.6 s |
+| cold2 | Wi-Fi network created 3.5 s before launch (screen had been off) | 21.7 s — Firestore "didn't respond within 10 seconds" gates boot |
+| cold3 | Wi-Fi stable 11 min | **13.5 s** |
+| notts | Google TTS `disable-user` (restored after) | 13.2 s |
+| boost | `sched_boost=1` held through launch | 21.1 s — Amplitude Experiment fetch timeout + Braze socket timeout + Capgo `notifyAppReady` at 17.7 s; renderer idle 8→17 s |
+| hot | Home → relaunch | **0.13 s** |
+
+**Clean cold launch (13.5 s):** process + `MainActivity` create ≈2 s (WebView init 0.4 s); asset loads stall ~0.6 s
+on a lock held by Firebase Analytics `AssetManager.list` of the 112 MB APK; renderer main thread runs 7.2 s, of
+which ≈3.8 s is V8 parse/compile (`V8.CompileCode` 2.9 s / 8 527 lazy compiles). Runnable-but-waiting on the
+renderer is only ~0.3 s — CPU contention is not the problem.
+
+**Findings**
+- **No V8 code cache for the app's own bundles**: `Code Cache/js` holds 190-byte stubs for every `localhost/*.js`;
+  only a network-fetched CDN script gets a real entry. Inference: intercepted responses never promote. No WebView
+  154 feature flag changes it. App-side (service worker / native-code changes), not ROM-fixable.
+- **Network calls gate the splash.** When the link is bad, each one runs to its timeout (Firestore 10 s, Amplitude
+  5 s, Braze, Capgo). Post-wake this is the screen-off Wi-Fi no-reconnect bug (PLAN-android17 "PNO is not
+  available"): you wake the phone, open the app, Wi-Fi is still associating, and Firestore's first stream eats the
+  10 s timeout. **This is the ROM-fixable part** — fixing PNO / screen-off reconnect should take ~8–10 s off
+  every "open right after wake". On stable Wi-Fi new2 sits at 2.4 GHz RSSI −68 with some v4 loss; IPv6 is fine.
+- **Google TTS burns ~10 s CPU per cold launch** (`cordova-plugin-tts-advanced` binds TTS + `getVoices`, an 8.75 s
+  binder call; also a 0-length `speak`). A/B says it is **not on the critical path** (13.2 vs 13.5 s) — it is wasted
+  core + RAM only.
+- **`sched_boost` is no lever**: the boosted run was network-gated; the renderer never starved for CPU.
+- **Memory pressure decides cold vs hot** (0.13 s vs 13+ s): zram 82 % full, kswapd ~5 s CPU per launch, daily
+  LOW_MEMORY kills of the app and its renderer.
+
+**Next:** (1) screen-off Wi-Fi reconnect / PNO (PLAN-android17 lever candidates); (2) keeping more apps cached
+(lmkd/zram, resident Launcher3 next to pepitolauncher2). Everything else is Huckleberry's to fix.
