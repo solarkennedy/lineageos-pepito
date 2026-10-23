@@ -29,6 +29,20 @@ always = [
     "test_memory.py::test_zram",
     "test_memory.py::test_vm_tunables",
     "test_memory.py::test_lmkd_config",
+    # Post-flash smoke (the checks from the 2026-10-23 upstream rebase): stamped
+    # build, patch level not stale, no platform crash or unknown SELinux denial
+    # since boot, GApps privileged, cell service; and, with the screen awake, the
+    # pepito UI patches carried in rebased forks (QS slider + torch, 3-button nav
+    # with Launcher3, Updater + Tweaks pages). ~1 min.
+    "test_system.py::test_build_is_stamped",
+    "test_system.py::test_security_patch_level_fresh",
+    "test_system.py::test_no_platform_crashes_since_boot",
+    "test_system.py::test_selinux_no_new_denials",
+    "test_system.py::test_gms_privileged",
+    "test_system.py::test_cell_service",
+    "test_system.py::test_quick_settings",
+    "test_system.py::test_three_button_nav",
+    "test_system.py::test_pepito_screens_open",
 ]
 
 [groups.wfc]

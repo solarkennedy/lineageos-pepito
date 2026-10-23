@@ -1,0 +1,33 @@
+# SELinux denials known on 24.0 builds, for test_system.py::test_selinux_no_new_denials.
+#
+# Each entry is [source domain, target type, class], categories stripped. Read
+# off dut1 + new2 on 24.0-20261023 (vanilla and gapps), plus new2's 20261017
+# boot. Denials from the third-party app sandboxes (untrusted_app*, isolated_app*,
+# ephemeral_app, sdk_sandbox*) are not checked at all: they follow whatever apps
+# are installed. A denial outside this list fails the test; if it turns out to be
+# harmless, add it here with a reason, the same as the rest.
+
+allowed = [
+    # stock camera daemon (A8 blobs) probing debug props and test dirs
+    ["mm-qcamerad", "default_prop", "file"],
+    ["mm-qcamerad", "shell_data_file", "dir"],
+    ["mm-qcamerad", "shell_test_data_file", "dir"],
+    ["mm-qcamerad", "system_data_root_file", "dir"],
+    # vendor init setting/reading props the stock rc files carry
+    ["vendor_init", "bootloader_prop", "property_service"],
+    ["vendor_init", "default_prop", "property_service"],
+    ["vendor_init", "shell_prop", "property_service"],
+    ["vendor_init", "vendor_firmware_file", "file"],
+    ["qti_init_shell", "vendor_qmux_prop", "file"],
+    ["rmt_storage", "default_prop", "file"],
+    ["wcnss_service", "system_prop", "file"],
+    # zygote listing /vendor/.../hw at preload
+    ["zygote", "vendor_file", "dir"],
+    ["surfaceflinger", "default_android_hwservice", "hwservice_manager"],
+    # background dexopt
+    ["artd", "app_data_file", "lnk_file"],
+    ["dex2oat", "system_data_file", "dir"],
+    # vold probing the persist/cache block devices (seen on 20261017)
+    ["vold", "persist_block_device", "blk_file"],
+    ["vold", "cache_block_device", "blk_file"],
+]

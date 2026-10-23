@@ -6,6 +6,7 @@ wrapper. One file per feature:
 | File | Covers |
 |---|---|
 | `test_wfc.py` | Wi-Fi calling, including the "Wi-Fi preferred" TH2 steering |
+| `test_system.py` | post-flash smoke: build stamped, security patch level not stale, no platform crash / unknown SELinux denial since boot (`baselines/selinux.toml`), GApps privileged, cell service; with the screen awake, QS volume slider + torch, 3-button nav with Launcher3, Updater + PVG100 Tweaks pages (nav mode put back, HOME pressed) |
 | `test_memory.py` | MGLRU kill switch, zram, vm tunables, lmkd props, kernel health; the `diag-tools/mglru-bench` hog and app-cycle benches against `baselines/memory.toml` |
 
 ```bash
@@ -50,7 +51,7 @@ What makes that hold, and what new tests must keep true:
 
 | Marker | What it does to the phone | Opt-in |
 |---|---|---|
-| (none) | getprop, dumpsys, content query, logcat -d | always runs |
+| (none) | getprop, dumpsys, content query, logcat -d; the `awake` UI tests also open screens and flip nav mode, then put it back | always runs |
 | `call` | dials the test number and hangs up | `--allow-calls` |
 | `disruptive` | toggles Wi-Fi (or another radio) and restores it | `--allow-disruptive` |
 | `bench` | ~15 min of memory pressure: 1.2 GB hogs, apps killed and relaunched, screen held on and unlocked | `--allow-bench` |
