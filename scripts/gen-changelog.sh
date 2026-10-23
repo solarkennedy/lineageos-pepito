@@ -7,6 +7,16 @@
 # and, unless --stdout, prepends it to CHANGELOG.md in the landing repo and
 # writes the same section to a notes file for use as the GitHub release body.
 #
+# Forks get rebased onto upstream (REBASE.md), which rewrites our commits: the
+# previous tag is then no longer an ancestor of HEAD. So the anchor is the
+# newest tag by name, our commits are listed with --cherry-pick (a replayed
+# patch the tag already had is not new). What a rebase brought in from upstream
+# (manifests/upstreams.conf) isn't listed: the release gets a short "Upstream
+# LineageOS" note instead (scripts/upstream.py tree-changelog): the Android
+# security patch level, the count of Google security fixes LineageOS merged,
+# and rebase totals, counting the non-fork projects against the previous
+# release's snapshot in manifests/snapshots/. Nothing taken, no note.
+#
 # The repo set is every project in manifests/pepito.xml on one of our remotes
 # (pepito / pepito-ssh), plus this landing repo. There is no 24.0 tree on the
 # netbook (git-driven builds, see build-lineage24-remotely.sh), so the tree
@@ -28,10 +38,16 @@ LANDING=${LANDING:-/home/kyle/Projects/lineageos-pepito-24}
 MANIFEST="$LANDING/manifests/pepito.xml"
 TAG_PREFIX="pepito-24.0-"
 
-# Tree repos, in manifest order: "<path><TAB><display name>".
-mapfile -t TREE_REPOS < <(python3 - "$MANIFEST" <<'PY'
+# Tree repos, in manifest order: "<path><TAB><display name><TAB><upstream url><TAB><upstream ref>"
+# (upstream "-" when the repo isn't rebased onto one).
+mapfile -t TREE_REPOS < <(python3 - "$MANIFEST" "$LANDING/manifests/upstreams.conf" <<'PY'
 import sys, xml.etree.ElementTree as ET
 OURS = {"pepito", "pepito-ssh"}
+UP = {}
+for line in open(sys.argv[2]):
+    f = line.split("#", 1)[0].split()
+    if f and f[1] == "rebase":
+        UP[f[0]] = (f[2], f[3])
 def display(path):
     special = {
         "kernel/xiaomi/msm8937": "kernel (msm8937)",
@@ -47,7 +63,8 @@ def display(path):
     return path
 for p in ET.parse(sys.argv[1]).getroot().iter("project"):
     if p.get("remote") in OURS:
-        print(f"{p.get('path')}\t{display(p.get('path'))}")
+        url, ref = UP.get(p.get("path"), ("-", "-"))
+        print(f"{p.get('path')}\t{display(p.get('path'))}\t{url}\t{ref}")
 PY
 )
 [[ ${#TREE_REPOS[@]} -gt 0 ]] || { echo "gen-changelog.sh: no pepito projects found in $MANIFEST" >&2; exit 1; }
@@ -78,14 +95,20 @@ fi
 DATE="$(date -u +%Y-%m-%d)"
 
 # --- per-repo logs from the build server, one ssh session --------------------
-# Prints, per repo: "@@REPO<TAB><path><TAB><previous tag or empty>", then that
-# repo's "- subject" lines since the tag (nothing when there is no tag).
+# Prints, per repo: "@@REPO<TAB><path><TAB><previous tag or empty>", then our
+# "- subject" lines since the tag (minus anything that came from upstream).
 remote_logs() {
-    local paths=()
-    for entry in "${TREE_REPOS[@]}"; do paths+=("${entry%%$'\t'*}"); done
-    ssh "$TARGET" -- bash -s -- "$REMOTE_TREE" "$TAG_PREFIX" "${paths[@]}" <<'REMOTE'
+    local args=() entry path rest url ref
+    for entry in "${TREE_REPOS[@]}"; do
+        IFS=$'\t' read -r path _ url ref <<<"$entry"
+        args+=("$path" "$url" "$ref")
+    done
+    ssh "$TARGET" -- bash -s -- "$REMOTE_TREE" "$TAG_PREFIX" "${args[@]}" <<'REMOTE'
 tree=$1; prefix=$2; shift 2
-for p in "$@"; do
+aosp=$(git -C "$tree/.repo/manifests" show HEAD:default.xml \
+    | sed -n 's/.*name="aosp".*revision="\([^"]*\)".*/\1/p' | head -n1)
+while [ $# -ge 3 ]; do
+    p=$1; url=$2; ref=$3; shift 3
     d="$tree/$p"
     if [ ! -e "$d/.git" ]; then
         printf '@@MISSING\t%s\n' "$p"
@@ -94,12 +117,22 @@ for p in "$@"; do
     remote=$(git -C "$d" remote | head -n1)
     [ -n "$remote" ] && git -C "$d" fetch -q "$remote" \
         "+refs/tags/${prefix}*:refs/tags/${prefix}*" 2>/dev/null || true
-    prev=$(git -C "$d" describe --tags --abbrev=0 --match "${prefix}*" 2>/dev/null || true)
+    # newest by name, not `describe`: after a rebase the tag isn't an ancestor
+    prev=$(git -C "$d" tag -l "${prefix}*" | sort -V | tail -n1)
     printf '@@REPO\t%s\t%s\n' "$p" "$prev"
-    if [ -n "$prev" ]; then
-        git -C "$d" log "$prev..HEAD" --no-merges --pretty='- %s'
+    [ -n "$prev" ] || continue
+    up=""
+    if [ "$url" != "-" ]; then
+        [ "$ref" = "@aosp" ] && ref=$aosp
+        git -C "$d" fetch -q --no-tags "$url" "$ref" 2>/dev/null && up=$(git -C "$d" rev-parse FETCH_HEAD)
     fi
-done
+    if [ -n "$up" ]; then
+        base=$(git -C "$d" merge-base HEAD "$up")   # the upstream commit HEAD sits on
+        git -C "$d" log --no-merges --cherry-pick --right-only --pretty='- %s' "$prev...HEAD" "^$base"
+    else
+        git -C "$d" log --no-merges --pretty='- %s' "$prev..HEAD"
+    fi
+done </dev/null   # this script arrives on stdin (bash -s); keep git from eating it
 exit 0
 REMOTE
 }
@@ -118,8 +151,7 @@ section() {
     fi
 
     for entry in "${TREE_REPOS[@]}"; do
-        path="${entry%%$'\t'*}"
-        name="${entry##*$'\t'}"
+        IFS=$'\t' read -r path name _ _ <<<"$entry"
         # this repo's block: its @@REPO header line, then lines up to the next header
         local block
         block="$(awk -F'\t' -v p="$path" '
@@ -141,8 +173,22 @@ section() {
         any=1
     done
 
+    # the upstream note: security patch level, bulletin fixes, rebase totals
+    # (only when this release took something from upstream)
+    prev="$(git -C "$LANDING" tag -l "${TAG_PREFIX}*" | sort -V | tail -n1)"
+    if [[ -n "$prev" ]]; then
+        local note
+        note="$("$LANDING/scripts/upstream.py" tree-changelog --tag "$prev" \
+            "manifests/snapshots/${prev#"$TAG_PREFIX"}.xml")" \
+            || { echo "gen-changelog.sh: upstream note failed" >&2; exit 1; }
+        if [[ -n "$note" ]]; then
+            printf '%s\n\n' "$note"
+            any=1
+        fi
+    fi
+
     # the landing repo is local
-    prev="$(git -C "$LANDING" describe --tags --abbrev=0 --match "${TAG_PREFIX}*" 2>/dev/null || true)"
+    prev="$(git -C "$LANDING" tag -l "${TAG_PREFIX}*" | sort -V | tail -n1)"
     if [[ -z "$prev" ]]; then
         echo "### landing (docs/scripts)"
         echo "- (first tagged in ${VERSION} — no prior anchor)"

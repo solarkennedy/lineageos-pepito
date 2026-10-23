@@ -16,7 +16,9 @@
 #       shared pepito.json; the Updater offers each phone only its own channel)
 #   4. tag every pepito repo pepito-24.0-<version> and push the tags, so the next
 #      run's changelog anchors here. The tree repos are tagged ON THE BUILD
-#      SERVER, at exactly the commits that were built; the landing repo here;
+#      SERVER, at exactly the commits that were built; the landing repo here,
+#      after committing manifests/snapshots/<version>.xml (`repo manifest -r` of
+#      the built tree), which the next changelog's upstream section diffs against;
 #   0. refuse to start unless tests/integration has a green run for the source
 #      about to be built (scripts/test-gate.py; tests/integration/README.md), and
 #      check each build's stamp matches that source before releasing it;
@@ -129,6 +131,10 @@ variant_released() {
 [[ -n "$VERSION" ]] || VERSION="$(date +%Y%m%d)"
 [[ "$VERSION" =~ ^[0-9]{8}$ ]] || { echo "error: --version must be YYYYMMDD (got '$VERSION')" >&2; exit 1; }
 export LINEAGE_BUILD_DATE="$VERSION"   # picked up by build-lineage24-remotely.sh → the build
+# Upstream moves only on rebase day (REBASE.md), never inside a release: the
+# changelog written in step 1 and the snapshot in step 4 describe the tree as it
+# stands, so the builds must not re-sync it under them.
+unset SYNC_ALL
 
 # --- 0b. integration-test gate ----------------------------------------------
 # A release must be a build of source that tests/integration passed on: the gate
@@ -270,6 +276,16 @@ for p in "$@"; do
     echo "  tagged + pushed: $p -> $push_url"
 done
 REMOTE
+    SNAP="manifests/snapshots/$VERSION.xml"
+    SNAP_TMP=$(mktemp)
+    "$SCRIPT_DIR/upstream.py" snapshot > "$SNAP_TMP"
+    mv "$SNAP_TMP" "$LANDING_ROOT/$SNAP"
+    if [[ -n "$(git -C "$LANDING_ROOT" status --porcelain -- "$SNAP")" ]]; then
+        git -C "$LANDING_ROOT" add "$SNAP"
+        git -C "$LANDING_ROOT" commit -m "snapshot: $VERSION tree"
+        git -C "$LANDING_ROOT" push origin HEAD
+    fi
+    echo "  snapshot: $SNAP"
     if git -C "$LANDING_ROOT" rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
         echo "  landing: tag $TAG already exists, skipping create"
     else

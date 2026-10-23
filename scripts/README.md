@@ -11,6 +11,7 @@ throughout — read before running. In the bench tree these live behind a
 |---|---|
 | `build-lineage24.sh` | full build entry point, run on the build server (envsetup, `lunch lineage_Mi8937 cp2a userdebug`, `mka bacon`) |
 | `build-lineage24-remotely.sh` | from netbook4: mirror this branch to the server, `repo sync` the manifest's projects (git-driven: commit + push first), build, stage + fetch flash images to `~/android/lineage-24/flash-staging/` |
+| `upstream.py` | monthly upstream tracking (runbook: `REBASE.md`): `drift` reports how far each fork and the tree are behind upstream `lineage-24.0` (read-only); `rebase [--push]` rebases the forks' `pepito-24` onto it, dry run unless `--push`; `snapshot` / `tree-changelog` record each release's tree in `manifests/snapshots/` and give the changelog its upstream section. Upstreams in `manifests/upstreams.conf` |
 | `prepare-flash.sh` | stages a flashable set: sparse→raw system/vendor, **signs boot/recovery for the PVG100 bootloader**, zeroes the FBE header (forces fresh `/data` format) |
 | `backup-to-archive.sh` | bench backup |
 | `clear-ramoops.sh` | clears pstore/ramoops between crash captures |
