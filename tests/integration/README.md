@@ -7,6 +7,7 @@ wrapper. One file per feature:
 |---|---|
 | `test_wfc.py` | Wi-Fi calling, including the "Wi-Fi preferred" TH2 steering |
 | `test_system.py` | post-flash smoke: build stamped, security patch level not stale, no platform crash / unknown SELinux denial since boot (`baselines/selinux.toml`), GApps privileged, cell service; with the screen awake, QS volume slider + torch, 3-button nav with Launcher3, Updater + PVG100 Tweaks pages (nav mode put back, HOME pressed) |
+| `test_camera.py` | Flash power tweak: the kernel strobe cap follows `persist.gotweak.flash_ma`, each choice applies live (setting put back), the row shows in PVG100 System Tweaks. Skips on builds without it |
 | `test_memory.py` | MGLRU kill switch, zram, vm tunables, lmkd props, kernel health; the `diag-tools/mglru-bench` hog and app-cycle benches against `baselines/memory.toml` |
 
 ```bash

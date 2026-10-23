@@ -43,6 +43,8 @@ always = [
     "test_system.py::test_quick_settings",
     "test_system.py::test_three_button_nav",
     "test_system.py::test_pepito_screens_open",
+    # Flash power tweak: setting -> kernel cap. Read-only.
+    "test_camera.py::test_flash_cap_follows_setting",
 ]
 
 [groups.wfc]
@@ -87,4 +89,19 @@ paths = [
     "frameworks/base/services/core/java/com/android/server/am/OomAdjuster*",
     "frameworks/base/services/core/java/com/android/server/am/ProcessList.java",
     "frameworks/base/services/core/java/com/android/server/am/CachedAppOptimizer.java",
+]
+
+[groups.camera]
+description = "Camera flash: msm_flash strobe cap (camera-legacy), the gotweaks init trigger, the Flash power row in PVG100 System Tweaks"
+tests = [
+    "test_camera.py::test_flash_cap_applies_live",
+    "test_camera.py::test_flash_power_row",
+]
+paths = [
+    "kernel/xiaomi/msm8937/techpack/camera-legacy/sensor/flash/*",
+    "kernel/xiaomi/msm8937/drivers/leds/leds-qpnp-flash*",
+    "device/xiaomi/mithorium-common/rootdir/etc/init.gotweaks.rc",
+    "device/xiaomi/mithorium-common/sepolicy/vendor/gotweaks.te",
+    "packages/apps/LineageParts/src/org/lineageos/lineageparts/perf/GoTweaksSettings.java",
+    "packages/apps/LineageParts/res/xml/go_tweaks_settings.xml",
 ]
