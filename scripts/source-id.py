@@ -122,12 +122,18 @@ def changes(tree, ours, prefix):
                                       capture_output=True).returncode:
                 subprocess.run(["git", "-C", str(d), "fetch", "-q", remote, tip], capture_output=True)
         tip = tip or git(d, "rev-parse", "HEAD").strip()
-        prev = git(d, "describe", "--tags", "--abbrev=0", "--match", f"{prefix}*", tip).strip()
+        # Newest tag by name, not `describe`: a monthly upstream rebase (REBASE.md)
+        # leaves the previous release tag off the fork's history. The tree diff is
+        # still right (replayed patches cancel out); --cherry-pick drops replayed
+        # commits from the list, leaving upstream's and our new ones.
+        tags = [t for t in git(d, "tag", "-l", f"{prefix}*").split() if t]
+        prev = max(tags) if tags else ""
         r = {"tip": tip, "prev": prev or None}
         if prev:
             r["files"] = git(d, "diff", "--name-only", prev, tip).split("\n")
             r["files"] = [f for f in r["files"] if f]
-            r["commits"] = git(d, "log", "--no-merges", "--format=%h %s", f"{prev}..{tip}").splitlines()
+            r["commits"] = git(d, "log", "--no-merges", "--cherry-pick", "--right-only",
+                               "--format=%h %s", f"{prev}...{tip}").splitlines()
             r["released_at"] = int(git(d, "log", "-1", "--format=%ct", prev).strip() or 0)
         return path, r
 
