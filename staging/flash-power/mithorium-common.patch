@@ -1,7 +1,8 @@
-diff -ruN a/device/xiaomi/mithorium-common/rootdir/etc/init.gotweaks.rc b/device/xiaomi/mithorium-common/rootdir/etc/init.gotweaks.rc
---- a/rootdir/etc/init.gotweaks.rc	2026-10-22 16:54:50.547758203 -0700
-+++ b/rootdir/etc/init.gotweaks.rc	2026-10-22 16:54:51.104746854 -0700
-@@ -92,3 +92,14 @@
+diff --git a/rootdir/etc/init.gotweaks.rc b/rootdir/etc/init.gotweaks.rc
+index 57a7055..95ba90c 100644
+--- a/rootdir/etc/init.gotweaks.rc
++++ b/rootdir/etc/init.gotweaks.rc
+@@ -103,3 +103,14 @@ on property:persist.gotweak.cpu_cluster_saver=0
      write /sys/devices/system/cpu/cpu1/online 1
      write /sys/devices/system/cpu/cpu2/online 1
      write /sys/devices/system/cpu/cpu3/online 1
@@ -16,10 +17,11 @@ diff -ruN a/device/xiaomi/mithorium-common/rootdir/etc/init.gotweaks.rc b/device
 +# 0 or unset = no cap = full stock power. Applies live, next photo.
 +on property:persist.gotweak.flash_ma=*
 +    write /sys/module/msm_flash/parameters/flash_cap_ma ${persist.gotweak.flash_ma}
-diff -ruN a/device/xiaomi/mithorium-common/sepolicy/vendor/gotweaks.te b/device/xiaomi/mithorium-common/sepolicy/vendor/gotweaks.te
---- a/sepolicy/vendor/gotweaks.te	2026-10-22 16:54:50.628756553 -0700
-+++ b/sepolicy/vendor/gotweaks.te	2026-10-22 16:54:51.106746813 -0700
-@@ -41,3 +41,11 @@
+diff --git a/sepolicy/vendor/gotweaks.te b/sepolicy/vendor/gotweaks.te
+index dd6572a..4d406a5 100644
+--- a/sepolicy/vendor/gotweaks.te
++++ b/sepolicy/vendor/gotweaks.te
+@@ -41,3 +41,11 @@ get_prop(qti_init_shell, gotweak_prop)
  # what runs our trigger. Checked before relying on one, same as the two
  # gotchas above.
  allow vendor_init sysfs_devices_system_cpu:file rw_file_perms;

@@ -1209,3 +1209,59 @@ module param `flash_cap_ma` applied in `msm_flash_high()`; `init.gotweaks.rc` tr
 0/700/400 mA under a new Camera category, default Full). Applies live, preflash/torch untouched,
 no new sepolicy grant (vendor_init already writes sysfs_type). README has the apply + validate
 steps; gold's first-two-shots-after-boot droop is the acceptance test.
+
+### §9 addendum 8 — 2026-10-22 night: "Flash power" VALIDATED on gold (local build, nothing pushed)
+
+**Build.** Builder tree = the pushed fork heads (= release 20261017: kernel `253a9ff4e4d1`,
+mithorium-common `4dc209b`, LineageParts `174b80df`; checked with `git fetch`, every manifest project +0), so
+`SKIP_SYNC=1 build-lineage24-remotely.sh --gapps` gave 20261017 + the three patches → `24.0-20261023-SNAPSHOT-
+Mi8937_gapps` (UTC date). Warm out/, incremental: update-api 1:41 + bacon 3:55 (rebuild 1:39 + 3:07). Patch drift:
+kernel + mithorium-common applied as-is; LineageParts' 3 hunks (arrays/strings/GoTweaksSettings imports) failed on
+24.0 context (MGLRU row, ewd arrays, GMS-doze category), ported by hand with the same semantics.
+**Bug found in the staged kernel patch:** the kernel compiles THREE `msm_flash.c` (drivers/media/.../camera_v2,
+techpack/camera-legacy, techpack/camera-legacy-m, all `CONFIG_MSMB_CAMERA`), and `camera_legacy_init()` enables the
+legacy stack on every Xiaomi msm8937 mach, so pepito's flash ioctls go through **techpack/camera-legacy**. The patch
+hit camera_v2: `/sys/module/msm_flash/parameters/flash_cap_ma` appeared and took 400, but dmesg still said
+`msm_flash_high:653 high_flash_current[0] = 1000` (camera-legacy's line numbers) and gold still drooped (rows
+low72 below). Moved both hunks to techpack/camera-legacy and dropped them from camera_v2. Keep ONE definition:
+all three share KBUILD_MODNAME `msm_flash`, so a second `module_param` would collide in sysfs. Rebuilt, reflashed
+(dirty, no wipe; kernel #23 18:25). `staging/flash-power/*.patch` now hold the exact 24.0 `git diff`s that were
+validated. The builder trees are reverted to clean HEAD, so nothing unpushed can ride into a release.
+
+**Flash:** `flash-staging.sh gold --no-unlock` ×2, data kept. Step 1 OK: the PVG100 System Tweaks → Camera → "Flash
+power" row reads "Full (1000 mA, stock). Lower this if…"; prop empty, node 0, no AVC. Picking "Low (400 mA)" in the
+UI sets prop 400 and the node reads 400 within 200 ms (live, no reboot, no denial); picking Full sets 0 again.
+
+**Gold at 97–100 % (4.15 V) did NOT droop** (2 boots × 2 shots, latch 04/0c, lit). The first-shots-after-boot
+droop needs a lower SoC (addendum 6's boots were at 66 %). Discharged to 72 % (charging off + 6× `yes`, ~830 mA,
+≤ 42 °C), then charging back on (500 mA SDP) for all rows below. Shots via `flash-trace.sh --auto 4` (+ qpnp dyndbg)
+right after reboot+unlock; dim = clamped. `cur` = PMIC 0xD342 code written for the strobe.
+
+| shot | build | uptime s | SoC/temp | cap | high_flash_current | cur | latch | EXIF | meanY |
+|---|---|---|---|---|---|---|---|---|---|
+| full72_1 | 1 | 62 | 73 % 41 °C | 0 | 1000 | 0x4F | **1c** | 25 FIRED | **45** |
+| full72_2 | 1 | 88 | 72 % 42 °C | 0 | 1000 | 0x4F | **1c** | — (no photo: frame slip + error frame) | — |
+| low72_1 | 1 (cap in wrong copy) | 63 | 71 % 43 °C | 400 | **1000** | 0x4F | **1c** | 25 | **45** |
+| low72_2 | 1 (cap in wrong copy) | 87 | 70 % 44 °C | 400 | **1000** | 0x4F | **1c** | 25 | **45** |
+| lowfix_1 | 2 | 63 | 74 % 34 °C | 400 | 1000 capped to **400** | 0x1F | **0c** | 25 FIRED | 79 |
+| lowfix_2 | 2 | 88 | 73 % 35 °C | 400 | 1000 capped to **400** | 0x1F | **0c** | 25 FIRED | 82 |
+| fullfix_1 | 2 | 63 | 72 % 37 °C | 0 | 1000 | 0x4F | **1c** | 25 FIRED | **44** |
+| fullfix_2 | 2 | 88 | 71 % 39 °C | 0 | 1000 | 0x4F | **1c** | — (no photo, error frame) | — |
+| lowwarm_1 | 2 | 119 | 70 % 39 °C | 400 | capped to 400 | 0x1F | 0c | 25 | 78 |
+| fullwarm_1 | 2 | 142 | 70 % 40 °C | 0 | 1000 | 0x4F | 0c | 25 | 119 |
+| red700_1 | 2 | 63 | 70 % 41 °C | 700 | capped to **700** | 0x37 | **0c** | — (photo lost: 3A lock ran 7 s past the window) | — |
+| red700_2 | 2 | 84 | 69 % 42 °C | 700 | capped to **700** | 0x37 | **0c** | — (captured, lost in MediaStore insert) | — |
+| red700warm_1 | 2 | 157 | 69 % 42 °C | 700 | capped to 700 | 0x37 | 0c | 25 | 106 |
+
+**Verdict.** On the same build, SoC and boot window, Full droops on every early shot (4/4 latch 1c, meanY 44–45 =
+the 200 mA clamp). Low never droops (4/4 0c, early and warm), and its photo is lit but darker (meanY ~80 vs ~119 for
+a lit 1000 mA strobe, about −0.6 EV). Reduced 700 mA also held 0c on both early shots (no early photo saved; warm
+meanY 106, about −0.15 EV). Torch/preflash unchanged (LOW = 120 mA in every trace). The lost photos are the
+known early-boot save loss (addendum 6), not the flash.
+
+**For Kyle:** (1) commit + push the three `staging/flash-power` patches (kernel now camera-legacy) if the tweak
+ships. (2) Pick the default and labels: 700 mA looks like the better "worn battery" setting (no droop at 70 % in
+n=2 early shots, near-full brightness). It is n=2 at one SoC; 400 is the safe floor. (3) At 97–100 % gold did not
+droop at all, so the reporter's "100 % + charging" failure means a worse cell than gold's.
+Raw data: `/tmp/flashsync/validate/` (per-shot .txt/.dmesg/.logcat/.jpg, vshot.sh/vboot.sh/discharge.sh,
+settings screenshots).

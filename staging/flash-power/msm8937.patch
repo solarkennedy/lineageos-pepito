@@ -1,7 +1,8 @@
-diff -ruN a/kernel/xiaomi/msm8937/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c b/kernel/xiaomi/msm8937/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c
---- a/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c	2026-10-22 16:54:50.470759772 -0700
-+++ b/drivers/media/platform/msm/camera_v2/sensor/flash/msm_flash.c	2026-10-22 16:54:51.102746894 -0700
-@@ -654,6 +654,21 @@
+diff --git a/techpack/camera-legacy/sensor/flash/msm_flash.c b/techpack/camera-legacy/sensor/flash/msm_flash.c
+index 17ae2b57b481..e567fc500200 100644
+--- a/techpack/camera-legacy/sensor/flash/msm_flash.c
++++ b/techpack/camera-legacy/sensor/flash/msm_flash.c
+@@ -624,6 +624,21 @@ static int32_t msm_flash_low(
  	return 0;
  }
  
@@ -23,7 +24,7 @@ diff -ruN a/kernel/xiaomi/msm8937/drivers/media/platform/msm/camera_v2/sensor/fl
  static int32_t msm_flash_high(
  	struct msm_flash_ctrl_t *flash_ctrl,
  	struct msm_flash_cfg_data_t *flash_data)
-@@ -680,6 +695,11 @@
+@@ -650,6 +665,11 @@ static int32_t msm_flash_high(
  				pr_debug("LED flash_current[%d] clamped %d\n",
  					i, curr);
  			}
