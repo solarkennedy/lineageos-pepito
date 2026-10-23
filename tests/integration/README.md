@@ -19,7 +19,7 @@ python3 -m pytest --unit dut1 -k th2 -s            # one test, with its printed 
 ## Unattended
 
 Every test must run with nobody at the phone or the terminal. The one-shot entry
-point runs the release's test plan (or `--all`), then sends the result to ntfy:
+point runs the release's test plan (or `--all`), then prints the result:
 
 ```bash
 tests/integration/run-unattended.sh dut1          # the plan's tests
@@ -42,7 +42,7 @@ What makes that hold, and what new tests must keep true:
   which is one reason `awake` holds it on.
 - **Unmet preconditions skip, with the reason** (no SIM, IMS not on WLAN after 90 s,
   someone else's capture running, a call already up). A skipped required test keeps
-  the release gate red, and the notification lists it.
+  the release gate red, and the run's printed result lists it.
 - Long or state-changing work that must outlive adb runs on the phone under
   `setsid` (see `device/`).
 

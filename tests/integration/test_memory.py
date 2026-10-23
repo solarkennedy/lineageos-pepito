@@ -32,7 +32,10 @@ def test_kernel_health(dut):
     """No BUG/WARN/bad-page in dmesg since boot, no panic left in pstore from the last one."""
     hits = dut.sh(f"dmesg | grep -E '{BAD}' | grep -v -E '{BENIGN}' || true")
     assert not hits, f"kernel complaints:\n{hits[:2000]}"
-    panics = dut.sh("grep -l -E 'Kernel panic|Internal error|BUG:' /sys/fs/pstore/* 2>/dev/null || true")
+    # Kernel records only. pmsg-ramoops is the previous boot's Android log, which
+    # holds adbd's echo of this very grep command (BUG: included) after a reboot.
+    panics = dut.sh("grep -l -E 'Kernel panic|Internal error|BUG:' "
+                    "/sys/fs/pstore/console-ramoops* /sys/fs/pstore/dmesg-ramoops* 2>/dev/null || true")
     assert not panics, f"previous boot left a panic in pstore: {panics}"
 
 
