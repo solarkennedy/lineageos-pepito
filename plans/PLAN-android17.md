@@ -501,6 +501,12 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
     Stock schedule ≈ 15 scans per disconnected stretch ⇒ well under 1 mAh per stretch (~0.1 % of the cell) —
     keep the stock timers. A 60 s timer would be ~60 wakes/h ⇒ order of a few mA average — not worth it.
     Open for a true number: unplugged battery-gauge arm with dut1 away from Wi-Fi.
+  - ⚠️ **Side effect of the overlay fix, caught 2026-10-23:** mithorium's `config_wifi_diagnostics_bugreport_enabled=true`
+    went live (dut1 `20261023` reads true; AOSP default false). On userdebug that lets WifiDiagnostics start a full
+    bug report on its own (≤1/h) on Pronto SSR, HAL errors, last-resort watchdog. Overridden back to false in
+    `WifiOverlay_Mi8937` — Mi8937 `475d43d4`, pushed, unbuilt. Hotspot ACS/11ac: AOSP defaults are already false ⇒
+    no hotspot change, client test not needed. Net user-visible changes from the now-live overlay: 802.11r FT on,
+    larger Wi-Fi TCP buffers, link probing on, SoftAP max clients 16→32, WPA2→WPA3 auto-upgrade off.
 - **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
   visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_wifi_ok` = 1 on home
   Wi-Fi, `vendor.qmux.wfc_th2` = sticky while on Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays
