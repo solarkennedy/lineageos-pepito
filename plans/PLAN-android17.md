@@ -597,3 +597,30 @@ CSVs: netbook4 `~/scratch/pwr-a17-1017/` (`run-cells2.sh`).
   `echo bkl-trigger > /sys/class/leds/wled/trigger`.
 - Gold's /data has 2200 f2fs dirty segments (dut1 215); no periodic GC bursts showed on Gold.
 - Still open: the unplugged airplane standby bracket against dut1's A16 9.1 mA (real suspend).
+
+## Upstream rebase 2026-10-23 — first run of REBASE.md
+
+First monthly rebase (`scripts/upstream.py`, runbook `REBASE.md`). 12 forks rebased onto upstream
+`lineage-24.0`, all clean, every one of our patches replayed unchanged (range-diff identical):
+frameworks/base 17 upstream, Launcher3 14, vendor/lineage 7, LineageParts 3, build/make 3,
+hardware/lineage/interfaces 3, lineage-sdk 2, Updater 2, system/sepolicy 2, telephony 1,
+hardware/interfaces 1, fs_mgr 1. Device trees, kernel, native, recovery, bpfprogs: 0 behind (device
+upstream is dead since 08-21). Backup tag on every fork: `pepito-24-pre-20261023`. Then
+`SYNC_ALL=1` build `20261023`: first full sync since 10-05, 93 projects moved vs the 20261017
+snapshot, incl. upstream's switch of conscrypt / ca-certificates / selinux / system/usb /
+frameworks/hardware/interfaces / hardware/google/interfaces to Lineage forks.
+
+- Security patch level unchanged at 2026-10-01 (= upstream). Upstream Google-authored fixes not in
+  the tree before the sync: 2, neither security (Bluetooth cleanup, ApiDemos). 20261017 was already
+  current on the bulletin.
+- emSign roots: conscrypt cacerts 4 → 1 (Lineage removed G3 / ECC C3 / C1; Root CA - G1 stays).
+- dut1 (`c39a6acf`) smoke, 10:41–10:47: boots; 3-button nav with Trebuchet: no crash loop
+  (launcher/systemui PIDs stable, bar drawn); QS volume slider + torch tile present; aconfig
+  `flashlight_strength` enabled; Updater opens (Security update Oct 2026, build date Oct 23); PVG100
+  System Tweaks + Modem Tweaks pages open. No crash from our code. avc denials (18) all seen on
+  20261017 too.
+- Not a regression: GMS / Play Store crash at start on dut1 (missing `INTERACT_ACROSS_USERS`, DPM
+  denial). They live only in /data/app (left from an earlier gapps install) on a vanilla build, so
+  no privileged grants. Same crashes before this boot.
+- Still to do before a release: `tests/integration` on this build (release gate), face unlock,
+  the gapps build.
