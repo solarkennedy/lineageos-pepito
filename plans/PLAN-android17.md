@@ -452,6 +452,55 @@ Memory: `wfc-wifi-preference-lane`. Evidence `diag-tools/captures/wfc-pref-20261
   "PNO is not available" is in walk2/walk3; those runs reconnected only because the screen was on. Not a WFC
   regression, but in real use: come home with the phone in a pocket → it stays on LTE until the screen wakes.
   Lever candidates: wcnss/pronto PNO in the Wi-Fi HAL, or the framework's screen-off periodic scan fallback.
+- 🔎 **2026-10-22 PNO root-caused + A/B'd on new2 (24.0 `20261017`, runtime overrides only, restored after):**
+  - **Why "PNO is not available":** HW PNO is gated only by `config_wifi_background_scan_support`
+    (`WificondScannerImpl.isHwPnoSupported`). mithorium-common's `WifiOverlay` sets it `true`, but **no overlay
+    reaches `com.android.wifi.resources`**: `WifiOverlay` and Mi8937's `WifiOverlay_prada` both use
+    `theme: "WifiOverlay"`, so both install into `/vendor/overlay/WifiOverlay/`. PackageManager reads a subdir as
+    one package cluster → two package names → the dir is skipped (neither package exists in `pm`/OMS). Same
+    layout since the initial Mi8937 tree ⇒ the whole mithorium Wi-Fi overlay (FT, link probing, TCP buffers,
+    SoftAP ACS/11ac off, reg-change event) has never applied on Mi8937 builds either.
+  - Test = screen off, `svc wifi disable/enable`, poll 180 s for wlan0 IPv4 (AP on ch 6 the whole time):
+    | config | result |
+    |---|---|
+    | shipped | NOT connected in 180 s (`PNO is not available`) |
+    | `force-overlay-config-value bool config_wifi_background_scan_support enabled true` | HW PNO **starts** (`NL80211_CMD_START_SCHED_SCAN`, freqs 2412/2437/2462) but the driver never reports a match (`iw event` silent 75 s) → NOT connected |
+    | background_scan off + `config_wifiSwPnoEnabled` true + `device_config put wifi software_pno_enabled true` | **CONNECTED +7 s, screen off** (SwPnoScanState) |
+  - Prima advertises `start_sched_scan` (16 match sets, 10 plans); its plan conversion is right for 4.19 and the
+    found-indication path is plain. Why Pronto firmware never indicates is open (needs `iwpriv setwlandbg` for
+    SME/WDA traces — no iwpriv on the image). Upstream nit seen on the way: `pmcSetPreferredNetworkList` appends
+    supplicant IEs to `&p24GProbeTemplate` (the pointer's address); unused here (wificond sends no IEs).
+  - **STAGED + PUSHED 2026-10-22, unbuilt:** Mi8937 `9f192ab7` (prada overlay loses `theme:`; new static
+    `WifiOverlay_Mi8937` prio 1: `config_wifi_background_scan_support=false`, `config_wifiSwPnoEnabled=true`) +
+    LineageParts `fe578954` (Tweaks → Wi-Fi → "Reconnect to Wi-Fi with screen off", **default OFF**:
+    `persist.gotweak.wifi_sw_pno` + DeviceConfig `wifi/software_pno_enabled`, live; BootReceiver re-asserts once
+    set; category hidden unless the overlaid `config_wifiSwPnoEnabled` is true). Stock SW PNO timers
+    (2 mobility, 3×5 min, 10×20 min, stop). SimpleDeviceConfig route dropped (it re-applies at boot, would
+    override the user).
+  - **After flash, check:** `cmd overlay list com.android.wifi.resources` shows `xiaomi_mithorium` +
+    `xiaomi_msm8937` enabled (prada absent on pepito); `cmd wifi get-overlay-config-values` →
+    background_scan false, SwPno true; switch ON → `device_config get wifi software_pno_enabled` true, the
+    screen-off reconnect test passes; switch OFF → stays disconnected. Re-check what the newly-live mithorium
+    values change: hotspot (ACS + 11ac now off), FT roaming, link probing, TCP buffers. Then CT-3 power A/B:
+    screen-off standby, Wi-Fi out of range, switch on vs off; choose final timers from that.
+  - ✅ **2026-10-23 dut1 on `24.0-20261023` (carries `9f192ab7` + `fe578954`):** both `xiaomi_mithorium` and
+    `xiaomi_msm8937` overlays enabled (prada installed, correctly skipped); background_scan false, SwPno true,
+    softap ACS false, link probing true, Wi-Fi TcpBufferSizes now 524288,2097152,4194304,262144,524288,1048576.
+    Switch flipped through the UI: ON → prop 1 + DeviceConfig true (LineageParts write accepted, no error) →
+    screen-off reconnect **+4 s** via SwPnoScanState; OFF → prop 0 + DeviceConfig false → NOT connected in 180 s,
+    `PNO is not available`. ✅ Reboot persistence: switch ON, flag forced `false` by hand (simulated server flip),
+    reboot → flag `true` 10 s after boot (BootReceiver delivered), screen-off reconnect +4 s via SwPnoScanState.
+    Still to do: hotspot with a client
+    (ACS + 11ac now off), CT-3 power A/B.
+  - ⚡ **2026-10-23 per-scan energy, dut1 on the CT-3 (charging off, `battery unplug`, screen dozing, Wi-Fi on +
+    disconnected, switch off):** 10 × `cmd wifi start-nl80211-scan wlan0 -t low_latency` 15 s apart (the driver
+    scan SW PNO issues; framework/scan-only triggers were refused for shell/root callers). Baseline 0.327 W
+    (σ 14 mW); each scan = ~1 s bump to ~0.6 W; excess **median 0.22 J** (mean 0.25, one 0.57 J outlier; control
+    windows ≈0). ≈ **0.016 mAh per scan** at 3.8 V. Wired ⇒ the SoC never suspends (78db000.usb), so the
+    resume-from-suspend + alarm handling cost is NOT in this number; budget it at a few × the scan.
+    Stock schedule ≈ 15 scans per disconnected stretch ⇒ well under 1 mAh per stretch (~0.1 % of the cell) —
+    keep the stock timers. A 60 s timer would be ~60 wakes/h ⇒ order of a few mA average — not worth it.
+    Open for a true number: unplugged battery-gauge arm with dut1 away from Wi-Fi.
 - **Validation after flash (new2 or dut1, Verizon-network SIM):** Settings → Wi-Fi calling → Calling preference
   visible; pick Wi-Fi preferred → `getprop vendor.qmux.wfc_mode` = 2, `vendor.qmux.wfc_wifi_ok` = 1 on home
   Wi-Fi, `vendor.qmux.wfc_th2` = sticky while on Wi-Fi; `diag-tools/nas-probe/wfc-call-run.sh` call stays
