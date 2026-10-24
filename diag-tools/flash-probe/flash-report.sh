@@ -58,7 +58,7 @@ start)
 	echo
 	echo ">>> Tracing.  If your camera app is open, close it (swipe it away) and reopen it."
 	echo ">>> Take $N photos with flash ON, ~5 s apart.  You can unplug the phone now if you want."
-	echo ">>> The trace stops after the ${N}th photo; then: adb pull /sdcard/Download/flash-report.tar.gz"
+	echo ">>> The trace stops after photo $N; then: adb pull /sdcard/Download/flash-report.tar.gz"
 	;;
 status)
 	cat $D/state 2>/dev/null || echo "not started"
@@ -134,7 +134,6 @@ run)
 	rm -rf $D/$NAME
 	echo "DONE: $SHOTS photos -> /sdcard/Download/$NAME.tar.gz (also Download/flash-report.tar.gz)" > $D/state
 	cat $D/state
-	cmd notification post -t "Flash report ready" flashreport "Download/$NAME.tar.gz" > /dev/null 2>&1
 	rm -f $D/pid
 	;;
 *)
