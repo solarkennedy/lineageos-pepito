@@ -11,7 +11,9 @@ Classifies every 15 s sample by what the MODEM says (never the framework):
 Then prints episodes (consecutive non-HOME runs), their class mix, recovery
 latency, Wi-Fi state, and daily totals in minutes.
 """
-import re, sys, collections, datetime
+import re, sys, os, collections, datetime
+
+HOME_PLMN = os.environ.get('HOME_PLMN', '311480')  # Verizon; set HOME_PLMN=<mccmnc> for another carrier
 
 SAMPLE = 15  # s nominal
 def parse(line):
@@ -33,7 +35,7 @@ def parse(line):
     else:
         reg, plmn, lte = f.get('reg'), f.get('plmn'), f.get('lte')
         if plmn is None or lte in ('0', '4'): cls = 'HOLE'
-        elif plmn == '311480': cls = 'HOME' if reg == '1' else 'HOME-LIMITED'
+        elif plmn == HOME_PLMN: cls = 'HOME' if reg == '1' else 'HOME-LIMITED'
         else: cls = 'FOREIGN'
     return dict(t=t, cls=cls, plmn=f.get('plmn'), reg=f.get('reg'), rsrp=rsrp, srxlev=srxlev,
                 wifi=wifi, ims=ims, emg=emg)
