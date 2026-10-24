@@ -20,7 +20,7 @@
 #
 #    adb root
 #    adb push flash-report.sh /data/local/tmp/
-#    adb shell "tr -d '\r' < /data/local/tmp/flash-report.sh > /data/local/tmp/fr && sh /data/local/tmp/fr start 5"
+#    adb shell sh /data/local/tmp/flash-report.sh start 5
 #
 #  Then: open the camera, flash ON, darkish room, point at a wall, take 5 photos, waiting about
 #  5 seconds between them.  Plugged in or not -- whichever way it fails for you (say which).
@@ -29,8 +29,8 @@
 #    adb pull /sdcard/Download/flash-report.tar.gz
 #
 #  (or send Download/flash-report-*.tar.gz from the phone's Files app).  Say which photos
-#  looked wrong.  Progress:  adb shell sh /data/local/tmp/fr status
-#  Stop early:               adb shell sh /data/local/tmp/fr stop
+#  looked wrong.  Progress:  adb shell sh /data/local/tmp/flash-report.sh status
+#  Stop early:               adb shell sh /data/local/tmp/flash-report.sh stop
 # ---------------------------------------------------------------------------------------------
 D=/data/local/tmp/flash-report
 W=$D/w
@@ -138,5 +138,5 @@ run)
 	rm -f $D/pid
 	;;
 *)
-	echo "usage: sh fr start [SHOTS] [TIMEOUT_S] | status | stop"; exit 2 ;;
+	echo "usage: sh flash-report.sh start [SHOTS] [TIMEOUT_S] | status | stop"; exit 2 ;;
 esac
