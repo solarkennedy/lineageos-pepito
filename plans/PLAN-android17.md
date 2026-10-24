@@ -624,3 +624,37 @@ frameworks/hardware/interfaces / hardware/google/interfaces to Lineage forks.
   no privileged grants. Same crashes before this boot.
 - Still to do before a release: `tests/integration` on this build (release gate), face unlock,
   the gapps build.
+
+## Bench result 2026-10-23 — white notification LED (PMI8950 MPP2)
+
+The white light below the screen is a current sink on PMI8950 MPP2. Stock
+(silver, 8.1) registers it as `button-backlight` and lights it at 10 mA
+whenever the screen is on; our tree left the node empty. Now it's the
+notification LED:
+
+- kernel `4ad403e75036`: `pepito/leds.dtsi` registers MPP2 as `white`
+  (manual mode, `pm8937_l11` at 3.3 V like stock, capped at 10 mA) and drops
+  `qcom,chg-led-support` so the unwired charger `red` LED goes away and the
+  lights HAL picks `white`.
+- Mi8937 `45107873`: genfscon `sysfs_graphics` (hal_light can write that, not
+  `sysfs_leds`); `config_deviceLightCapabilities` 0 (plain white, solid, no
+  battery light).
+- mithorium-common `ef662b2`: XiaomiParts turns "Blink light" off once on
+  pepito (fresh installs and OTA upgrades); after that it's the user's setting.
+
+Brightness: on silver, 5/10/20/40 mA showed no visible gain past 10 mA
+(probably 3.3 V headroom vs. the LED's forward voltage), so 10 mA is the cap.
+Cost while lit ≈ 10 mA vs. a ~3.3 mA airplane floor, hence default off.
+
+Hardware blink: NOT possible. Test kernel with writable regmap debugfs on
+dut1: MPP2 lights from a constant source, and from an inverted DTEST input
+(the line sits low), but the PMI8950 PWM channel's DTEST outputs (lines 1-2,
+output selects 1-3) never toggle it. HAL PWM path reverted (`883e617`); test
+branch `pepito-24-ledblink-test` abandoned. MPP MODE_CTL low nibble is
+function<<1 | value (`0x61` on, `0x64`/`0x65` DTEST1, `0x68` DTEST3).
+
+Verified on dut1, production build 20261024 gapps: `white` present (max 10,
+`sysfs_graphics`, owner system), no `red`, `notification_light_pulse`=0 after
+first boot, HAL `setLightState(NOTIFICATIONS, white)` → brightness 10, LED lit
+(Kyle). Not yet seen: a real notification lighting it (dut1's SIM isn't
+active; missed-call/SMS channels have lights on).
