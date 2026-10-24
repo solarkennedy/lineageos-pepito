@@ -29,11 +29,9 @@
 # frame, OFF ~0.25 s before, HIGH 30-115 ms before, OFF 0-70 ms after; photo EXIF "FIRED",
 # meanY 120-150 in a dark room.  See PLAN-misc.md §9 addenda 3-5.
 #
-# For a reporter (Linux/macOS host with adb; Windows: use WSL or Git Bash):
-#   1. enable USB debugging, plug in, accept the prompt;  `adb devices` must list the phone
-#   2. bash flash-trace.sh            (it runs `adb root` itself -- the ROM allows it)
-#   3. when asked, open Camera, set flash ON, take ONE photo, press Enter
-#   4. send back the flash-trace-*.txt, .dmesg, .logcat and .jpg files
+# This is the BENCH tool (needs bash + python3 on the host).  For a reporter -- any OS, only adb,
+# phone may be unplugged during the trace -- send flash-report.sh (runs on the phone) and read the
+# bundle with flash-analyze.py.
 set -u
 SER=""; AUTO=""; OUT=""; KEEP=""
 while [ $# -gt 0 ]; do
@@ -61,13 +59,16 @@ echo "build:    $(sh getprop ro.lineage.version) / android $(sh getprop ro.build
 echo "variant:  hwversion=$(sh getprop ro.boot.hwversion) hwc=$(sh getprop ro.boot.hwc) product=$(sh getprop ro.product.device)"
 echo "battery:  $(sh 'cd /sys/class/power_supply/battery && echo status=$(cat status) capacity=$(cat capacity) voltage_now=$(cat voltage_now) current_now=$(cat current_now) temp=$(cat temp) health=$(cat health) flash_active=$(cat flash_active 2>/dev/null)')"
 echo "bms:      resistance=$(sh cat /sys/class/power_supply/bms/resistance) charge_full=$(sh cat /sys/class/power_supply/bms/charge_full) cycle_count=$(sh cat /sys/class/power_supply/bms/cycle_count)"
+echo "kernel:   $(sh uname -v)   uptime=$(sh 'cut -d" " -f1 /proc/uptime') s"
+echo "flash power: persist.gotweak.flash_ma='$(sh getprop persist.gotweak.flash_ma)' kernel flash_cap_ma=$(sh 'cat /sys/module/msm_flash/parameters/flash_cap_ma 2>/dev/null || echo MISSING')   (empty/0 = Full 1000 mA, 700 = Reduced, 400 = Low)"
+echo "camera app: $(sh 'dumpsys activity activities | grep -m1 -E "topResumedActivity|mResumedActivity"' | sed -E 's/^ *//')"
 echo "leds:     $(sh 'ls /sys/class/leds | tr "\n" " "')"
 echo "reg_dump before: $(sh 'cat /sys/class/leds/led:switch/reg_dump | tr "\n" " "')"
 } | tee "$OUT"
 
 # the HAL reads its log level when the camera is opened -- close the app first so it reopens
 [ -z "$KEEP" ] && sh 'am force-stop org.lineageos.aperture'
-sh 'mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug; echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug 4; echo 1 > /sys/kernel/debug/flashLED/enable_debug; dmesg -c > /dev/null; logcat -c'
+sh 'mountpoint -q /sys/kernel/debug || mount -t debugfs none /sys/kernel/debug; echo "file msm_flash.c +p" > /sys/kernel/debug/dynamic_debug/control; echo "file leds-qpnp-flash.c +p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug 4; echo 1 > /sys/kernel/debug/flashLED/enable_debug; dmesg -c > /dev/null; logcat -c'
 "${A[@]}" logcat -v monotonic > "$OUT.logcat" 2>/dev/null &
 LCPID=$!
 # clock offset: kernel printk time vs logcat monotonic time
@@ -92,7 +93,7 @@ NEWEST=$(sh 'ls -t /sdcard/DCIM/Camera 2>/dev/null | head -1')
 [ "$NEWEST" = "$BEFORE" ] && { echo "NO NEW PHOTO was saved -- the shot did not happen; rerun." | tee -a "$OUT"; NEWEST=""; }
 "${A[@]}" shell dmesg > "$OUT.dmesg" 2>/dev/null
 sleep 1; kill $LCPID 2>/dev/null
-sh 'echo "file msm_flash.c -p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug ""'
+sh 'echo "file msm_flash.c -p" > /sys/kernel/debug/dynamic_debug/control; echo "file leds-qpnp-flash.c -p" > /sys/kernel/debug/dynamic_debug/control; setprop persist.vendor.camera.hal.debug ""'
 
 {
 LATCH=$(sh 'cd /sys/kernel/debug/regmap/spmi0-03 2>/dev/null && echo 0xd318 > address && echo 1 > count && cat data' | sed -E 's/.*: *//')
@@ -102,12 +103,12 @@ echo "reg_dump after:  $(sh 'cat /sys/class/leds/led:switch/reg_dump | tr "\n" "
 echo "battery after:   voltage_now=$(sh cat /sys/class/power_supply/battery/voltage_now) status=$(sh cat /sys/class/power_supply/battery/status)"
 echo "newest photo:    $NEWEST"
 echo "--- flash ioctl trace (kernel time) ---"
-grep -E 'msm_flash_config:[0-9]+ Enter|Invalid state|flash_current|Enable/Disable Regulator|open_fault|qpnp-flash' "$OUT.dmesg" \
+grep -E 'msm_flash_config:[0-9]+ Enter|Invalid state|flash_current|Enable/Disable Regulator|open_fault|qpnp-flash.*(addr 0xD342|fail|err)' "$OUT.dmesg" \
 	| sed -E 's/msm_flash_config:[0-9]+ Enter msm_flash_config type 0/INIT/; s/type 1$/RELEASE/; s/type 2$/OFF/; s/type 3$/LOW/; s/type 4$/HIGH/' \
 	| sed -E 's/msm_flash_config:[0-9]+ Enter msm_flash_config //'
 echo "--- strobe vs snapshot frame (logcat clock) ---"
-KM=$(grep -m1 'FLASHTRACE' "$OUT.dmesg" | sed -E 's/^\[ *([0-9.]+)\].*/\1/')
-LM=$(grep -m1 'FLASHTRACE' "$OUT.logcat" | awk '{print $1}')
+KM=$(grep -m1 '] FLASHTRACE$' "$OUT.dmesg" | sed -E 's/^\[ *([0-9.]+)\].*/\1/')
+LM=$(grep -m1 'FLASHTRACE *: mark' "$OUT.logcat" | awk '{print $1}')
 BLOB=$(grep 'stream format = 33' "$OUT.logcat" | tail -1 | sed -E 's/.*frame = ([0-9]+),.*/\1/')
 SOF=$(grep "valid frame_number = $BLOB," "$OUT.logcat" | head -1 | sed -E 's/.*capture_time = ([0-9-]+).*/\1/')
 if [ -n "$KM" ] && [ -n "$LM" ] && [ -n "$BLOB" ] && [ -n "$SOF" ]; then
@@ -138,6 +139,13 @@ esac
 case "$LATCH" in 1?|3?|5?|7?|9?|[bBdDfF]?) echo "VPH DROOP CLAMP latched (0xd318=$LATCH): the strobe ran at the 200 mA clamp current -> dim photo with EXIF FIRED. Battery/charger could not hold VPH >= 3.0 V under the 1 A pulse + system load." ;; esac
 if [ -n "${SOF:-}" ]; then
 	grep -E 'Skipping sof|Remap pending request|reporting error frame' "$OUT.logcat" | awk -v s="$SOF" '{d=($1-s/1e9)*1000; if (d>-400 && d<150) {printf "FRAME SLIP near the snapshot (%+.0f ms): ", d; $1=$2=$3=$4=""; print}}'
+fi
+HFC=$(grep -oE 'high_flash_current\[0\] = [0-9]+' "$OUT.dmesg" | tail -1 | grep -oE '[0-9]+$')
+CAPPED=$(grep -oE 'flash_current\[0\] [0-9]+ capped to [0-9]+' "$OUT.dmesg" | tail -1)
+CAPNOW=$(sh 'cat /sys/module/msm_flash/parameters/flash_cap_ma 2>/dev/null')
+echo "strobe current: ${HFC:-?} mA commanded${CAPPED:+ ($CAPPED)}; kernel cap now ${CAPNOW:-MISSING}"
+if [ -z "$CAPNOW" ]; then echo "NO FLASH POWER CAP in this kernel (build older than 20261023?) -- the Flash power setting does nothing here."
+elif [ -n "$HFC" ] && [ "$CAPNOW" != 0 ] && [ "$HFC" -gt "$CAPNOW" ]; then echo "CAP NOT APPLIED: Flash power is $CAPNOW mA but the strobe ran at $HFC mA."
 fi
 grep -q 'Invalid state' "$OUT.dmesg" && echo "DRIVER DROPPED A REQUEST (Invalid state) -- state-machine desync, see flash-torch-state-machine notes."
 } | tee -a "$OUT"
