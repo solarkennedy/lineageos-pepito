@@ -658,3 +658,19 @@ Verified on dut1, production build 20261024 gapps: `white` present (max 10,
 first boot, HAL `setLightState(NOTIFICATIONS, white)` → brightness 10, LED lit
 (Kyle). Not yet seen: a real notification lighting it (dut1's SIM isn't
 active; missed-call/SMS channels have lights on).
+
+## Bug 2026-10-30 — face unlock idle lockout shows "Something went wrong"
+
+Reported and traced by Scott on `20261023`. Paranoid Sense (`SenseService.kt`)
+locks face unlock 4 h after the last successful face match
+(`LOCKOUT_TYPE_IDLE`); authenticate then errors in ≤13 ms without opening the
+camera until the screen lock is entered. Timed and permanent lockouts map to
+`FACE_ERROR_LOCKOUT{,_PERMANENT}`; the idle one maps to `FACE_ERROR_VENDOR`
+with vendorCode 0, and AOSP's `face_error_vendor` array is empty, so keyguard
+showed `face_error_vendor_unknown`. The lockout itself is intended (WEAK-class
+biometric); only the message is wrong.
+
+Fix: Mi8937 `46b12fc1` adds `face_error_vendor[0]` = "Face unlock paused. Use
+your screen lock." in `xiaomi_pepito_overlay` (no FaceUnlock fork needed).
+Unbuilt. Verify: on a build carrying it, leave the phone 4 h after a face
+unlock, wake it, read the keyguard line.
