@@ -670,7 +670,22 @@ with vendorCode 0, and AOSP's `face_error_vendor` array is empty, so keyguard
 showed `face_error_vendor_unknown`. The lockout itself is intended (WEAK-class
 biometric); only the message is wrong.
 
-Fix: Mi8937 `46b12fc1` adds `face_error_vendor[0]` = "Face unlock paused. Use
-your screen lock." in `xiaomi_pepito_overlay` (no FaceUnlock fork needed).
-Unbuilt. Verify: on a build carrying it, leave the phone 4 h after a face
-unlock, wake it, read the keyguard line.
+Why Sense's timer fired at all: the framework already enforces the same rule
+(`LockSettingsStrongAuth`, 4 h, re-armed by keyguard every time it shows; when
+it fires keyguard stops requesting face auth and prompts for the screen lock).
+Sense's own timer is armed once at screen-off and can expire first.
+
+First fix, Mi8937 `46b12fc1` (`face_error_vendor[0]` string in
+`xiaomi_pepito_overlay`), is superseded and gets reverted once the fork lands.
+
+Fix: FaceUnlock is now our fork, `solarkennedy/android_packages_apps_FaceUnlock`
+`pepito-24` (crDroid `17.0` + 2):
+- `71d4d55` drop Sense's duplicate idle lockout; the framework owns it.
+- `27049dc` report Megvii per-frame results to keyguard as `FACE_ACQUIRED_*`
+  hints (dark, bright, closer/farther, look at phone, motion, covered, no face).
+  Nobody upstream does this (GitHub code search 10-30; AxionAOSP's rewrite
+  sends only NOT_DETECTED).
+
+Unbuilt, uncompiled. Verify: (1) 4 h after a face unlock, wake: keyguard asks
+for the pattern with no "Something went wrong"; (2) face unlock in the dark,
+too close, half covered: a hint shows under the clock.
