@@ -114,9 +114,12 @@ while [ $# -ge 3 ]; do
         printf '@@MISSING\t%s\n' "$p"
         continue
     fi
-    remote=$(git -C "$d" remote | head -n1)
-    [ -n "$remote" ] && git -C "$d" fetch -q "$remote" \
-        "+refs/tags/${prefix}*:refs/tags/${prefix}*" 2>/dev/null || true
+    # every remote, not the first: a project that moved from its upstream to a
+    # pepito fork keeps the old remote in .git/config and it sorts first
+    for remote in $(git -C "$d" remote); do
+        git -C "$d" fetch -q "$remote" \
+            "+refs/tags/${prefix}*:refs/tags/${prefix}*" 2>/dev/null || true
+    done
     # newest by name, not `describe`: after a rebase the tag isn't an ancestor
     prev=$(git -C "$d" tag -l "${prefix}*" | sort -V | tail -n1)
     printf '@@REPO\t%s\t%s\n' "$p" "$prev"
