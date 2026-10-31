@@ -72,7 +72,9 @@
   <project path="vendor/xiaomi" name="proprietary_vendor_xiaomi" remote="pepito-ssh" revision="pepito-vendor" />
 
   <!-- Paranoid Sense face unlock app: crDroid 17.0 (23.2 shipped 16.0) + ours: framework owns the
-       4-hour idle lockout, Megvii frame results reported to keyguard as acquired hints. -->
+       4-hour idle lockout, Megvii frame results reported to keyguard as acquired hints, match
+       reported before the camera is released, Megvii blob patched to pin to cpus 0-3 (the fast
+       cluster on MSM8937; lib/patch-megvii-affinity.py). -->
   <project path="packages/apps/FaceUnlock" name="android_packages_apps_FaceUnlock" remote="pepito" revision="pepito-24" />
 
   <!-- OpenEUICC dropped for 24.0 (Mi8937 pepito-24 6c1fb8f1). -->
