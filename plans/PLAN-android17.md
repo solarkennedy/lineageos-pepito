@@ -1009,3 +1009,47 @@ after boot, cpuidle path; not from this build's only change — watch the next b
 Bench notes: dut1's Office AP sits at -77..-86 from its bench spot (below the -75 sticky
 TH2 arm), which failed its first call run; it is now on yelppub (-70). new2 must be
 unlocked first (android-unlock-new2) or the call tests skip.
+
+## Bug 2026-11-01 — GPS slow / "not working" (user report): no XTRA at all, assisted GPS off by default
+
+**Report:** the US Mobile user (see "Bug 2026-10-30") says GPS doesn't work; Wi-Fi off, Verizon data flaky.
+
+**What the build actually does (dut1 + new2, `20261101`):**
+- Lineage's Settings → Location → "Use assisted GPS" (`Settings.Global.assisted_gps_enabled`) defaults
+  **off** (vendor/lineage overlay). Off ⇒ `GnssLocationProvider.getSuplMode(false)` = STANDALONE: no SUPL
+  either, pure cold starts. dut1 = 0, new2 = 1 (set by hand).
+- No XTRA: `loc_launcher` is `disabled` (mithorium-common `de3e7b4`). Started by hand on dut1, the Nokia-A11
+  `xtra-daemon` blob fails to link `vendor.qti.hardware.qccsyshal@1.0.so` (a whole HAL service we don't ship).
+  The HAL's `getExtensionXtra()` returned nullptr ⇒ `mSupportsPsds=false`, and no `LONGTERM_PSDS_SERVER` is set.
+- dut1's modem still held an XTRA file from its A11 days (2026-08-09, 168 h), long expired.
+
+**Stock reference (silver, A8, same MPSS C1-214411):** `loc_launcher` + xtra-daemon, lowi-server, xtwifi-*,
+slim_daemon. `xtra.sqlite`: modem-supplied URLs `http://xtrapath{1,2,3}.izatcloud.net/xtra3grc.bin`, last
+download 2026-11-01 09:22.
+
+**Bench, dut1, raw QMI LOC (`diag-tools/xtra-probe/`):** modem source list (0x36) = the izatcloud URLs.
+`INJECT_XTRA_DATA` 0xA7 ⇒ QMI err 94 (not supported); `QUERY_XTRA_INFO` 0xB0 ⇒ err 57. Deprecated
+`INJECT_PREDICTED_ORBITS_DATA` 0x35, 1 KiB parts:
+- `https://path1.xtracloud.net/xtra3grc.bin` (33 KB) ⇒ every part SUCCESS, validity 2026-11-01 22:00 UTC, 168 h.
+- izatcloud `xtra3grc.bin` (27.6 KB) ⇒ last part INVALID_PARAMETER, with or without a UTC-time injection (0x38).
+
+**Change (PUSHED 2026-11-01, unbuilt):** mithorium-common `e6262b9`, Mi8937 `f084c362`, LineageParts `adfee737`.
+- mithorium-common: `gps/android/2.1/GnssXtra.{h,cpp}` = `IGnssXtra` that injects the framework's PSDS
+  download with 0x35 over a private raw QMI LOC client (libqmi_cci dlopen'd, like the qmux tools; one client
+  kept for the process lifetime because QCCI holds a pointer to its os_params), and calls
+  `downloadRequestCb()` 24 h after a good injection (6 h after a failed one); A17 only downloads once per boot
+  otherwise. `/vendor/etc/gps_debug.conf` sets `LONGTERM_PSDS_SERVER_{1,2,3}` = xtracloud.net; `hal_gnss_qti`
+  may read `gotweak_prop`.
+- Switch `persist.gotweak.gnss_xtra`; unset, it follows `ro.vendor.qmux.enable` (pepito only), so the Xiaomi
+  siblings are unchanged. Off at boot ⇒ `getExtensionXtra()` returns nullptr (old behaviour); turned off later ⇒
+  nothing more is injected or requested.
+- LineageParts: Modem Tweaks → Location → "Download satellite orbit data" (restart to apply).
+- Mi8937: pepito RRO `xiaomi_pepito_overlay_settingsprovider` sets `assisted_gps_enabled` default **on**, as on
+  stock (silver: `default:1`). Only applies when the settings DB is created (fresh install/wipe). Existing
+  installs keep their stored 0 unless someone wrote it: new2 shows `pkg:com.google.android.gms value:1`
+  (Google Play services turned it on). Open: migrate untouched existing installs (`pkg:android value:0`).
+- Code review (Fable) before commit: fixed a stack-lifetime bug (os_params), longer QMI/indication timeouts
+  (8 s / 10 s, as on the bench), pepito-only default.
+
+**Still to measure:** time-to-first-fix A/B on dut1 with sky view (delete_aiding_data vs delete + time + XTRA);
+GPSTest installed on dut1 for it.
