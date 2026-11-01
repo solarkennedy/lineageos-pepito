@@ -977,3 +977,25 @@ throttle table empty). So the DSD "ims = LTE only" table is just this block, and
 (candidates: the cell change itself, the B2 cell, many back-to-back test runs). Next time it
 happens: do NOT reboot — the stuck state is the thing to capture (diag must be fresh that
 boot), and dump DSD 0x24 + imsa first.
+
+### Bench 2026-11-01 10:30 — ROOT CAUSE + FIX: the modem keeps the bridge's last WQE verdict
+
+Reproduced under live diag with the in-call walk-away loop (`wret-loop.sh`, 6/6 returned
+on B66 in 95–110 s; on B2 the 3rd never returned in 240 s, came back ~5 min later).
+In the stuck cycle the modem's IMS *itself* requested the handover to LTE (quality
+verdict "not met" processed just before WLAN_NOT_AVAILABLE) instead of the tunnel dying.
+Decisive quiet experiment: sending DSD 0x43 "not met" for profiles 4..7 with Wi-Fi up
+moved IMS to LTE in 10 s and it never came back (8 min, table still listing IWLAN);
+re-sending "met" brought it back in 10 s. The modem keeps the LAST verdict and never
+asks again; the bridge only spoke on change or on a fresh 0x45, and on the down edge it
+sent "not met" ms before WLAN_NOT_AVAILABLE — that race is the stuck entry. Stock CnE
+re-sends its verdict every ~10 s.
+
+Fix: Mi8937 `63914f26` (pushed, pepito-24, unbuilt): repeat the verdict every 10 s,
+no "not met" on the down edge, remember the profile set in vendor.qmux.wfc_wqe_prof and
+seed it after a restart. Bench-binary proof on dut1: injected "not met" = 3 s on LTE then
+back; Wi-Fi bounce returns in ~20 s; restart seeds 0xf0. Also landing `2ffd4c3`: the
+gate's on-WLAN wait 90 -> 180 s (plain fallback still takes the modem's 120 s
+t_minonwwan). dut1 runs the OLD service bridge again (diag_mdlog still live on this boot).
+Next: build, re-run the gate on dut1 (T-Mobile) and new2 (Verizon: it now gets
+repeated verdicts too — watch test_call_hold/walkaway).
