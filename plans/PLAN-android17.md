@@ -999,3 +999,13 @@ gate's on-WLAN wait 90 -> 180 s (plain fallback still takes the modem's 120 s
 t_minonwwan). dut1 runs the OLD service bridge again (diag_mdlog still live on this boot).
 Next: build, re-run the gate on dut1 (T-Mobile) and new2 (Verizon: it now gets
 repeated verdicts too — watch test_call_hold/walkaway).
+
+### Bench 2026-11-01 12:00 — build 20261101 with 63914f26 VALIDATED on both carriers
+
+test_wfc.py with calls: dut1 (T-Mobile) 9/9, new2 (Verizon) 9/9 — hold + walk-away +
+return within the 180 s window. Rest of the suite without calls: new2 25 pass; dut1 24
+pass + one kernel-health hit (one-off rpm-smd WARNING at the first deep sleep, 64 s
+after boot, cpuidle path; not from this build's only change — watch the next boot).
+Bench notes: dut1's Office AP sits at -77..-86 from its bench spot (below the -75 sticky
+TH2 arm), which failed its first call run; it is now on yelppub (-70). new2 must be
+unlocked first (android-unlock-new2) or the call tests skip.
