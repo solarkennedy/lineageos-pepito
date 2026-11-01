@@ -14,7 +14,15 @@ QMI='LD_PRELOAD=/vendor/lib64/libqmi_force_ipcr.so LD_LIBRARY_PATH=/vendor/lib64
 rm -rf "$D"; mkdir -p "$D"
 mark() { echo "$(date +%s) $1" >>"$D/marks"; }
 
+# Call audio at the quietest the phone allows (STREAM_VOICE_CALL minimum is 1,
+# not 0), so a test call does not blare out of the earpiece; put the user's
+# level back on exit.
+vol() { cmd media_session volume --stream 0 "$@" 2>/dev/null; }
+VOL=$(vol --get | grep -oE 'volume is [0-9]+' | grep -oE '[0-9]+$')
+vol --set 1 >/dev/null
+
 cleanup() {
+    [ -n "$VOL" ] && vol --set "$VOL" >/dev/null
     [ -n "$OFF" ] && { svc wifi enable; mark wifi_on; sleep 3; }
     touch "$D/stop"; sleep 2
     kill "$LOGCAT" 2>/dev/null
