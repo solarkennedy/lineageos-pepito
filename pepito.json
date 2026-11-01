@@ -1,5 +1,23 @@
 [
   {
+    "datetime": 1793564510,
+    "type": "UNOFFICIAL",
+    "version": "24.0",
+    "files": [
+      {
+        "filename": "lineage-24.0-20261101-UNOFFICIAL-Mi8937.zip",
+        "sha256": "4f55ea27daea547c145e395e85fafd659d8efc46660aead90db3dafe88af24ae",
+        "size": 1230941680,
+        "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261101/lineage-24.0-20261101-UNOFFICIAL-Mi8937.zip",
+        "os_sdk_level": 37,
+        "os_patch_level": "2026-10-01",
+        "ota_property_files": "metadata:69:352,metadata.pb:489:258"
+      }
+    ],
+    "changelog": "### device/Mi8937\n- qmux: wfc_wlan_bridge: repeat the WQE verdict; no \"not met\" on the Wi-Fi-loss edge\n- Mi8937: pepito: wfc_wlan_bridge: answer the modem's Wi-Fi quality requests\n- Mi8937: pepito: ims_enabler: learn the MSISDN from a sip:+ URI\n- Mi8937: pepito: move modem_evs SIM-loaded trigger to system_ext\n- Mi8937: pepito: cap VoLTE EVS at wideband (modem_evs)\n- Revert \"Mi8937: pepito: give the face unlock idle lockout a message\"\n- Mi8937: pepito: give the face unlock idle lockout a message\n- Mi8937: pepito: drive the white MPP2 LED as the notification light\n\n### device/mithorium-common\n- Revert \"mithorium-common: lights: drive a PWM-gated LED's blink in hardware\"\n- mithorium-common: parts: notification light off by default on pepito\n- mithorium-common: lights: drive a PWM-gated LED's blink in hardware\n\n### kernel (msm8937)\n- ARM64: dts: pepito: white notification LED on PMI8950 MPP2\n\n### frameworks/base\n- biometrics: sense: recover from a dead binding to the Sense service\n\n### frameworks/opt/telephony\n- DataNetworkController: judge WWAN data by the cellular RAT under legacy IWLAN\n\n### LineageParts\n- LineageParts: \"Super-wideband call audio\" switch in PVG100 Modem Tweaks\n\n### FaceUnlock\n- FaceUnlock: pin Megvii to the fast cluster on MSM8937\n- FaceUnlock: report the match before releasing the camera\n- FaceUnlock: report acquired hints to keyguard\n- FaceUnlock: drop the duplicate 4-hour idle lockout",
+    "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261101"
+  },
+  {
     "datetime": 1792794136,
     "type": "SNAPSHOT",
     "version": "24.0",
