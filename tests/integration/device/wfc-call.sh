@@ -23,6 +23,10 @@ vol --set 1 >/dev/null
 
 cleanup() {
     [ -n "$VOL" ] && vol --set "$VOL" >/dev/null
+    # The in-call proximity sensor can blank the screen and the phone then
+    # dozes; screen-off Wi-Fi does not rejoin its network (no PNO), so wake it
+    # before giving Wi-Fi back or the run leaves the phone off Wi-Fi.
+    input keyevent KEYCODE_WAKEUP
     [ -n "$OFF" ] && { svc wifi enable; mark wifi_on; sleep 3; }
     touch "$D/stop"; sleep 2
     kill "$LOGCAT" 2>/dev/null
