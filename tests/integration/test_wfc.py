@@ -229,6 +229,15 @@ def test_call_walkaway(dut, imsa_probe, test_number, artifacts, on_wlan):
     assert in_call(samples, off + SURVIVE_S), f"call did not survive {SURVIVE_S} s past Wi-Fi off"
 
     if on_wlan in (WIFI_ONLY, WIFI_PREFERRED):
+        # Time the bridge from the link loss, not from `svc wifi disable`: the
+        # Pronto teardown alone takes 5-6 s before wlan0 disassociates and the
+        # framework drops VALIDATED (wifi_ok=0), and the ~1.5 s sampling made a
+        # fixed 5 s-from-the-command budget a coin flip (dut1 + new2, 10-31).
+        lost = [s for s in samples if s["t"] >= off and s["wifi_ok"] == "0"]
+        assert lost and lost[0]["t"] - off <= 10, "Wi-Fi loss not visible within 10 s of Wi-Fi off"
         released = [s for s in samples if s["t"] >= off and s["th2"] == "stock"]
-        assert released and released[0]["t"] - off <= 5, "TH2 not released within 5 s of Wi-Fi off"
+        assert released, "TH2 never released after Wi-Fi off"
+        print(f"Wi-Fi loss seen {lost[0]['t'] - off} s after Wi-Fi off, "
+              f"TH2 released {released[0]['t'] - lost[0]['t']} s after that")
+        assert released[0]["t"] - lost[0]["t"] <= 3, "TH2 not released within 3 s of the Wi-Fi loss"
     assert dut.wifi()["enabled"], "Wi-Fi was not re-enabled"
