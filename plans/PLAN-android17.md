@@ -689,3 +689,291 @@ Fix: FaceUnlock is now our fork, `solarkennedy/android_packages_apps_FaceUnlock`
 Unbuilt, uncompiled. Verify: (1) 4 h after a face unlock, wake: keyguard asks
 for the pattern with no "Something went wrong"; (2) face unlock in the dark,
 too close, half covered: a hint shows under the clock.
+
+## Bug 2026-10-30 — T-Mobile VoLTE calls crash the ADSP + modem (user report, unit c3ad6a80)
+
+Two user bugreports (20261023 gapps, modem C1-162128, US Mobile on T-Mobile). VoLTE
+calls drop 3–6 s after alerting; the previous-boot kernel log shows `Fatal error on
+adsp! … Excep :0:Exception detected` → ~2 s later `modem subsystem failure reason:
+qpaudio_svs.c:4475:Assertion 0 failed` (once followed by an `ipa_qmi_client.c:750`
+crash loop and a `vold` reboot). After each crash IMS stays down, so later calls go CS
+→ no 2G/3G on T-Mobile → cause 36. The one crashed call with a codec logged was
+EVS-SWB (audioQuality 19).
+
+Findings:
+- The `na/tmo/commerci` MCFG profile sets `qipcall_audio_codec_list =
+  EVS;AMR_WB_BE;AMR_WB_OA;AMR_BE;AMR_OA`; the Verizon profiles have no EVS (empty
+  list, AMR 12.2 / AMR-WB 12.65 only). new2 → Pixel on Verizon is AMR-WB, so our
+  Verizon VoLTE validation never exercised EVS.
+- The TMO profile and `dsp.bin` are byte-identical in C1-162128 and C1-214411.
+- dut1 on C1-214411 + a T-Mobile SIM (US Mobile, activated 10-30; IMS only came up
+  after a reboot post-activation): 6/6 EVS-SWB calls to the Pixel, answered and
+  ringing-only, no crash. The `voice_get_cal: No cal data for cal 6` / ADSP_EFAILED
+  dmesg lines appear on clean calls too: noise.
+- 21:14 dut1 modem dd'd to C1-162128 (`acb81d93`, baseband `…1.160315.0.162128.1`
+  = the user's); boots, IMS registers, TMO codec config live. No calls placed yet.
+
+10-31: dut1 on 162128 (2019-02 image, WS241): 13 h clean overnight, then 6/6 EVS-SWB
+calls clean. Correction: the ADSP firmware is `image/adsp.*` inside the modem partition
+(the `dsp` partition is only `/vendor/dsp` fastRPC libs), so this tested the user's
+2019-02 modem AND ADSP. A second, different 162128 binary exists (2018-11, build host
+WS228, own ADSP); the user can tell which they have without root:
+`adb shell cat /sys/devices/soc0/images` → entries 11/12 `Version: :WS228` or `:WS241`.
+Staged `modem-swap-dut1/modem-162128-2018-11.bin` (gifted's prewipe dump, 952ddf08).
+
+Previously planned (10-31): repeat the six-call set on dut1/162128 with `logcat -f` + dmesg checks.
+Crash ⇒ modem build is the cause ⇒ fix = move users to the 214411 modem (EDL/dd);
+no crash ⇒ look at the user's radio conditions / unit. Restore dut1: dd or EDL with
+`~/android/lineage-24/modem-swap-dut1/` (`modem-214411-dut1.bin`). Tools:
+`diag-tools/ims-codec/` (`call-codec.py`, `mbn-codec.py`).
+
+10-31 REPRODUCED on dut1, on both 162128 and its own 214411 ⇒ every PVG100 on T-Mobile:
+the ADSP crashes when an EVS-SWB voice session starts (or is <~1 s old) while the voice
+device is, or is switching to, the speaker. The user's calls all switch to speaker within
+0.7 s of HD. Speaker 4 s after EVS start: no crash (n=1); AMR + speaker: no crash (n=1).
+After one ADSP crash every later VoLTE call crashes until reboot. Table and logs:
+`diag-tools/ims-codec/captures/dut1-214411-speaker-crash-20261031/`. Open: stock A8 parity
+on T-Mobile; mitigation (drop EVS from the TMO codec list in EFS, or hold voice device
+switches until the vocoder is up). dut1 restored to its own 214411 modem.
+
+10-31 isolated on dut1/214411 (`diag-tools/ims-codec/captures/dut1-214411-isolation-20261031/`):
+not the modem build, not the mic (single-mic crashes too), not the HAL's TMUS branch (the
+non-TMUS branch crashes even on the earpiece; mapping TMUS to ACDB 7/41 doesn't help). With
+EVS removed from `/nv/item_files/ims/qipcall_audio_codec_list` the calls go AMR-WB and all
+recipes are clean (5/5). Model: the ADSP dies when voice calibration lands on an EVS-SWB
+session that is starting or < ~3 s old; T-Mobile earpiece calls only survived because the
+HAL's TMUS devices look up ACDB 88/89, which the Palm ACDB lacks, so no cal is sent.
+Fix candidate: a Modem Tweaks "EVS" lever (default off) that writes the EVS-free codec list,
+using the B12 switch's EFS write path; stock A8 parity on T-Mobile still unchecked.
+
+10-31 codec dimension on new2 (Verizon): with EVS added to its codec list the Verizon network
+negotiates EVS-WB, and every recipe that crashes EVS-SWB on dut1 is clean (speaker switches
+1.3–1.5 s after EVS start, end-on-speaker → earpiece, earpiece with valid cal). Verizon AMR-WB
+is clean on the same recipes. So the crash is EVS super-wideband specific; T-Mobile is the
+only carrier that negotiates SWB. new2 restored. Gentler fix than dropping EVS: cap the EVS
+bandwidth at WB (`qipcall_evs_codec_config`, layout still unknown).
+
+10-31 fix proven on dut1: keep T-Mobile's EVS-first codec list but write Verizon's
+`qipcall_evs_codec_config` bytes (`00 00 10 00 00 00 6d 00 03 02 …` vs T-Mobile's
+`… 00 00 02 03 …`) ⇒ T-Mobile negotiates EVS-WB and every crash recipe is clean, including
+a speaker switch 0.27 s after EVS start (`diag-tools/ims-codec/captures/dut1-tmo-evs-wb-cap-20261031/`).
+Next: decide which bytes matter (byte 6 vs 8–9), then ship as a boot-time EFS write on
+T-Mobile profiles (B12 switch path), with a Modem Tweaks row to turn super-wideband back on.
+
+10-31 after review (Fable): the timings above used UNSOL_MODEM_RESTART (3–4 s late). Re-timed on
+the HAL's `SSR/PDR occurred`, every crash is 70–272 ms after EVS-SWB starts: the trigger is a
+voice cal being registered when an EVS-SWB session STARTS (a valid ACDB pair, or the kernel's
+cached speaker cal from the previous call). Switching onto a running SWB session is safe from
+0.4 s on (5 cases). Byte isolation: byte 9 of `qipcall_evs_codec_config` is the EVS max
+bandwidth (`03` SWB, `02` WB); a one-byte change `03`→`02` on T-Mobile gives EVS-WB and every
+cal-at-start recipe is clean; the item survives SSR and reboot. dut1 left on it.
+(`diag-tools/ims-codec/captures/dut1-evs-byte9-isolation-20261031/`). Still untested with the
+fix: MT calls, VoWiFi. Ship: boot-time read-compare-write of byte 9 on T-Mobile profiles.
+10-31 pm: MT call with the fix clean (EVS-WB). Forcing SWB on Verizon (new2 byte 9 → 03)
+makes Verizon negotiate EVS-SWB and the first earpiece call crashes the same way ⇒ the bug is
+EVS-SWB + voice cal at session start on any network; T-Mobile is just the carrier that asks
+for SWB. Stock parity impossible on the bench (silver is Verizon-locked; stock on Verizon
+negotiates EVS-WB). new2 restored.
+
+10-31 fix PUSHED, unbuilt: Mi8937 `fd7d17c1` (modem_evs oneshot: caps byte 9 of
+`qipcall_evs_codec_config` at 02 at boot / switch flip / SIM LOADED unless
+persist.gotweak.modem_evs_swb=1; only touches profiles above WB; original byte + item saved
+in modem-EFS marker /data/pepito_evs_bw, restore only if the item still matches) and
+LineageParts `38e940b3` ("Super-wideband call audio" row in PVG100 Modem Tweaks, default off).
+Bench-tested as a cross-compiled binary on dut1: cap 03→02, boot run read-only ("capped"),
+allow-SWB restores 03 and clears the marker, a flip during the flush re-caps; host unit tests
+cover the SIM-swap/stale-marker case. Verify on the build: status row reads "capped" on a
+T-Mobile SIM and "none" on Verizon; one T-Mobile call negotiates EVS-WB; SELinux denials for
+modem_evs (none expected; same rules as modem_b12).
+
+10-31 17:2x–17:42 VERIFIED on build 20261031 (dut1 + new2): with dut1 reset to T-Mobile's byte 9
+`03` and the marker invalidated, the shipped modem_evs capped it at boot (saving 180 s →
+restart → "capped" after the next boot, read-only run 0.2 s). Six T-Mobile calls, all EVS-WB, no
+crash, including speaker cal before EVS, cached speaker cal, valid handset cal 7. Settings row:
+dut1 "Off: calls use wideband HD voice." (switch enabled), new2 greyed with "Your carrier does
+not use super-wideband audio"; tapping the switch on restores byte 9 = 03 with the save dialog,
+off re-caps and settles at "capped" with no restart. new2 Verizon call AMR-WB, speaker, clean.
+No SELinux denials. Not covered: Wi-Fi calling.
+
+## Bench result 2026-10-31 — WFC on a T-Mobile-network SIM never leaves LTE (dut1)
+
+First time WFC was tried on a T-Mobile-network SIM (US Mobile, PLMN 310260,
+carrier_id 1). Not a regression: every earlier WFC pass was the same MVNO on
+Verizon. Found by the release gate run (test_call_hold/test_call_walkaway
+skipped "IMS voice not on WLAN after 90 s"; dut1 had also booted with Wi-Fi
+off, so that run never had a chance).
+
+State with Wi-Fi up and validated, bridge `up`/`feeding`, Settings "Call over
+Wi-Fi" (wfc_mode 2, TH2 sticky), LTE RSRP -109: IMSA voip_service_rat stays 1,
+WLAN NetworkRegistrationInfo UNKNOWN, no ePDG PDN (r_rmnet_data1 DOWN). Gates
+already open: IMSS 0x16=1, ps_sys field 4 = 1 (main + Subscription01), DSD
+available systems = 3 entries (WLAN present).
+
+Two separate causes:
+
+1. **IMS MSISDN never learned.** T-Mobile's registration URI list has no
+   `tel:` entry, only `sip:<digits>@msg.pc...`, `sip:+<E.164>@ims.mnc...`,
+   `sip:<IMSI>@ims.mnc...` and `sip:+<E.164>@msg.pc...`. ims_enabler's
+   msisdn_phase only takes `tel:`, so it times out (`vendor.qmux.ims_msisdn
+   = pending`) and IMSS 0x54 TLV 0x19 stays empty. Fix: accept the
+   `sip:+<digits>@` user part as well; never a bare-digit sip user (one of
+   them is the IMSI). Writing the number by hand (`imss-probe setstr 0x53
+   0x18 ...`) was accepted but on its own did not move IMS, unlike Verizon
+   (part 52).
+2. **The T-Mobile handover algorithm needs a CnE Wi-Fi quality report.** F3
+   (dut1, C1-214411, Diag-wfc.cfg, Wi-Fi off->on): `calling _Ex flavor of
+   wifi for ee/tmo algo` -> `qpDplWiFiMeasurementsSetParamEx: START`, then
+   `qpDplMetricReport: TRAT Quality 0` -> `IsHandOverPossible: TRAT is BAD:
+   HandOver is NOT POSSIBLE`. The Verizon path tolerates permanently-INVALID
+   Wi-Fi quality (wfc_wlan_bridge.c header); the _Ex path waits for
+   `DplHandOverProcessCNEReport` (iWiFiQual GOOD / medium-low / BAD), i.e.
+   the WQE report stock CnE sends. Stock A8 (part 29 trace) sent DSD 0x43
+   `01:<profile 4/5/6/7/9> 10:1 11:2` when Wi-Fi was good and `10:0 11:0` on
+   stop. Replaying that from dsd-probe (one-shot client) was accepted
+   (result 0) and changed nothing in 60 s.
+
+Next:
+- ims_enabler: sip:+E.164 MSISDN fallback (small, needed either way).
+- One reboot of dut1, then an F3 capture with the DS/ANDSF SSIDs in the mask
+  (ds_qmi_dsd, ds_andsf, DplHandOverSetCNEProfileForMetrics) to see which WQE
+  profile the T-Mobile path arms and why the 0x43 reports are ignored
+  (client lifetime vs "Wifi measurements not started" vs wrong profile).
+- Then send the 0x43 quality report from wfc_wlan_bridge's own long-lived
+  DSD client, for the armed profile(s), from wlan0 RSSI.
+- Capture + DSD dump: `~/android/lineage-24/field-logs/dut1-tmo-wfc-f3-20261031/`
+  (private: holds IMSI/MSISDN; decode with a qdb built from dut1's
+  /firmware/image/qdsp6m.qdb via lineage-23 diag-tools/build_qdb.py).
+
+### Update 2026-10-31 evening — WQE answered: first T-Mobile Wi-Fi call; fixes pushed
+
+- The modem asks for the quality report itself, but only to a DSD client
+  registered for indications (0x38): on Wi-Fi up, IND 0x45 per requested WQE
+  profile (4..7 on T-Mobile, no RSSI thresholds) + IND 0x3f mask. Reply DSD
+  0x43 {01 profile, 10 status, 11 cause}: **status 0 = met** (sweep: IND 0x40
+  met mask gains the profile only for 0; 1..3 clear it). Stock Verizon CnE
+  was asked for 4..9 with -65/-80 thresholds.
+- Answering 4..7 with status 0 from a held client: IMS voice + SMS on WLAN,
+  `test_call_hold` PASS (60 s call on Wi-Fi, LTE -105..-111). The modem kept
+  the state after that client exited.
+- `0x53` SET_WIFI_SERVICE_CAP returns error 57 on this modem; not needed.
+- Pushed (Mi8937 pepito-24): `1669d0fe` modem_evs SIM trigger to system_ext,
+  `64a77a16` ims_enabler MSISDN from sip:+E.164, `43869e78` wfc_wlan_bridge
+  WQE replies (bench build of the same source: IMS on WLAN 16 s after Wi-Fi
+  up, unaided).
+- **Open:** at 19:21:21 the serving LTE cell changed (EARFCN 66736 B66 ->
+  975 B2) and IMS deregistered from IWLAN, re-registered on LTE, and stayed
+  there: through the modem's fresh 0x45 requests (answered met), a re-prime
+  and a Wi-Fi bounce. LTE -106, so not the -80 TH2. T-Mobile's handover
+  config reads TH_1/TH_3 = 0 (Verizon -112/-100). Needs F3 (diag is wedged
+  on dut1 until a reboot): mask SSID 5000/5032 + IMS, then a Wi-Fi bounce on
+  the B2 cell, read qpDplHandOver / IsHandOverPossible_ex / ds_andsf_wqe.
+- After flashing a build with these: re-run the gate on dut1; also check
+  new2 (Verizon) still holds a call on Wi-Fi, since its modem now gets
+  quality reports too (stock behaviour, but a change for our build).
+
+### Bench 2026-10-31 night — build with 1669d0fe/64a77a16/43869e78 on dut1 + new2
+
+- dut1 (T-Mobile): gate run 24/25 PASS incl. test_call_hold + test_call_walkaway
+  and test_selinux_no_new_denials (modem_evs trigger fixed). Idle IMS on WLAN
+  from boot (bridge: profiles 4..7 met), held 20+ min on B66.
+- MSISDN: blanked the store (`pepito-wfc-virginize msisdn`), re-ran the
+  enabler -> "set from registration URI (11 digits, verified)" off T-Mobile's
+  sip:+ URI.
+- new2 (Verizon): the modem asks for profiles 4..9 with thresholds (4 = -65,
+  reported not met at -72; 5..9 = -80, met) — matches stock CnE.
+  test_call_hold PASS. test_call_walkaway: run 1 = call setup SIP timeout over
+  IWLAN (VZW_TIMER) then IMS re-registration, before Wi-Fi was touched; run 2 =
+  call came up on WLAN, moved to LTE, survived; failed only the 5 s TH2-release
+  budget at 7 s because wlan0 stayed associated ~6 s after `svc wifi disable`
+  (bridge released TH2 12 ms after it saw the drop). Watch both on reruns.
+- **New bug, fixed in frameworks/opt/telephony `59b0ccf7` (unbuilt):** dut1's
+  only gate failure, test_cell_service. With IMS on WLAN the RIL reports the
+  WWAN PS RAT as IWLAN (legacy mode); T-Mobile's fast.t-mobile.com bitmask has
+  no IWLAN bit (Verizon's does), so DataNetworkController tore cellular
+  internet down with RAT_NOT_ALLOWED each time (3x in 9 min). Fix: in legacy
+  IWLAN mode, judge WWAN data by the CS-domain RAT.
+- Still open: IMS leaving WLAN after the B66 -> B2 cell change (not the IMS
+  APN bitmask: T-Mobile IMS includes IWLAN, no IMS PDN teardown seen).
+
+### Bench 2026-10-31 late — build with 59b0ccf7 (telephony RAT fix)
+
+- dut1: test_cell_service now PASS (no more RAT_NOT_ALLOWED teardowns). Gate run
+  21:13: 23 pass, 2 skip — both call tests skipped "IMS voice not on WLAN after
+  90 s": after the previous run's walk-away handed IMS to LTE (cell 975, B2) it
+  never came back, same as the 19:21 cell-change case.
+- new2 (Verizon): test_wfc.py (all 9) + test_cell_service + selinux: 11/11 PASS.
+- Test changes (landing 697f0a7, 9e18d6a, 24b7f01): calls at minimum call volume
+  (restored after); walk-away TH2 release timed from the Wi-Fi loss (Pronto
+  teardown is 5-6 s after `svc wifi disable`); driver wakes the phone before
+  re-enabling Wi-Fi (screen-off Wi-Fi does not rejoin). Earlier failures were
+  486 Busy from the test line and the dozed-phone Wi-Fi wait.
+- **"IMS won't return to WLAN" F3 (dut1, B2, field-logs/dut1-tmo-wfc-b2-20261031):**
+  WQE met, IMS: `TRAT is GOOD and TRAT is Preferred`, `pref_rat 19`,
+  `Initiate HO to sys 2` (repeated; `qpDplIsSetPrefSysDuplicate` 2 == 2) — but DSD
+  `set_best_system new 1 old 1` and no ePDG attempt; MPPM:
+  `ds_mppm_run_pref_rat_per_pdn_calc_algo: Found apn_api_override info for
+  pref_sys 0x1` — an AP-set (API) per-APN preferred-system override pins the
+  PDN to WWAN. Next: find who sets it (qcril-data in legacy mode when the
+  framework sets up the IMS data network on WWAN? DSD/WDS "set APN preferred
+  system"); capture QMI (strace qcrild / qmi log) across a walk-away. The F3
+  stream died at Wi-Fi off again, so capture the reconnect separately.
+
+### Bench 2026-11-01 early — "IMS never returns to WLAN" is a modem-internal gate; AP levers exhausted
+
+Re-read of the 10-31 B2 capture: the `apn_api_override` line is at the Wi-Fi-OFF edge
+(expected there) and is the ANDSF `IsAPIOverride=1` on T-Mobile's `ims` rule
+(`diag-tools/mcfg-lane/andsf/tmo-andsf.xml` in the 23.2 tree: ims = LTE pri 1, WLAN pri 2,
+API override on). Not an AP write: the only AP code that knows DSD 0x29 is
+libril-qc-hal-qmi's AP-assisted IWLAN path, which legacy mode never runs; wfc_wlan_bridge
+never sends it. The real stuck signature in that capture is IMS-side:
+`qpDcmHOAPNToPrefSys` -> `qpDplIsSetPrefSysDuplicate: passed 2 stored 2` -> IMS skips
+its own "prefer WLAN" request, and no MPPM `apn_pref_sys_change` ever follows.
+
+History of this boot (20:55 reflash): run 21:00 call_hold PASS on WLAN, walk-away #1 ->
+IMS came BACK to WLAN (run 21:05 call_hold ran at rat=0); walk-away #2 at ~21:08 -> never
+back since (21:13 run skipped, still on LTE at 01:00 on B66 and B2 alike).
+
+AP-side state while stuck (dut1, Wi-Fi -74, bridge: WLAN_AVAILABLE + WQE 4..7 met):
+DSD 0x24 per-APN table lists `ims` with LTE only (new2/Verizon on WLAN lists IWLAN
+first); `tcpdump` on wlan0 and on r_rmnet_data0 shows ZERO modem packets (no ePDG DNS,
+no IKE) across a Wi-Fi bounce — the modem never attempts S2B. WDS 0x6C PDN-throttle
+(new `diag-tools/nas-probe/wds-probe.c`) is empty for 3GPP/3GPP2 and rejects any other
+net type, so IWLAN throttle is not visible over QMI.
+
+Levers tried, none moved IMS off LTE: DSD 0x29 SET_APN_PREFERRED_SYSTEM ims->WLAN(1) and
+->IWLAN(2); IMSS 0x53 WFC preference 1->2->1; IMSS WFC on/off (TLV 0x14 1->0->1);
+reg_mgr test_mode 1->0 (IMS deregistered and then sat NOT_REGISTERED 6 min waiting on
+IWLAN — the DSD table briefly showed ims preferring a null-bearer S2B system — until a
+Wi-Fi bounce put it back on LTE); Wi-Fi bounce with re-prime (+WAKEUP; screen-off Wi-Fi
+does not rejoin). All settings restored (0x54 TLV 0x15/0x16 = 1, test_mode 0).
+
+Working hypothesis: modem S2B PDN throttle, keyed per SSID
+(`ds_iwlan_s2b_pdn_throttle_*`, has an "infinite timer" branch, and it pushes a
+PDN_THROTTLE_INFO event to MPPM, which would drop IWLAN from the ims APN's system list —
+exactly the table we see). Two abrupt tunnel losses on the same SSID -> throttled.
+Only F3 can confirm (diag is wedged on dut1 until the next reboot): run
+`diag-tools/wfc-tmo/capture-return-to-wlan.sh dut1` on a fresh boot; it arms diag,
+waits for WLAN, does two abrupt losses with marks, decodes. Then grep
+`s2b_pdn_throttle|epdg_addr|ikev2|s2b_pdn_sm|apn_pref_sys_change`. Cheap cross-check
+if confirmed: a different SSID (per-SSID table) should return to WLAN immediately.
+Fix candidates once confirmed: orderly loss (bridge reports WQE not-met before
+WLAN_NOT_AVAILABLE so IMS hands over itself instead of the tunnel dying), or clearing the
+throttle via whatever stock CnE does on Wi-Fi reconnect.
+
+### Bench 2026-11-01 02:00 — fresh-boot F3: the "never returns" is NOT reproducible; the return takes ~120 s (MPPM t_minonwwan)
+
+`capture-return-to-wlan.sh dut1` on a fresh boot (capture in
+field-logs/dut1-tmo-wfc-return-20261101-0141, diag_mdlog still running on dut1 — leave it,
+one session per boot; it holds a wake lock). Every loss today came back to WLAN:
+idle loss #1 and #2 (118 s each), a second bounce inside the window (still 118 s from the
+first fallback), and an in-call walk-away via wfc-call.sh (return 120 s after Wi-Fi on).
+F3: after the fallback to LTE MPPM runs a per-PDN `t_minonwwan` timer; on expiry
+`ds_mppm_unblock_rat_for_pdn: UnBlocking RAT 0 ... override_cause_mask 0x100` ->
+`apn_api_override pref_sys 0x2000001` -> S2B PDN up (`ds_iwlan_s2b_pdn_sm_enter_net_up_state`,
+throttle table empty). So the DSD "ims = LTE only" table is just this block, and the test's
+90 s wait (`test_wfc.py` on_wlan) is shorter than the modem's 120 s minimum — raise it to
+~180 s. Yesterday's hours-long stuck state (after the 21:08 in-call walk-away, and after the
+19:21 B66->B2 cell change) did not reproduce in four tries; what differed is unknown
+(candidates: the cell change itself, the B2 cell, many back-to-back test runs). Next time it
+happens: do NOT reboot — the stuck state is the thing to capture (diag must be fresh that
+boot), and dump DSD 0x24 + imsa first.
