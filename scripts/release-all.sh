@@ -260,7 +260,10 @@ set -e
 tree=$1; tag=$2; msg=$3; name=$4; email=$5; shift 5
 for p in "$@"; do
     d="$tree/$p"
-    remote=$(git -C "$d" remote | head -n1)
+    # Our fork remote, not just the first one: a repo can also carry an
+    # upstream remote (FaceUnlock's crdroid-gitlab sorts before pepito).
+    remote=$(git -C "$d" remote | grep -xE 'pepito-ssh|pepito' | sort -r | head -n1)
+    remote=${remote:-$(git -C "$d" remote | head -n1)}
     url=$(git -C "$d" remote get-url "$remote")
     # https://github.com/OWNER/REPO -> git@github.com:OWNER/REPO.git (push over SSH)
     case "$url" in
