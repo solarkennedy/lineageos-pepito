@@ -26,6 +26,7 @@ DRIVER = "device/wfc-call.sh"
 
 HOLD_S = 42          # the test line hangs up on its own ~47 s in
 WALK_OFF_S = 15      # Wi-Fi off this long after dialling
+ON_WLAN_WAIT_S = 180  # modem t_minonwwan is 120 s; give the tunnel time after a walk-away
 SURVIVE_S = 22       # the WIFI_LOST drop lands ~20 s after link loss
 
 
@@ -174,16 +175,19 @@ def summary(samples):
 
 @pytest.fixture
 def on_wlan(dut, sub, imsa_probe, radio_quiet, awake):
-    """A call only proves something if IMS voice starts on WLAN. Waits up to 90 s
-    for it (IMS re-registers over IWLAN after Wi-Fi comes back, e.g. after the
-    previous test's walk-away), then skips."""
+    """A call only proves something if IMS voice starts on WLAN. Waits up to
+    ON_WLAN_WAIT_S for it, then skips. After a fallback to LTE (the previous
+    test's walk-away) the modem's MPPM holds the ims PDN on WWAN for its
+    t_minonwwan timer, 120 s on T-Mobile (F3, PLAN-android17 2026-11-01), before
+    it will bring the ePDG tunnel back, so 90 s was shorter than a healthy
+    phone."""
     rat = None
-    for _ in range(18):
+    for _ in range(ON_WLAN_WAIT_S // 5):
         rat = dut.imsa(imsa_probe).get("voip_service_rat")
         if rat == 0:
             return int(dut.prop("vendor.qmux.wfc_mode") or -1)
         time.sleep(5)
-    pytest.skip(f"IMS voice not on WLAN after 90 s (voip_service_rat={rat})")
+    pytest.skip(f"IMS voice not on WLAN after {ON_WLAN_WAIT_S} s (voip_service_rat={rat})")
 
 
 @pytest.mark.call
