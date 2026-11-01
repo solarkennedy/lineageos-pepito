@@ -1,5 +1,59 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
+## 20261101 (2026-11-01)
+
+### device/Mi8937 (since pepito-24.0-20261023)
+- qmux: wfc_wlan_bridge: repeat the WQE verdict; no "not met" on the Wi-Fi-loss edge
+- Mi8937: pepito: wfc_wlan_bridge: answer the modem's Wi-Fi quality requests
+- Mi8937: pepito: ims_enabler: learn the MSISDN from a sip:+ URI
+- Mi8937: pepito: move modem_evs SIM-loaded trigger to system_ext
+- Mi8937: pepito: cap VoLTE EVS at wideband (modem_evs)
+- Revert "Mi8937: pepito: give the face unlock idle lockout a message"
+- Mi8937: pepito: give the face unlock idle lockout a message
+- Mi8937: pepito: drive the white MPP2 LED as the notification light
+
+### device/mithorium-common (since pepito-24.0-20261023)
+- Revert "mithorium-common: lights: drive a PWM-gated LED's blink in hardware"
+- mithorium-common: parts: notification light off by default on pepito
+- mithorium-common: lights: drive a PWM-gated LED's blink in hardware
+
+### kernel (msm8937) (since pepito-24.0-20261023)
+- ARM64: dts: pepito: white notification LED on PMI8950 MPP2
+
+### frameworks/base (since pepito-24.0-20261023)
+- biometrics: sense: recover from a dead binding to the Sense service
+
+### frameworks/opt/telephony (since pepito-24.0-20261023)
+- DataNetworkController: judge WWAN data by the cellular RAT under legacy IWLAN
+
+### LineageParts (since pepito-24.0-20261023)
+- LineageParts: "Super-wideband call audio" switch in PVG100 Modem Tweaks
+
+### FaceUnlock (since pepito-24.0-20261023)
+- FaceUnlock: pin Megvii to the fast cluster on MSM8937
+- FaceUnlock: report the match before releasing the camera
+- FaceUnlock: report acquired hints to keyguard
+- FaceUnlock: drop the duplicate 4-hour idle lockout
+
+### landing (docs/scripts) (since pepito-24.0-20261023)
+- PLAN-android17: build 20261101 WFC fix validated with calls on T-Mobile and Verizon
+- PLAN-android17: WFC T-Mobile 'never returns to WLAN' root-caused and fixed (Mi8937 63914f26)
+- tests/integration: wait 180 s for IMS on WLAN, not 90
+- wfc-tmo: fresh-boot return-to-WLAN capture script, raw WDS probe, bench notes
+- tests/integration: wake the phone before giving Wi-Fi back after a call
+- tests/integration: time the walk-away TH2 release from the Wi-Fi loss
+- source-id: resolve a project's pushed tip on its fork remote
+- tests/integration: place test calls at the lowest call volume
+- gen-changelog: fetch release tags from every remote of a project
+- manifest: note the FaceUnlock latency work in the Sense project comment
+- PLAN-android17: face unlock fix moves to a FaceUnlock fork
+- manifest: FaceUnlock from our fork (pepito-24): framework-owned idle lockout, acquired hints
+- PLAN-android17: face unlock idle-lockout message bug and fix
+- summarize.py: HOME_PLMN env override (default 311480) for testers on other carriers
+- flash-report.sh: validated on dut1 (2 shots, 20261024); drop the root notification (cannot post), wording
+- flash-report.sh: run it as pushed, no line-ending strip step
+- flash-probe: phone-side flash-report.sh (any host OS, only adb; survives unplug) + flash-analyze.py; flash-trace.sh records Flash power, checks the kernel cap, fixes logcat clock sync (matched adbd's echo, ~100 ms early)
+- PLAN-android17: white notification LED bench result
 ## 20261023 (2026-10-23)
 
 ### device/Mi8937 (since pepito-24.0-20261017)
