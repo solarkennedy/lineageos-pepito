@@ -70,15 +70,25 @@ def source_id(projects, dirty_paths):
     return h.hexdigest()[:16] + ("+dirty" if dirty_paths else "")
 
 
+def fork_remote(d):
+    """The fork remote, not the first one: a checkout can keep a stale upstream
+    remote (FaceUnlock's crdroid-gitlab) that sorts ahead of "pepito"."""
+    remotes = git(d, "remote").split()
+    for r in ("pepito", "pepito-ssh"):
+        if r in remotes:
+            return r
+    return remotes[0] if remotes else None
+
+
 def pushed_tip(tree, path, rev):
     if re.fullmatch(r"[0-9a-f]{40}", rev or ""):
         return rev
     d = Path(tree) / path
-    remote = git(d, "remote").split()
+    remote = fork_remote(d)
     if not remote:
         return None
     ref = rev if rev.startswith("refs/") else f"refs/heads/{rev}"
-    out = git(d, "ls-remote", remote[0], ref).split()
+    out = git(d, "ls-remote", remote, ref).split()
     return out[0] if out else None
 
 
@@ -113,7 +123,7 @@ def changes(tree, ours, prefix):
         d = tree / path
         if not (d / ".git").exists():
             return path, {"missing": True}
-        remote = (git(d, "remote").split() or [None])[0]
+        remote = fork_remote(d)
         tip = pushed_tip(tree, path, ours[path])
         if remote:
             subprocess.run(["git", "-C", str(d), "fetch", "-q", remote,
