@@ -1053,3 +1053,31 @@ download 2026-11-01 09:22.
 
 **Still to measure:** time-to-first-fix A/B on dut1 with sky view (delete_aiding_data vs delete + time + XTRA);
 GPSTest installed on dut1 for it.
+
+## Bug 2026-11-02 — Play services crash loop: "Missing local network permission" (user report, gapps)
+
+The T-Mobile user's unit (c3ad6a80, 20261023 gapps): 78 dropbox `system_app_crash` from `com.google.android.gms`
+26.42.31, all `SecurityException: Missing local network permission` in `NsdManager.registerService`
+(Nearby / Quick Share advertising from a background service). Its `ACCESS_LOCAL_NETWORK` read
+`granted=false, flags=[GRANTED_BY_DEFAULT]`.
+
+- **Cause.** A17 `platform.xml` splits `INTERNET` → `ACCESS_LOCAL_NETWORK` for targetSdk < 37. Our
+  gapps system-image GmsCore (NikGapps 25.34.34) targets 36, so the boot that runs default grants
+  records the grant as IMPLICIT (the flag is only set when the permission had no state at all). A
+  Play update to a targetSdk-37 GmsCore makes it explicit, and `AppIdPermissionPolicy`
+  (`!isImplicitPermission && hasImplicitFlag`) drops the grant unless system/policy fixed. Only a
+  build fingerprint change re-runs default grants, so each OTA heals it; after the last release
+  nothing would. Stock escapes because its factory GmsCore already targets 37.
+- **Reproduced on dut1 2026-11-02**: `cmd package uninstall-system-updates com.google.android.gms`
+  (→ target 36), `pm create-user` (fresh state, default-granted), `adb install-multiple` the 26.43.30
+  splits (→ target 37) ⇒ the new user ends `granted=false, flags=[GRANTED_BY_DEFAULT]`. Splits backed up
+  at netbook4 `~/android/lineage-24/gms-backup-dut1/gms-26.43.30/` and dut1 `/data/local/tmp/gms-26.43.30/`.
+- **Fix PUSHED, unbuilt**: frameworks/base `4592c9f566ca` — retain the grant when it was a default grant
+  (PREGRANT) that was in effect (`isAppOpGranted(oldFlags)`), so a user denial still wins.
+  Overrides can't swap in a newer GmsCore: Play's install is 12 splits, `overrides/` takes one APK.
+- **dut1 left in the broken state** (user 0 `granted=false`), test user removed.
+- **Build-verify on dut1**: (1) after flashing, user 0 granted=true (default grants re-run on the
+  fingerprint change — unpatched builds also do this); (2) the patch itself: uninstall-system-updates,
+  `pm create-user t2`, `adb install-multiple` the backup, user t2 must stay `granted=true`; then
+  `pm remove-user`. (3) User denial still holds: deny "Nearby devices" for Play services in t2 before the
+  update ⇒ stays denied.
