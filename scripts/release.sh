@@ -921,6 +921,20 @@ PY
         [[ -s "$WORK/verify/$f" ]] || { echo "error: $f missing from the converted kit" >&2; exit 1; }
     done
     cmp "$EDL_DIR/boot-magisk.bin" "$WORK/verify/boot-magisk.bin"
+
+    # 20261101 gapps shipped a service-connectivity.jar that R8 had stripped of
+    # INetworkStatsService overrides: system_server died on every boot, while
+    # the bench-tested build of the same source was fine. Check the system
+    # image users will actually get for any class missing an implementation
+    # of an abstract method declared in another jar.
+    echo "  checking the system image for missing abstract-method implementations..."
+    python3 "$REPO_ROOT/scripts/check-abstract-impls.py" \
+        --tools "$TREE/out/host/linux-x86/bin" \
+        --baseline "$REPO_ROOT/scripts/check-abstract-impls.baseline" \
+        "$WORK/verify/system.bin" \
+        || { echo "error: classes in $FILENAME would throw AbstractMethodError (above)." >&2
+             echo "       This build's output is bad even if its source is fine: rebuild, and do not publish it." >&2
+             exit 1; }
     rm -rf "$WORK/verify"
 
     check_size "$WORK/signed.zip"

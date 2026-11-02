@@ -1,0 +1,12 @@
+# Expected findings for check-abstract-impls.py (run by release.sh on every
+# release). One per line, exactly as the script prints them minus the [jar].
+#
+# Qualcomm's prebuilt uceservice V2.0 HIDL java stubs predate the current
+# android.hidl.base IBase.debug(NativeHandle, ArrayList) signature. Present in
+# every 24.0 build so far; harmless unless something calls debug() on a proxy.
+Lcom/qualcomm/qti/uceservice/V2_0/IOptionsListener$Proxy; -> Landroid/hidl/base/V1_0/IBase;.debug(Landroid/os/NativeHandle;Ljava/util/ArrayList;)V
+Lcom/qualcomm/qti/uceservice/V2_0/IOptionsService$Proxy; -> Landroid/hidl/base/V1_0/IBase;.debug(Landroid/os/NativeHandle;Ljava/util/ArrayList;)V
+Lcom/qualcomm/qti/uceservice/V2_0/IPresenceListener$Proxy; -> Landroid/hidl/base/V1_0/IBase;.debug(Landroid/os/NativeHandle;Ljava/util/ArrayList;)V
+Lcom/qualcomm/qti/uceservice/V2_0/IPresenceService$Proxy; -> Landroid/hidl/base/V1_0/IBase;.debug(Landroid/os/NativeHandle;Ljava/util/ArrayList;)V
+Lcom/qualcomm/qti/uceservice/V2_0/IUceListener$Proxy; -> Landroid/hidl/base/V1_0/IBase;.debug(Landroid/os/NativeHandle;Ljava/util/ArrayList;)V
+Lcom/qualcomm/qti/uceservice/V2_0/IUceService$Proxy; -> Landroid/hidl/base/V1_0/IBase;.debug(Landroid/os/NativeHandle;Ljava/util/ArrayList;)V
