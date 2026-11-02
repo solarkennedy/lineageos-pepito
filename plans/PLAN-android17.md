@@ -1062,22 +1062,38 @@ The T-Mobile user's unit (c3ad6a80, 20261023 gapps): 78 dropbox `system_app_cras
 `granted=false, flags=[GRANTED_BY_DEFAULT]`.
 
 - **Cause.** A17 `platform.xml` splits `INTERNET` → `ACCESS_LOCAL_NETWORK` for targetSdk < 37. Our
-  gapps system-image GmsCore (NikGapps 25.34.34) targets 36, so the boot that runs default grants
-  records the grant as IMPLICIT (the flag is only set when the permission had no state at all). A
-  Play update to a targetSdk-37 GmsCore makes it explicit, and `AppIdPermissionPolicy`
-  (`!isImplicitPermission && hasImplicitFlag`) drops the grant unless system/policy fixed. Only a
-  build fingerprint change re-runs default grants, so each OTA heals it; after the last release
-  nothing would. Stock escapes because its factory GmsCore already targets 37.
-- **Reproduced on dut1 2026-11-02**: `cmd package uninstall-system-updates com.google.android.gms`
-  (→ target 36), `pm create-user` (fresh state, default-granted), `adb install-multiple` the 26.43.30
-  splits (→ target 37) ⇒ the new user ends `granted=false, flags=[GRANTED_BY_DEFAULT]`. Splits backed up
-  at netbook4 `~/android/lineage-24/gms-backup-dut1/gms-26.43.30/` and dut1 `/data/local/tmp/gms-26.43.30/`.
-- **Fix PUSHED, unbuilt**: frameworks/base `4592c9f566ca` — retain the grant when it was a default grant
-  (PREGRANT) that was in effect (`isAppOpGranted(oldFlags)`), so a user denial still wins.
-  Overrides can't swap in a newer GmsCore: Play's install is 12 splits, `overrides/` takes one APK.
+  gapps system-image GmsCore (NikGapps 25.34.34) targets 36, so it holds the permission as an implicit
+  compat grant (`IMPLICIT_GRANTED`). Default grants then add only `PREGRANT`: `DefaultPermissionGrantPolicy`
+  skips `grantPermission` because the permission already reads granted, and its flag update clears
+  `IMPLICIT`. Internal state before the update: `PREGRANT|IMPLICIT_GRANTED`, no `RUNTIME_GRANTED` (seen on
+  dut1 for app ID 1000 in `dumpsys permissionmgr`). A Play update to a targetSdk-37 GmsCore stops the
+  compat grant (`AppIdPermissionPolicy.kt` ~:1247 clears `IMPLICIT_GRANTED`), nothing is left, and it ends
+  `[PREGRANT]`, denied. Default grants re-run only when `ro.build.version.incremental` changes, so every
+  new build heals an affected phone durably (the grant is explicit by then). Fresh state (new flash,
+  factory reset, new user) on a build whose system GmsCore targets 36 re-breaks after the first Play
+  update. Stock escapes because its factory GmsCore already targets 37.
+- **Reproduced on dut1 2026-11-02** (symptom and final flags; the intermediate state was not captured):
+  `cmd package uninstall-system-updates com.google.android.gms` (→ target 36), `pm create-user`,
+  `adb install-multiple` the 26.43.30 splits (→ target 37) ⇒ the new user ends
+  `granted=false, flags=[GRANTED_BY_DEFAULT]`. Splits backed up at netbook4
+  `~/android/lineage-24/gms-backup-dut1/gms-26.43.30/` and dut1 `/data/local/tmp/gms-26.43.30/`.
+- **First fix was wrong**: frameworks/base `4592c9f566ca` patched the `hasImplicitFlag` branch, which
+  this state never reaches (independent review). Reverted in `f0610526e72a`.
+- **Fix STAGED on the builder, unbuilt**: system GmsCore replaced by `PrebuiltGmsCoreVic.apk` 26.11.36
+  (261136035, targetSdk 37, explicitly requests `ACCESS_LOCAL_NETWORK`, same V3 signer `5f239127…5402`,
+  sha256 `35f23040…c1c2`), taken from `com.google.android.gmssystem.prodvic.apex` in MindTheGapps
+  `17.0.0-arm64-20261022_132445` (zip sha256 `a6844eeb…ca4d`, matches the release's `.sha256sum`). Dropped
+  in as `vendor/pepito-gapps/overrides/PrebuiltGmsCoreVic.apk`; `extract-nikgapps.py` re-run (signer regex
+  fixed for v3-only APKs). Tree diff vs before: the APK plus the three XMLs with a gms block; the 6 new
+  signature|privileged perms (ACCESS_CELL_BROADCAST, DRAW_MOTION_CUES, LOG_COMPAT_CHANGE,
+  PACKET_KEEPALIVE_OFFLOAD, PERFORM_GESTURE_EXCHANGE, READ_COMPAT_CHANGE_CONFIG) are allowlisted. Pre-change
+  tree: builder `~/gms-apex-check/pepito-gapps-pre-gmscore-override/`.
+- ⚠️ **System partition space**: the new APK is 24.7 MiB larger. dut1 on 20261101 gapps has `/` at 99%,
+  36 MiB free, about the 40 MiB `WITH_GMS` reserve in `device/xiaomi/Mi8937/BoardConfig.mk`, so the next
+  gapps build likely fails at system.img unless something gives (see options below).
 - **dut1 left in the broken state** (user 0 `granted=false`), test user removed.
-- **Build-verify on dut1**: (1) after flashing, user 0 granted=true (default grants re-run on the
-  fingerprint change — unpatched builds also do this); (2) the patch itself: uninstall-system-updates,
-  `pm create-user t2`, `adb install-multiple` the backup, user t2 must stay `granted=true`; then
-  `pm remove-user`. (3) User denial still holds: deny "Nearby devices" for Play services in t2 before the
-  update ⇒ stays denied.
+- **Build-verify on dut1**: (1) after flashing, user 0 granted=true (any new build does this);
+  (2) the fix: `cmd package uninstall-system-updates com.google.android.gms` ⇒ system copy reports
+  targetSdk 37; `pm create-user t2`; in `dumpsys permissionmgr` t2's GmsCore ACCESS_LOCAL_NETWORK must be
+  `RUNTIME_GRANTED|PREGRANT` (explicit, not IMPLICIT_GRANTED); `adb install-multiple` the backup ⇒ still
+  granted; `pm remove-user`. (3) Run `scripts/audit-privapp-permissions.py` on the built tree first.

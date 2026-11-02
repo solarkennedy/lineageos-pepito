@@ -175,7 +175,9 @@ def _apk_permissions(apk):
 def _apk_signer(apk):
     out = subprocess.run([_tool("apksigner"), "verify", "--print-certs", str(apk)],
                          capture_output=True, text=True).stdout
-    m = re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-f]+)", out)
+    # apksigner prints "Signer #1 certificate ..." for v1/v2-signed APKs but
+    # "V3.0 Signer: certificate ..." for v3-only ones (current Google prebuilts).
+    m = re.search(r"(?:Signer #1|V3\.0 Signer:) certificate SHA-256 digest:\s*([0-9a-f]+)", out)
     if not m:
         sys.exit(f"error: cannot read signing certificate from {apk} (unsigned?)")
     return m.group(1)
