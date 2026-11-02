@@ -1088,9 +1088,12 @@ The T-Mobile user's unit (c3ad6a80, 20261023 gapps): 78 dropbox `system_app_cras
   signature|privileged perms (ACCESS_CELL_BROADCAST, DRAW_MOTION_CUES, LOG_COMPAT_CHANGE,
   PACKET_KEEPALIVE_OFFLOAD, PERFORM_GESTURE_EXCHANGE, READ_COMPAT_CHANGE_CONFIG) are allowlisted. Pre-change
   tree: builder `~/gms-apex-check/pepito-gapps-pre-gmscore-override/`.
-- ⚠️ **System partition space**: the new APK is 24.7 MiB larger. dut1 on 20261101 gapps has `/` at 99%,
-  36 MiB free, about the 40 MiB `WITH_GMS` reserve in `device/xiaomi/Mi8937/BoardConfig.mk`, so the next
-  gapps build likely fails at system.img unless something gives (see options below).
+- **System partition space**: the new APK is 24.7 MiB larger. dut1 on 20261101 gapps has `/` with
+  36.1 MiB free (used + avail = the whole fs, so no ext4 root reserve), leaving ≈11 MiB after the swap.
+  The 40 MiB `WITH_GMS` reserve in `device/xiaomi/Mi8937/BoardConfig.mk` is NOT enforced: with
+  `BOARD_SYSTEMIMAGE_PARTITION_SIZE` set, `build_image.py` builds a fixed-size image and only the dynamic
+  path reads `partition_reserved_size` (20261101 shipped with less free than the reserve). Real limit =
+  content fits the fixed fs (3096336 KiB). Future gapps growth over ≈11 MiB needs an app dropped.
 - **dut1 left in the broken state** (user 0 `granted=false`), test user removed.
 - **Build-verify on dut1**: (1) after flashing, user 0 granted=true (any new build does this);
   (2) the fix: `cmd package uninstall-system-updates com.google.android.gms` ⇒ system copy reports
