@@ -34,6 +34,8 @@
   <project path="lineage-sdk" name="android_lineage-sdk" remote="pepito" revision="pepito-24" />
   <remove-project name="LineageOS/android_packages_apps_LineageParts" />
   <project path="packages/apps/LineageParts" name="android_packages_apps_LineageParts" remote="pepito" revision="pepito-24" />
+  <remove-project name="LineageOS/android_packages_apps_Settings" />
+  <project path="packages/apps/Settings" name="android_packages_apps_Settings" remote="pepito" revision="pepito-24" groups="pdk-fs,pdk-cw-tvc,sysui-studio" />
   <remove-project name="LineageOS/android_packages_apps_Launcher3" />
   <project path="packages/apps/Launcher3" name="android_packages_apps_Launcher3" remote="pepito" revision="pepito-24" groups="pdk-fs,sysui-studio,pdk-cw-tvc" />
   <remove-project name="LineageOS/android_bootable_recovery" />
