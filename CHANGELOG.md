@@ -1,5 +1,39 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
+## 20261102 (2026-11-02)
+
+### device/Mi8937 (since pepito-24.0-20261101)
+- qmux: modem_evs: cap only the T-Mobile EVS layout; undo caps elsewhere
+- Mi8937: pepito: "Use assisted GPS" on by default
+
+### device/mithorium-common (since pepito-24.0-20261101)
+- mithorium-common: gps: inject XTRA from the framework's PSDS download
+
+### frameworks/base (since pepito-24.0-20261101)
+- Revert "permission: keep default grants when an implicit permission turns explicit"
+- permission: keep default grants when an implicit permission turns explicit
+
+### LineageParts (since pepito-24.0-20261101)
+- LineageParts: "Download satellite orbit data" switch in PVG100 Modem Tweaks
+
+### Settings
+- (first tagged in 20261102 — no prior anchor)
+
+### landing (docs/scripts) (since pepito-24.0-20261101)
+- PLAN-android17: Scott's logs weaken modem_evs as the VoLTE cause (+cdmaless; MO fails, MT works)
+- release: publish exactly the zip that was tested (--stage / --publish)
+- PLAN-android17: R8 root cause: duplicate INetworkStatsService on the lib line, first-arrival wins
+- PLAN-android17: Scott's post-rollback VoLTE failure points at modem_evs capping the Verizon hvolte EVS item
+- backup: restore XML qdl can parse; --fix-restore-xml for old backups
+- release: refuse a system image with classes missing abstract-method implementations
+- PLAN-android17: 20261101 gapps withdrawn: R8 stripped NetworkStatsService AIDL methods in the release build
+- PLAN-android17: system space after the GmsCore swap; gapps reserve is not enforced
+- extract-nikgapps: read v3-only signers; PLAN-android17: correct GMS local-network mechanism, stage targetSdk 37 GmsCore
+- PLAN-android17: GMS local-network permission loss after Play update; framework fix
+- ota: pull 20261101 from the feed: system_server crash-loops at boot
+- manifest: Settings from our fork (pepito-24): Wi-Fi calling searchable again
+- RELEASE-NOTES: faster GPS (XTRA) and turn on Use assisted GPS after updating
+- xtra-probe: raw QMI LOC XTRA injection probe; PLAN-android17: GPS assist bug and XTRA HAL change
 ## 20261101 (2026-11-01)
 
 ### device/Mi8937 (since pepito-24.0-20261023)
