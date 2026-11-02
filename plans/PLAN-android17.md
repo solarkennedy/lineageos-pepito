@@ -1226,3 +1226,23 @@ modem EFS) exists but the item is not that layout, write the saved byte back.
   written back to the saved byte. Bench to do: dut1 (T-Mobile) still `capped`;
   a Verizon unit reports `none`; a unit capped by 20261101/02 on hvolte gets
   `… 02 04` back. Scott's unit was restored from modemst, so it needs nothing.
+
+### 2026-11-02 evening — Scott's attachments WEAKEN the modem_evs explanation
+
+- FACT: `init.svc.qmux_modem_evs=stopped` in his 20261101 getprop, so modem_evs
+  ran during the boot loop. His dump has no `vendor.pepito.*` props (read as
+  shell, not root), so its outcome (capped/none) is unknown. No modem_evs lines
+  in any logcat he sent.
+- FACT: his REGISTER carries `+cdmaless` and UA `PALM---PVG100---v3C3M`
+  (C1-222870). If the active MCFG is verizon/**cdmaless** (byte 9 = 02),
+  modem_evs left the item alone and is NOT the cause; only hvolte (byte 9 = 04)
+  gets capped. Which profile is active is unknown.
+- FACT (logcat-radio-calls, after the rollback): MO calls reach ALERTING
+  ~0.7 s after dial, then 1502 "sdp parse failed" ~0.8 s later; **MT calls on
+  the same boot connect** (AMR-WB, audioQuality=2). No EVS in any profile.
+- ims_enabler 64a77a16 (also in 20261101) changes nothing on Verizon (its
+  P-Associated-URI has a tel: entry, the old path).
+- Status: the cause of the NV change is OPEN. The decisive data is the two
+  modemst images (broken vs restored): look for the 32-byte
+  qipcall_evs_codec_config contents and /data/pepito_evs_bw in each.
+  f84b0e5b stays: it is right regardless.
