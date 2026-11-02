@@ -1100,3 +1100,46 @@ The T-Mobile user's unit (c3ad6a80, 20261023 gapps): 78 dropbox `system_app_cras
   targetSdk 37; `pm create-user t2`; in `dumpsys permissionmgr` t2's GmsCore ACCESS_LOCAL_NETWORK must be
   `RUNTIME_GRANTED|PREGRANT` (explicit, not IMPLICIT_GRANTED); `adb install-multiple` the backup ⇒ still
   granted; `pm remove-user`. (3) Run `scripts/audit-privapp-permissions.py` on the built tree first.
+
+## Bug 2026-11-02 — release `20261101` gapps does not boot (WITHDRAWN)
+
+User reports: Scott (`620a962c`, gapps) and Neil ("last update hangs phone").
+system_server crash-loops every ~15 s on the boot animation:
+`AbstractMethodError: INetworkStatsService.registerUsageCallback(...)` on
+`NetworkStatsService`, thrown from `NetworkPolicyManagerService.initService`.
+
+**Pulled 2026-11-02:** both 20261101 entries removed from `pepito.json`
+(`ad013f0`); GitHub release marked pre-release with a "withdrawn" banner;
+20261023 is Latest again. Zips kept for forensics.
+
+**What is wrong (FACT, builder `~/cmp1101/`):**
+- The *released* gapps zip (built 12:52 PST) is not the build benched on
+  dut1/new2 (10:45 PST). The two system images differ only in
+  `com.android.tethering.capex` (+ its oat files and build-manifest).
+- Inside the capex only `service-connectivity.jar` differs.
+  `framework-connectivity-t.jar` (the caller side) is byte-identical.
+- The released `service-connectivity` has R8 strip 13 `NetworkStatsService`
+  methods: `registerUsageCallback` and the newer AIDL overrides `getIfaceStats`,
+  `getTotalStats`, `getUidStats` and `getRateLimitCacheConfig` (+ helpers).
+- The **vanilla** release (12:21) has a `service-connectivity.jar` identical to
+  the bench build, so vanilla 20261101 is good on this point. It was pulled
+  from the feed anyway.
+- Connectivity source is unchanged since 10-05. The R8 step reran at 12:53
+  only because the `framework` turbine header jar was dirty. The only library
+  jars that define `INetworkStatsService` date from 10-23/10-05. Same inputs for
+  the interface, different R8 output: root cause of the nondeterminism is still
+  OPEN (the bad intermediates are gone; `out/` has been rebuilt since). Today's
+  20261102 gapps `out/` has the methods.
+
+**Process gap:** `test-gate.py` keys on the *source* ID, but release-all
+rebuilds each flavor, so the published bits were never booted. Fix candidates:
+gate on the artifact (boot the exact released zip), and/or a packaging check
+that every `INetworkStatsService` / AIDL Stub method is still implemented in
+the APEX `service-connectivity.jar` (dexdump).
+
+Rollback side effect (Scott, unexplained): after EDL back to 20261023, VoLTE
+MO calls to modern handsets drop with ImsReasonInfo 1502 "sdp parse failed"
+until `modemst1/2` are restored from a pre-20261101 dump. EDL never writes
+modemst. Also: `fh_dump.py`'s `rawprogram_restore.xml` does not parse with
+qdl 2.8 (missing `file_sector_offset`, `partofsingleimage`,
+`readbackverify`, `size_in_KB`, `sparse`, `start_byte_hex`).
