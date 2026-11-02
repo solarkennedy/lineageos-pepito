@@ -1143,3 +1143,34 @@ until `modemst1/2` are restored from a pre-20261101 dump. EDL never writes
 modemst. Also: `fh_dump.py`'s `rawprogram_restore.xml` does not parse with
 qdl 2.8 (missing `file_sector_offset`, `partofsingleimage`,
 `readbackverify`, `size_in_KB`, `sparse`, `start_byte_hex`).
+
+### 2026-11-02 — Scott's post-rollback VoLTE failure: likely `modem_evs` (in 20261101, both flavors)
+
+`fd7d17c1` (new in 20261101) adds `modem_evs`, a vendor oneshot that runs at
+boot (independent of system_server, so it also ran during the boot loop). It
+caps byte 9 of modem EFS `/nv/item_files/ims/qipcall_evs_codec_config` to 02
+whenever byte 9 is 03 or 04. The only layout check is `len == 32 && byte9 <= 4`.
+Byte 9 = max EVS bandwidth was isolated on the **T-Mobile** layout only.
+
+FACT, carrier profiles in modem C1-222870 (v3C3M-0), `mbn-codec.py --grep qipcall_evs`:
+
+| profile | bytes 0-9 (+) |
+|---|---|
+| tmo/commerci | `00 00 10 00 00 00 00 00 02 03` |
+| verizon/cdmaless | `00 00 10 00 00 00 00 00 00 02` |
+| verizon/hvolte | `01 00 10 00 00 00 6d 00 02 04` `00 … 6d` |
+
+new2's Verizon item (`… 6d 00 03 02`, byte 9 = 02) is left alone, which is why
+the 11-01 Verizon bench calls passed. A unit on **hvolte** gets byte 9 04 → 02
+in a layout we never decoded. Scott's symptoms fit: Verizon, failures to
+EVS-capable phones only ("sdp parse failed", ImsReasonInfo 1502), survived the
+EDL rollback (EDL never writes modemst; 20261023 has no modem_evs to undo it),
+cured by restoring modemst1/2. HYPOTHESIS until his 20261101 getprop shows
+`vendor.pepito.modem.evs=capped` (it is in his attachment
+`20261101-getprop.txt`).
+
+Consequences: vanilla 20261101 must stay out of the feed even though it boots;
+every build since fd7d17c1 (incl. 20261102) carries this. Fix candidates:
+touch only the exact T-Mobile layout (bytes 0-8 `00 00 10 00 00 00 00 00 02`),
+everything else "unsupported"; and when the marker (`/data/pepito_evs_bw` in
+modem EFS) exists but the item is not that layout, write the saved byte back.
