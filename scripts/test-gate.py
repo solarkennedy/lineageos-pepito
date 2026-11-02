@@ -23,6 +23,13 @@ count; the report says which.
   test-gate.py --report              # informational (release sweep): exit 0 unless error
   test-gate.py --id-file F           # also write the gated source id to F (release-all.sh)
   test-gate.py --file-stamp STAMP    # file a fresh build stamp in the ledger, print its id
+  test-gate.py --source-id ID --build-utc N
+                                     # only runs on that exact build (ro.build.date.utc = N,
+                                     # the release zip's post-timestamp): release-all --publish
+
+--build-utc gates an artifact rather than a source. 20261101 gapps was rebuilt
+after its source passed and the rebuild (an R8 race) did not boot; a run only
+counts for a zip if the phone was running that zip's build.
 """
 import argparse
 import hashlib
@@ -110,11 +117,15 @@ def main():
     ap.add_argument("--report", action="store_true")
     ap.add_argument("--id-file", type=Path)
     ap.add_argument("--file-stamp", metavar="STAMP")
+    ap.add_argument("--build-utc", type=int, metavar="N",
+                    help="only count runs on the build with ro.build.date.utc N (needs --source-id)")
     ap.add_argument("--required", type=Path,
                     help="file listing required tests, instead of the release's test plan")
     a = ap.parse_args()
     if a.file_stamp:
         return file_stamp(a.file_stamp)
+    if a.build_utc and not a.source_id:
+        ap.error("--build-utc needs --source-id (the build's stamp)")
 
     current_projects = {}
     if a.source_id:
@@ -152,6 +163,9 @@ def main():
             print(f"  {D}  review it: release-sweep skill, or scripts/test_plan.py show{X}")
     all_runs = load_runs()
     runs = [r for r in all_runs if r.get("source_id") == sid and r.get("exitstatus") in (0, 1)]
+    if a.build_utc:
+        runs = [r for r in runs if (r.get("build") or {}).get("date_utc") == a.build_utc]
+        print(f"  {D}only runs on build ro.build.date.utc={a.build_utc}{X}")
     results = verdict(runs, required)
     open_manual = [m for m in manual if not m.get("done")]
     green = bool(runs) and all(o == "passed" for o, _ in results.values()) and not open_manual
@@ -167,7 +181,7 @@ def main():
         print(f"  {G}✓ green: every release-gate test passed on this source.{X}")
         return 0
     if not runs:
-        print(f"  {Y}● no test run for this source.{X}")
+        print(f"  {Y}● no test run for this {'build' if a.build_utc else 'source'}.{X}")
         stamped = [r for r in all_runs if r.get("source_id")]
         if stamped:
             last = stamped[-1]

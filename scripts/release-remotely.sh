@@ -27,6 +27,8 @@
 #   ./scripts/release-remotely.sh                # the zip (OTA + EDL kit) + JSON feed
 #   ./scripts/release-remotely.sh --gapps        # the gapps variant
 #   ./scripts/release-remotely.sh --no-feed      # publish the zip, leave the Updater feed alone
+#   ./scripts/release-remotely.sh --package-only # package + verify into release-dist/, publish nothing
+#   ./scripts/release-remotely.sh --packaged     # publish the release-dist/ zip from --package-only
 #   ./scripts/release-remotely.sh --notes-file ~/Projects/lineageos-pepito-24/.release-notes.md
 #
 # --notes-file FILE sets the GitHub release body (must live under the landing
@@ -41,13 +43,15 @@ GAPPS=false
 NOTES_FILE=""
 TAG_OVERRIDE=""
 NO_FEED=false           # default: full release (the zip + the JSON Updater feed)
+MODE=""                 # "", --package-only (stage) or --packaged (publish a staged zip)
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --gapps) GAPPS=true; shift ;;
         --notes-file) NOTES_FILE="$2"; shift 2 ;;
         --tag) TAG_OVERRIDE="$2"; shift 2 ;;
         --no-feed) NO_FEED=true; shift ;;
-        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE, --tag TAG, --no-feed)" >&2; exit 1 ;;
+        --package-only|--packaged) MODE="$1"; shift ;;
+        *) echo "error: release-remotely.sh: unknown arg '$1' (accepts --gapps, --notes-file FILE, --tag TAG, --no-feed, --package-only, --packaged)" >&2; exit 1 ;;
     esac
 done
 
@@ -122,7 +126,11 @@ rsync "${RSYNC_COMMON[@]}" "${EDL_CONSTANTS[@]}" \
 # at build start; date -u has since rolled over). release-all.sh passes the
 # build's date here as --tag, so the whole release pins to the zip, not the clock.
 DATE_TAG="${TAG_OVERRIDE:-$(date -u +%Y%m%d)}"
-ALL_ZIPS=$(ssh "$TARGET" -- "ls '$REMOTE_ROOT/$PRODUCT_OUT'"/lineage-*-"$DATE_TAG"-"$BUILDTYPE_TAG"-*.zip 2>/dev/null || true)
+# --packaged publishes the zip an earlier --package-only left in release-dist/
+# (the one that was flashed and tested), not whatever is in out/ now.
+ZIP_DIR="$REMOTE_ROOT/$PRODUCT_OUT"
+[[ "$MODE" == --packaged ]] && ZIP_DIR="$REMOTE_ROOT/release-dist"
+ALL_ZIPS=$(ssh "$TARGET" -- "ls '$ZIP_DIR'"/lineage-*-"$DATE_TAG"-"$BUILDTYPE_TAG"-*.zip 2>/dev/null || true)
 
 # Both variants are UNOFFICIAL, so filter on the _gapps suffix: gapps zips end
 # in -Mi8937_gapps.zip, vanilla in -Mi8937.zip. grep -v drops the gapps ones for
@@ -137,10 +145,10 @@ fi
 NUM_MATCHES=$(grep -c . <<< "$MATCHES" || true)
 
 if [[ "$NUM_MATCHES" -eq 0 ]]; then
-    echo "error: no $BUILDTYPE_TAG $VARIANT_DESC zip matching today's date ($DATE_TAG) in $REMOTE_ROOT/$PRODUCT_OUT on $TARGET" >&2
+    echo "error: no $BUILDTYPE_TAG $VARIANT_DESC zip matching today's date ($DATE_TAG) in $ZIP_DIR on $TARGET" >&2
     exit 1
 elif [[ "$NUM_MATCHES" -gt 1 ]]; then
-    echo "error: multiple $BUILDTYPE_TAG $VARIANT_DESC zips matching today's date ($DATE_TAG) in $REMOTE_ROOT/$PRODUCT_OUT on $TARGET:" >&2
+    echo "error: multiple $BUILDTYPE_TAG $VARIANT_DESC zips matching today's date ($DATE_TAG) in $ZIP_DIR on $TARGET:" >&2
     echo "$MATCHES" >&2
     exit 1
 fi
@@ -193,12 +201,12 @@ NO_FEED_ARG=""
 $NO_FEED && NO_FEED_ARG="--no-feed"
 
 ssh "$TARGET" -- \
-    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh $NO_FEED_ARG --yes $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"
+    "export GH_HOST=github.com GH_TOKEN=$(printf '%q' "$REMOTE_GH_TOKEN"); cd '$REMOTE_ROOT' && ./scripts/release.sh $MODE $NO_FEED_ARG --yes $NOTES_ARG $TAG_ARG $(printf '%q' "$ZIP")"
 
 # In full mode release.sh regenerated pepito.json on the server, where the
 # landing mirror has no .git. Fetch it back and commit it from here, where the
 # real clone lives, so the Updater feed the device polls is actually updated.
-if ! $NO_FEED; then
+if ! $NO_FEED && [[ "$MODE" != --package-only ]]; then
     echo "==> Fetching regenerated OTA JSON from the server..."
     rsync "${RSYNC_COMMON[@]}" --include='*.json' --exclude='*' \
         "$TARGET:$LANDING_ROOT"/ "$LANDING_ROOT"/ | tail -20

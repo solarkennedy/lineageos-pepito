@@ -36,6 +36,9 @@
 #   ./scripts/release.sh <zip> --package-only  # build + verify the release zip
 #                                              # in --dist-dir, publish nothing
 #   ./scripts/release.sh <zip> --skip-edl      # publish the zip as built, no kit
+#   ./scripts/release.sh <dist zip> --packaged # publish a zip --package-only made
+#                                              # earlier, exactly as it is (the zip
+#                                              # that was flashed and tested)
 #   ./scripts/release.sh <zip> --no-feed       # publish the zip, but leave the
 #                                              # Updater feed (JSON) alone
 #   ./scripts/release.sh <zip> --notes-file CHANGELOG_SECTION.md  # release body
@@ -68,6 +71,7 @@ ASSUME_YES=false
 SKIP_EDL=false           # publish the zip exactly as built: no README, no EDL kit
 NO_FEED=false            # publish the zip but do not touch the Updater feed (JSON)
 PACKAGE_ONLY=false       # build + verify the release zip, then stop
+PACKAGED=false           # the zip is already a --package-only result: publish it as is
 TREE="${LINEAGE_ROOT:-/home/kyle/android/lineage-24}"
 EDL_DIR="$TREE/flash-staging"
 # Where the repackaged zip is written (and kept, so it can be test-flashed).
@@ -580,6 +584,7 @@ while [[ $# -gt 0 ]]; do
         --skip-edl) SKIP_EDL=true; shift ;;
         --no-feed) NO_FEED=true; shift ;;
         --package-only) PACKAGE_ONLY=true; shift ;;
+        --packaged) PACKAGED=true; shift ;;
         --dry-run) DRY_RUN=true; shift ;;
         --yes|-y) ASSUME_YES=true; shift ;;
         -h|--help) usage ;;
@@ -593,6 +598,18 @@ done
 if $PACKAGE_ONLY && $SKIP_EDL; then
     echo "error: --package-only and --skip-edl are mutually exclusive (there would be nothing to package)" >&2
     exit 1
+fi
+if $PACKAGED; then
+    $PACKAGE_ONLY && { echo "error: --packaged and --package-only are mutually exclusive" >&2; exit 1; }
+    # Publish it byte for byte: it was packaged, verified and checked by an
+    # earlier --package-only run, and that is the zip the bench tested.
+    unzip -l "$ZIP" edl/manifest.json >/dev/null 2>&1 \
+        || { echo "error: --packaged: $ZIP has no edl/manifest.json, so it is not a --package-only result" >&2; exit 1; }
+    "$TREE/out/host/linux-x86/bin/check_ota_package_signature" \
+        "${OTA_KEY:-$TREE/vendor/lineage-priv/keys/releasekey}.x509.pem" "$ZIP" 2>&1 \
+        | grep -q "Whole package signature VERIFIED" \
+        || { echo "error: --packaged: $ZIP failed whole-file signature verification" >&2; exit 1; }
+    SKIP_EDL=true
 fi
 
 FILENAME="$(basename "$ZIP")"
@@ -706,7 +723,9 @@ echo "  romtype:   $ROMTYPE"
 echo "  repo:      $REPO"
 echo "  tag:       $TAG"
 echo "  branch:    $BRANCH"
-if $SKIP_EDL; then
+if $PACKAGED; then
+    echo "  edl kit:   already in the zip (--packaged): published exactly as packaged"
+elif $SKIP_EDL; then
     echo "  edl kit:   none (--skip-edl): the zip is published exactly as built"
 else
     echo "  edl kit:   from $EDL_DIR, re-signed with $(basename "$OTA_KEY")"

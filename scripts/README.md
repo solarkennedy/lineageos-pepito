@@ -76,11 +76,11 @@ program cross-compiled for Linux, macOS and Windows and bundled in `edl/`).
 
 | Script | What it does |
 |---|---|
-| `release-all.sh` | from netbook4: changelog, build + release each flavor, tag every repo |
+| `release-all.sh` | from netbook4, two phases: `--stage` = changelog, build + `--package-only` each flavor (zips in the builder's `release-dist/`, images in `flash-staging/release-<date>-<flavor>/`); `--publish` = test gate on each staged build, publish those zips as they are (`release.sh --packaged`), tag every repo |
 | `release-remotely.sh` | from netbook4: run `release.sh` on the build server for one flavor, fetch + commit `pepito.json` |
 | `release.sh` | on the build server: stage the kit, add it to the zip, re-sign (`signapk -w`, release key), verify (signature, payload unchanged, `ota2raw` output byte-identical to the build's target-files images, no class missing an abstract-method implementation from another jar — `check-abstract-impls.py`), upload, update the Updater feed. `--package-only` stops after verify, for a test flash |
 | `gen-changelog.sh`, `gen-ota-json.py` | changelog across the pepito repos; the `pepito.json` Updater feed |
 | `check-abstract-impls.py` | dexdumps every framework and APEX jar in a system image and lists concrete classes that would throw `AbstractMethodError` (the 20261101 gapps failure); `release.sh` runs it on the image ota2raw rebuilds; expected findings in `check-abstract-impls.baseline` |
 | `source-id.py` | runs on the build server (piped over ssh): hashes every project's commit into a source id. `stamp` = the tree as built (`build-lineage24-remotely.sh` files one per build in `~/.local/share/pepito/build-stamps/`); `pushed` = what the next build would sync |
 | `test_plan.py` | which tests and manual checks this release needs: `tests/integration/coverage.toml` matched against what changed since the last tag, plus the release-sweep skill's review (`show`, `add`, `waive`, `manual`, `done`, `reviewed`) |
-| `test-gate.py` | is there a green `tests/integration` run of the release's test plan for the pushed source? `release-all.sh` refuses to release without one (`--skip-test-gate`) and checks each build's stamp still matches; the release sweep shows it as a report |
+| `test-gate.py` | is there a green `tests/integration` run of the release's test plan for the pushed source, or (`--build-utc`) on one exact build? `release-all.sh --publish` refuses each staged flavor without one on that flavor's build (`--skip-test-gate`); the release sweep shows the source report |

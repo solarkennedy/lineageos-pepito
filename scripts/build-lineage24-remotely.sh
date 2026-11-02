@@ -233,8 +233,9 @@ echo "==> Remote build succeeded."
 # Stamp the build with the exact source it was made from (scripts/source-id.py:
 # every project's commit, hashed) and file it under the build date + kernel the
 # phone will report, so a tests/integration run on a phone flashed with these
-# images is tied to this source. release-all.sh checks the stamp against the
-# source its test gate passed. Not fatal for a test build.
+# images is tied to this source. release-all.sh --stage keeps a copy with each
+# staged flavor; --publish gates on runs of exactly that build. Not fatal for a
+# test build.
 STAMP="$LOCAL_FLASH_DIR/build-stamp.json"
 mkdir -p "$LOCAL_FLASH_DIR"
 rm -f "$STAMP"

@@ -77,7 +77,13 @@ with whatever it pulled (call samples, marks, logcat).
 
 ## Release gate
 
-`scripts/release-all.sh` will not release source that hasn't passed here.
+`scripts/release-all.sh --publish` will not publish a zip whose own build hasn't
+passed here: each staged flavor needs a run on a phone flashed with exactly that
+build (`summary.json` `build.date_utc` = the zip's `post-timestamp`,
+`test-gate.py --build-utc`). Source alone is not enough: 20261101 gapps was a
+rebuild of source that had passed, and the rebuild did not boot. So test after
+`release-all.sh --stage`, on the images it kept in
+`flash-staging/release-<date>-<flavor>/`.
 
 1. Every `build-lineage24-remotely.sh` build is stamped with its source id (a hash
    of every project's commit, `scripts/source-id.py`) and filed in
@@ -92,7 +98,8 @@ with whatever it pulled (call samples, marks, logcat).
 3. `scripts/test-gate.py` hashes the source the release build will sync (manifest
    projects at their pushed tips) and wants every test in that release's test plan
    to have PASSED in the latest run on that source that did not skip it, and every
-   manual check in the plan done. Runs on different units and flavors combine.
+   manual check in the plan done. Runs on different units and flavors combine;
+   with `--build-utc` (what `--publish` uses) only runs on that one build count.
 
 The plan (`scripts/test_plan.py show`) is not the whole suite:
 

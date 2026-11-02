@@ -48,11 +48,20 @@ Do not flash, reboot a phone into EDL, or start a release without being asked.
 ./scripts/build-lineage24-remotely.sh            # sync the manifest on the server, build, stage + fetch flash images
 ./scripts/build-lineage24-remotely.sh --gapps
 ~/android/lineage-24/flash-staging/flash-staging.sh   # EDL-flash the staged images (hard-wired to dut1 via android16-adb; --no-adb otherwise)
-./scripts/release-all.sh [--gapps] [--dry-run]   # changelog, build + release each flavor, tag every repo
+./scripts/release-all.sh --stage [--gapps]       # changelog, build + package each flavor, publish nothing
+./scripts/release-all.sh --publish --version <date> [--gapps]   # gate, publish the staged zips, tag every repo
 ```
 
-`release-all.sh` first requires a green `tests/integration` run on a build of
-the exact pushed source (`scripts/test-gate.py`, `tests/integration/README.md`).
+A release is two phases so the published zip is the tested one. `--stage`
+leaves each flavor's zip in the builder's `release-dist/` and its flash images
+in `flash-staging/release-<date>-<flavor>/`; Kyle flashes each
+(`FLASH_DIR=<that dir> flash-staging.sh <unit>`) and runs `tests/integration`.
+`--publish` wants a green run of the test plan on each staged *build* (the
+phone's `ro.build.date.utc` = the zip's `post-timestamp`, `scripts/test-gate.py
+--build-utc`) and publishes those zips without rebuilding: 20261101 gapps was a
+rebuild of tested source and never booted. `release.sh` also refuses an image
+with classes missing abstract-method implementations
+(`scripts/check-abstract-impls.py`).
 
 A release publishes **one zip per flavor**: the OTA zip with `README.md` and
 the EDL kit (`edl/`) packed in and re-signed. Users rebuild the raw images from

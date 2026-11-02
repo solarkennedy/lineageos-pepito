@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
-# release-all.sh — one command to cut a full pepito LineageOS 24.0 release from
-# the netbook (lineageos24.0 branch).
+# release-all.sh — cut a full pepito LineageOS 24.0 release from the netbook
+# (lineageos24.0 branch), in two phases, so what is published is exactly what
+# was tested:
+#
+#   --stage    changelog, then build + package (release.sh --package-only) each
+#              flavor; the finished zips wait in release-dist/ on the builder and
+#              each flavor's flash images are kept in
+#              flash-staging/release-<version>-<flavor>/. Nothing is published.
+#   (bench)    flash each staged flavor and run tests/integration on it.
+#   --publish  for each flavor: a green test-plan run on THAT build (the phone's
+#              ro.build.date.utc = the zip's post-timestamp) and an unchanged
+#              builder tree, then publish the staged zip as is (no rebuild, no
+#              repackaging), then tag.
+#
+# Why: 20261101 gapps was rebuilt after its source passed the gate; the rebuild
+# came out of an R8 race with NetworkStatsService methods stripped and never
+# booted (PLAN-android17.md, "Bug 2026-11-02"). Gating a source does not gate
+# the bits a rebuild produces.
+#
+# The steps below are the old single-pass order; --stage runs 1-3 (packaging
+# instead of releasing), --publish runs the releases of 2-3, then 4-5.
 #
 #   1. generate the changelog across every pepito repo (scripts/gen-changelog.sh,
 #      which reads the tree repos on the build server), commit + push
@@ -19,32 +38,37 @@
 #      SERVER, at exactly the commits that were built; the landing repo here,
 #      after committing manifests/snapshots/<version>.xml (`repo manifest -r` of
 #      the built tree), which the next changelog's upstream section diffs against;
-#   0. refuse to start unless tests/integration has a green run for the source
-#      about to be built (scripts/test-gate.py; tests/integration/README.md), and
-#      check each build's stamp matches that source before releasing it;
+#   0. (--publish) refuse unless tests/integration has a green run of the
+#      release's test plan on each staged build (scripts/test-gate.py
+#      --build-utc; tests/integration/README.md);
 #   5. (best-effort) shell out to `claude` to turn the raw commit changelog into a
 #      friendly end-user BBCode bullet list for the XDA update post.
 #
 # The release notes are also embedded into each pepito.json entry ("changelog" /
 # "changelog_url" keys) for our Updater's "What's new" (plans/PLAN-ota-changelog.md).
 #
-# Vanilla is built+released BEFORE gapps is built, on purpose: the two variants
+# Vanilla is built+packaged BEFORE gapps is built, on purpose: the two variants
 # share out/target/product/Mi8937/ and each build's installclean wipes the
-# other's zip, so the release must happen while its zip still exists.
+# other's zip, so packaging must happen while its zip still exists. The packaged
+# zip in release-dist/ is independent of out/ from then on.
 #
 # IDEMPOTENT — safe to just re-run after an intermittent failure (see the 23.2
 # notes: changelog sections are replaced, released variants are skipped, uploads
 # use --clobber, existing tags are skipped). Pass the original --version when
 # resuming on a later day.
 #
-#   ./scripts/release-all.sh                      # version = today's date code
-#   ./scripts/release-all.sh --version 20261101   # force the date code
+#   ./scripts/release-all.sh --stage --gapps      # build + package both flavors, publish nothing
+#   ./scripts/release-all.sh --publish --version 20261101 --gapps
+#                                                 # gate + publish what --stage left
+#   ./scripts/release-all.sh --stage --version 20261101   # force the date code
 #   ./scripts/release-all.sh --dry-run            # changelog only; no build/release/tag
-#   ./scripts/release-all.sh --no-tag             # skip the repo-tagging step
-#   ./scripts/release-all.sh --gapps              # also build + release the gapps variant
-#   ./scripts/release-all.sh --notes-file FILE    # hand-written release body (e.g. the
-#                                                 # first 24.0 release, which has no anchor)
-#   ./scripts/release-all.sh --skip-test-gate     # release without a green integration run
+#   ./scripts/release-all.sh --publish --no-tag   # skip the repo-tagging step
+#   ./scripts/release-all.sh --stage --notes-file FILE    # hand-written release body (e.g.
+#                                                 # the first 24.0 release, which has no anchor)
+#   ./scripts/release-all.sh --publish --skip-test-gate   # publish without a green run
+#
+# --publish takes the same --version and --gapps as the --stage it follows
+# (--version defaults to today's date, so pass it on a later day).
 #
 # Needs $GITHUB_TOKEN_PEPITO (or $GH_TOKEN_VAR) set, for the GitHub release.
 set -euo pipefail
@@ -66,6 +90,7 @@ DO_TAG=true
 DO_GAPPS=false
 CUSTOM_NOTES=""
 TEST_GATE=true
+PHASE=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version) VERSION="$2"; shift 2 ;;
@@ -74,10 +99,17 @@ while [[ $# -gt 0 ]]; do
         --gapps)   DO_GAPPS=true; shift ;;
         --notes-file) CUSTOM_NOTES="$2"; shift 2 ;;
         --skip-test-gate) TEST_GATE=false; shift ;;
-        -h|--help) sed -n '2,49p' "${BASH_SOURCE[0]}" | cut -c3-; exit 0 ;;
+        --stage)   PHASE=stage; shift ;;
+        --publish) PHASE=publish; shift ;;
+        -h|--help) sed -n '2,75p' "${BASH_SOURCE[0]}" | cut -c3-; exit 0 ;;
         *) echo "release-all.sh: unknown arg '$1'" >&2; exit 1 ;;
     esac
 done
+if [[ -z "$PHASE" ]] && ! $DRY_RUN; then
+    echo "error: say --stage (build + package, publish nothing) or --publish (gate + publish what" >&2
+    echo "       --stage left). A release is published only after its own zips were tested." >&2
+    exit 1
+fi
 if [[ -n "$CUSTOM_NOTES" && ! -f "$CUSTOM_NOTES" ]]; then
     echo "error: --notes-file not found: $CUSTOM_NOTES" >&2; exit 1
 fi
@@ -136,46 +168,75 @@ export LINEAGE_BUILD_DATE="$VERSION"   # picked up by build-lineage24-remotely.s
 # stands, so the builds must not re-sync it under them.
 unset SYNC_ALL
 
-# --- 0b. integration-test gate ----------------------------------------------
-# A release must be a build of source that tests/integration passed on: the gate
-# hashes the source the build below will sync (manifest projects at their pushed
-# tips) and wants a green summary.json for it. Before anything is written, so a
-# failed gate leaves no changelog commit behind. The id it passed is re-checked
-# against each build's stamp (check_built_source), which catches a push that
-# lands while the release is running.
-GATED_ID=""
-STAMP=${LOCAL_FLASH_DIR:-/home/kyle/android/lineage-24/flash-staging}/build-stamp.json
-if $TEST_GATE; then
-    say "Integration-test gate"
-    GATE_ID_FILE=$(mktemp)
-    if "$SCRIPT_DIR/test-gate.py" --id-file "$GATE_ID_FILE"; then
-        GATED_ID=$(cat "$GATE_ID_FILE")
-    elif $DRY_RUN; then
-        echo "(dry run: a real run would stop here)"
-    else
-        rm -f "$GATE_ID_FILE"
-        echo "error: no green integration-test run for the source about to be released." >&2
-        echo "       Flash a build of it, run tests/integration, or pass --skip-test-gate." >&2
-        exit 1
-    fi
-    rm -f "$GATE_ID_FILE"
-else
-    say "Integration-test gate SKIPPED (--skip-test-gate)"
-fi
-
-# check_built_source — after a build: its stamp must name the gated source.
-check_built_source() {
-    [[ -n "$GATED_ID" ]] || return 0
-    local built
-    built=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["source_id"])' "$STAMP" 2>/dev/null) || built="(no stamp)"
-    if [[ "$built" != "$GATED_ID" ]]; then
-        echo "error: the build is source $built, but the test gate passed $GATED_ID." >&2
-        echo "       Something was pushed (or the builder tree changed) during the release. Not releasing it." >&2
-        exit 1
-    fi
-    echo "Built source $built matches the test gate."
+# --- 0b. staged flavors ----------------------------------------------------
+# --stage keeps each flavor's flash images (hard links, so a later build's
+# rsync into flash-staging/ cannot change them) and its build stamp here;
+# --publish reads them back. The zips themselves wait in release-dist/ on the
+# builder, where release.sh --package-only put them.
+LOCAL_FLASH_DIR=${LOCAL_FLASH_DIR:-/home/kyle/android/lineage-24/flash-staging}
+STAMP=$LOCAL_FLASH_DIR/build-stamp.json
+FLAVORS=(vanilla)
+$DO_GAPPS && FLAVORS+=(gapps)
+stage_dir()   { echo "$LOCAL_FLASH_DIR/release-$VERSION-$1"; }
+flavor_args() { [[ "$1" == gapps ]] && echo --gapps || true; }
+sidecar_re()  { [[ "$1" == gapps ]] && echo '-Mi8937_gapps\.zip\.sha256sum$' || echo '-Mi8937\.zip\.sha256sum$'; }
+dist_zip_glob() {
+    [[ "$1" == gapps ]] && echo "$REMOTE_TREE/release-dist/lineage-*-$VERSION-SNAPSHOT-Mi8937_gapps.zip" \
+                        || echo "$REMOTE_TREE/release-dist/lineage-*-$VERSION-UNOFFICIAL-Mi8937.zip"
+}
+stamp_get() {   # stamp_get FILE source_id|date_utc
+    python3 -c 'import json,sys; d=json.load(open(sys.argv[1]))
+print(d["source_id"] if sys.argv[2] == "source_id" else d["build"]["date_utc"])' "$1" "$2"
 }
 
+# --- 0c. publish gate: every check before anything is published --------------
+if [[ "$PHASE" == publish ]]; then
+    say "Publish gate: each flavor's staged zip, its build, and a green run on that build"
+    STAGED_ID=""
+    for f in "${FLAVORS[@]}"; do
+        dir=$(stage_dir "$f")
+        [[ -f "$dir/build-stamp.json" ]] \
+            || { echo "error: $f: nothing staged in $dir (run --stage --version $VERSION first)" >&2; exit 1; }
+        sid=$(stamp_get "$dir/build-stamp.json" source_id)
+        utc=$(stamp_get "$dir/build-stamp.json" date_utc)
+        [[ -z "$STAGED_ID" || "$STAGED_ID" == "$sid" ]] \
+            || { echo "error: the staged flavors are different sources ($STAGED_ID, $sid)" >&2; exit 1; }
+        STAGED_ID=$sid
+        zip=$(ssh "$TARGET" -- "ls $(dist_zip_glob "$f") 2>/dev/null" || true)
+        [[ $(grep -c . <<<"$zip") -eq 1 ]] \
+            || { echo "error: $f: expected one staged zip $(dist_zip_glob "$f") on $TARGET, found: ${zip:-none}" >&2; exit 1; }
+        ts=$(ssh "$TARGET" -- "unzip -p $(printf '%q' "$zip") META-INF/com/android/metadata" | sed -n 's/^post-timestamp=//p')
+        [[ "$ts" == "$utc" ]] \
+            || { echo "error: $f: $zip is build $ts, but the staged images are build $utc" >&2; exit 1; }
+        echo "$f: $(basename "$zip"), build $utc, source $sid"
+        if $TEST_GATE; then
+            "$SCRIPT_DIR/test-gate.py" --source-id "$sid" --build-utc "$utc" || {
+                echo "error: $f: no green test-plan run on build $utc (the staged zip itself)." >&2
+                echo "       FLASH_DIR=$dir $LOCAL_FLASH_DIR/flash-staging.sh <unit>, run tests/integration," >&2
+                echo "       then publish again (or --skip-test-gate)." >&2
+                exit 1; }
+        fi
+    done
+    $TEST_GATE || say "Integration-test gate SKIPPED (--skip-test-gate)"
+    # Tags go on the builder's HEADs and the snapshot is `repo manifest -r` of
+    # the tree, so the tree must still be what was staged.
+    if $DO_TAG; then
+        TREE_ID=$(cd "$SCRIPT_DIR" && python3 -c 'import test_plan; print(test_plan.on_builder("stamp")["source_id"])')
+        [[ "$TREE_ID" == "$STAGED_ID" ]] || {
+            echo "error: the builder tree is now source $TREE_ID, not the staged $STAGED_ID, so the tags" >&2
+            echo "       would not name what was built. Put the tree back, or publish with --no-tag and tag by hand." >&2
+            exit 1; }
+    fi
+    [[ -s "$NOTES_FILE" ]] || { echo "error: $NOTES_FILE (written by --stage) is missing" >&2; exit 1; }
+    SECTION="$(cat "$NOTES_FILE")"
+    TAG="${TAG_PREFIX}${VERSION}"
+    if $DRY_RUN; then
+        say "Dry run — the publish gate passed; nothing published or tagged."
+        exit 0
+    fi
+fi
+
+if [[ "$PHASE" != publish ]]; then
 # --- 1. changelog -----------------------------------------------------------
 say "Generating changelog"
 
@@ -213,33 +274,47 @@ if ! git -C "$LANDING_ROOT" diff --quiet -- CHANGELOG.md 2>/dev/null || \
 else
     echo "CHANGELOG.md unchanged — nothing to commit"
 fi
-
-# --- 2. vanilla: build then release -----------------------------------------
-# "Released" = the zip's .sha256sum sidecar is on the release: release.sh uploads
-# it after the zip, so its presence means the variant's upload completed.
-if variant_released '-Mi8937\.zip\.sha256sum$'; then
-    say "Vanilla zip already on release $VERSION — skipping build + release"
-else
-    say "Building VANILLA remotely"
-    rm -f "$STAMP"
-    "$SCRIPT_DIR/build-lineage24-remotely.sh"
-    check_built_source
-    say "Releasing VANILLA"
-    "$SCRIPT_DIR/release-remotely.sh" --notes-file "$NOTES_FILE" --tag "$VERSION"
 fi
 
-# --- 3. gapps: build then release -------------------------------------------
-if ! $DO_GAPPS; then
-    say "GApps variant skipped (pass --gapps once 24.0 has a gapps build)"
-elif variant_released '-Mi8937_gapps\.zip\.sha256sum$'; then
-    say "GApps zip already on release $VERSION — skipping build + release"
-else
-    say "Building GAPPS remotely"
+# --- 2-3. stage: build + package each flavor; publish: release the staged zips -
+# "Released" = the zip's .sha256sum sidecar is on the release: release.sh uploads
+# it after the zip, so its presence means the variant's upload completed.
+for f in "${FLAVORS[@]}"; do
+    if variant_released "$(sidecar_re "$f")"; then
+        say "${f^} zip already on release $VERSION — skipping"
+        continue
+    fi
+    if [[ "$PHASE" == publish ]]; then
+        say "Publishing ${f^^} (the staged zip, as is)"
+        "$SCRIPT_DIR/release-remotely.sh" $(flavor_args "$f") --packaged --notes-file "$NOTES_FILE" --tag "$VERSION"
+        continue
+    fi
+    dir=$(stage_dir "$f")
+    if [[ -f "$dir/build-stamp.json" ]] && ssh "$TARGET" -- "ls $(dist_zip_glob "$f")" >/dev/null 2>&1; then
+        say "${f^} already staged in $dir — skipping build"
+        continue
+    fi
+    say "Building ${f^^} remotely"
     rm -f "$STAMP"
-    "$SCRIPT_DIR/build-lineage24-remotely.sh" --gapps
-    check_built_source
-    say "Releasing GAPPS"
-    "$SCRIPT_DIR/release-remotely.sh" --gapps --notes-file "$NOTES_FILE" --tag "$VERSION"
+    "$SCRIPT_DIR/build-lineage24-remotely.sh" $(flavor_args "$f")
+    [[ -f "$STAMP" ]] || { echo "error: the $f build has no stamp ($STAMP), so no test run could be tied to it" >&2; exit 1; }
+    say "Packaging ${f^^} (release.sh --package-only)"
+    "$SCRIPT_DIR/release-remotely.sh" $(flavor_args "$f") --package-only --notes-file "$NOTES_FILE" --tag "$VERSION"
+    rm -rf "$dir"
+    mkdir -p "$dir"
+    find "$LOCAL_FLASH_DIR" -maxdepth 1 -type f -exec cp -al {} "$dir"/ \;
+    echo "Staged $f: $dir (build $(stamp_get "$dir/build-stamp.json" date_utc))"
+done
+
+if [[ "$PHASE" == stage ]]; then
+    say "Staged $VERSION. Nothing is published yet. For each flavor:"
+    for f in "${FLAVORS[@]}"; do
+        echo "  FLASH_DIR=$(stage_dir "$f") $LOCAL_FLASH_DIR/flash-staging.sh <unit>   # $f"
+    done
+    echo "  then on that unit: cd tests/integration && python3 -m pytest --unit <unit> ..."
+    echo "  (scripts/test-gate.py --source-id $(stamp_get "$(stage_dir "${FLAVORS[0]}")/build-stamp.json" source_id) --build-utc <date_utc> shows what is left)"
+    echo "Then: ./scripts/release-all.sh --publish --version $VERSION$($DO_GAPPS && echo " --gapps")"
+    exit 0
 fi
 
 # --- 4. tag every repo + push ----------------------------------------------

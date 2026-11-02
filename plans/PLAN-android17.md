@@ -1208,3 +1208,21 @@ modem EFS) exists but the item is not that layout, write the saved byte back.
   android.os.Binder { public <methods>; }` in Connectivity/Wifi proguard
   flags. Not worth it: clean release builds (still a fresh R8 roll), R8
   `--threads 1` (unproven).
+
+### 2026-11-02 — fixes landed
+
+- **Release = the tested zip.** `release-all.sh` is two phases: `--stage`
+  (changelog, build + `release.sh --package-only` per flavor; zips stay in the
+  builder's `release-dist/`, images in `flash-staging/release-<date>-<flavor>/`)
+  and `--publish` (per flavor: zip post-timestamp = staged stamp,
+  `test-gate.py --build-utc` green on that exact build, builder tree unchanged
+  for the tags; then `release.sh --packaged` publishes the zip byte for byte).
+  Checked on the real 20261101 builds: the gate refuses both released zips (no
+  run on either), and the tag guard refuses a moved tree. A real `--stage` has
+  not run yet.
+- **`check-abstract-impls.py`** in `release.sh` (see above).
+- **`modem_evs` `f84b0e5b`** (Mi8937, pushed, unbuilt): caps only the exact
+  T-Mobile layout; on any other layout a cap it made (marker matches) is
+  written back to the saved byte. Bench to do: dut1 (T-Mobile) still `capped`;
+  a Verizon unit reports `none`; a unit capped by 20261101/02 on hvolte gets
+  `… 02 04` back. Scott's unit was restored from modemst, so it needs nothing.
