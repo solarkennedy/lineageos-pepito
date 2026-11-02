@@ -1174,3 +1174,37 @@ every build since fd7d17c1 (incl. 20261102) carries this. Fix candidates:
 touch only the exact T-Mobile layout (bytes 0-8 `00 00 10 00 00 00 00 00 02`),
 everything else "unsupported"; and when the marker (`/data/pepito_evs_bw` in
 modem EFS) exists but the item is not that layout, write the saved byte back.
+
+### 2026-11-02 — why R8 stripped NetworkStatsService (root-cause pass, builder `~/cmp1101/exp/`)
+
+- FACT (reproduced): the service-connectivity R8 command has
+  `android.net.INetworkStatsService` on its `--lib` line **twice**: the jarjar'd
+  `framework-connectivity-t.impl` turbine jar (lib #28) and the
+  `framework-connectivity-t-pre-jarjar` turbine jar (lib #92). They differ only
+  in 5 descriptors (jarjar-renamed `netstats/{StatsResult,
+  TrafficStatsRateLimitCacheConfig,IUsageCallback}`). R8 keeps a duplicate
+  library class silently, first arrival wins (`LibraryClassCollection.
+  resolveClassConflict` returns the first). If the pre-jarjar copy wins, exactly
+  those 5 overrides stop matching and are shaken with their 8 helpers = the
+  13. Moving the pre-jarjar lib first reproduces the strip; removing it gives
+  a correct jar.
+- HYPOTHESIS (0/179 reruns reproduced it): which copy arrives first is a race in
+  R8's parallel library force-load. The 12:53 command was byte-identical to
+  today's (same siso cmdhash, same `--lib` order, same r8.jar), and only this
+  one duplicate flipped (a lib-order change strips more, e.g. NsdService).
+- Why R8 reran at all: the product switch vanilla→gapps plus `update-api`
+  rebuilt the framework turbine jar, which dirties every R8/d8 consumer. Every
+  fresh R8 run rolls the dice.
+- Same shape elsewhere: **service-wifi** (framework-wifi.impl vs
+  framework-wifi-pre-jarjar; 9 `IWifiManager` descriptors use a jarjar'd
+  `ParceledListSlice`) would crash-loop system_server the same way; also
+  service-uwb (not shipped), telephony-common (no known override hazard).
+- Prevention: (1) release the artifact that was benched: gate `release.sh`
+  on a green integration run whose `ro.build.date.utc` matches the zip's
+  `post-timestamp`, and stop `release-all.sh` rebuilding after the bench;
+  (2) `check-abstract-impls.py` in `release.sh` (done, 8ff43b1; catches the
+  service-wifi shape too: interface and implementation are in different jars);
+  (3) optional fork keep rule `-keepclassmembers class * extends
+  android.os.Binder { public <methods>; }` in Connectivity/Wifi proguard
+  flags. Not worth it: clean release builds (still a fresh R8 roll), R8
+  `--threads 1` (unproven).
