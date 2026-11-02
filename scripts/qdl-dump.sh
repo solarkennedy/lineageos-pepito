@@ -78,6 +78,16 @@ def attrs(name, start, num, fname):
             f'num_partition_sectors="{num}" physical_partition_number="0" '
             f'start_sector="{start}"')
 
+# qdl's <program> parser requires every attribute the ROM's rawprogram XML
+# carries; with only the six <read> needs it fails ("errors while parsing
+# program tag") before it touches the phone.
+def program_attrs(name, start, num, fname):
+    return (f'SECTOR_SIZE_IN_BYTES="{S}" file_sector_offset="0" filename="{fname}" '
+            f'label="{name}" num_partition_sectors="{num}" partofsingleimage="false" '
+            f'physical_partition_number="0" readbackverify="false" '
+            f'size_in_KB="{num * S / 1024:.1f}" sparse="false" '
+            f'start_byte_hex="{hex(start * S)}" start_sector="{start}"')
+
 with open("readback.xml", "w") as f:
     f.write("<?xml version=\"1.0\" ?>\n<data>\n")
     for name, start, num in parts:
@@ -87,7 +97,7 @@ with open("readback.xml", "w") as f:
 with open("rawprogram_restore.xml", "w") as f:
     f.write("<?xml version=\"1.0\" ?>\n<data>\n")
     for name, start, num in parts:
-        f.write(f'  <program {attrs(name, start, num, name + ".bin")}/>\n')
+        f.write(f'  <program {program_attrs(name, start, num, name + ".bin")}/>\n')
     f.write("</data>\n")
 
 total = sum(n for _, _, n in parts)

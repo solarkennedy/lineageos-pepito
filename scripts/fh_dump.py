@@ -12,6 +12,11 @@ The phone must already be in Firehose mode (qdl has uploaded the loader once;
 qdl prints "device is already in Firehose mode" on later runs).
 
 Usage: python fh_dump.py COM10 <outdir> [--exclude userdata] [--rom-xml rawprogram0.pvg100.xml]
+       python fh_dump.py --fix-restore-xml <backup dir>   # no phone needed
+
+--fix-restore-xml rewrites rawprogram_restore.xml in an existing backup from
+its own gpt-lun0.bin, for the partitions whose .bin is there. Backups made
+before 2026-11-02 have a restore XML qdl refuses to parse.
 """
 import argparse
 import hashlib
@@ -22,8 +27,6 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
-import serial
-
 S = 512
 CHUNK_SECTORS = 131072          # 64 MiB per <read> command
 STALL_SECONDS = 30
@@ -31,6 +34,7 @@ STALL_SECONDS = 30
 
 class Firehose:
     def __init__(self, port):
+        import serial
         self.ser = serial.Serial(port, timeout=1)
         try:
             self.ser.set_buffer_size(rx_size=4 << 20, tx_size=1 << 16)
@@ -164,14 +168,49 @@ def parse_gpt(data):
     return parts
 
 
+def write_manifests(out, keep):
+    def attrs(name, start, num):
+        return (f'SECTOR_SIZE_IN_BYTES="{S}" filename="{name}.bin" label="{name}" '
+                f'num_partition_sectors="{num}" physical_partition_number="0" start_sector="{start}"')
+    # qdl's <program> parser requires every attribute the ROM's rawprogram XML
+    # carries; with only the six <read> needs it fails ("errors while parsing
+    # program tag") before it touches the phone.
+    def program_attrs(name, start, num):
+        return (f'SECTOR_SIZE_IN_BYTES="{S}" file_sector_offset="0" filename="{name}.bin" '
+                f'label="{name}" num_partition_sectors="{num}" partofsingleimage="false" '
+                f'physical_partition_number="0" readbackverify="false" '
+                f'size_in_KB="{num * S / 1024:.1f}" sparse="false" '
+                f'start_byte_hex="{hex(start * S)}" start_sector="{start}"')
+    for fname, tag, fmt in (("readback.xml", "read", attrs),
+                            ("rawprogram_restore.xml", "program", program_attrs)):
+        with open(os.path.join(out, fname), "w") as f:
+            f.write('<?xml version="1.0" ?>\n<data>\n')
+            for p in keep:
+                f.write(f"  <{tag} {fmt(*p)}/>\n")
+            f.write("</data>\n")
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("port")
-    ap.add_argument("outdir")
+    ap.add_argument("port", nargs="?")
+    ap.add_argument("outdir", nargs="?")
+    ap.add_argument("--fix-restore-xml", metavar="BACKUP_DIR",
+                    help="rewrite BACKUP_DIR/rawprogram_restore.xml from its gpt-lun0.bin; no phone needed")
     ap.add_argument("--exclude", default="")
     ap.add_argument("--rom-xml", help="ROM rawprogram XML to cross-check against the phone's GPT")
     ap.add_argument("--gpt-only", action="store_true")
     a = ap.parse_args()
+
+    if a.fix_restore_xml:
+        d = os.path.abspath(a.fix_restore_xml)
+        parts = parse_gpt(open(os.path.join(d, "gpt-lun0.bin"), "rb").read())
+        keep = [p for p in parts if os.path.exists(os.path.join(d, p[0] + ".bin"))]
+        write_manifests(d, keep)
+        print(f"rewrote {os.path.join(d, 'rawprogram_restore.xml')} and readback.xml: "
+              f"{len(keep)} of {len(parts)} partitions have a .bin here")
+        return
+    if not (a.port and a.outdir):
+        ap.error("port and outdir are required (or use --fix-restore-xml)")
 
     out = os.path.abspath(a.outdir)
     os.makedirs(out, exist_ok=True)
@@ -203,15 +242,7 @@ def main():
         return
 
     keep = [p for p in parts if p[0] not in exclude]
-    def attrs(name, start, num):
-        return (f'SECTOR_SIZE_IN_BYTES="{S}" filename="{name}.bin" label="{name}" '
-                f'num_partition_sectors="{num}" physical_partition_number="0" start_sector="{start}"')
-    for fname, tag in (("readback.xml", "read"), ("rawprogram_restore.xml", "program")):
-        with open(os.path.join(out, fname), "w") as f:
-            f.write('<?xml version="1.0" ?>\n<data>\n')
-            for p in keep:
-                f.write(f"  <{tag} {attrs(*p)}/>\n")
-            f.write("</data>\n")
+    write_manifests(out, keep)
 
     total = sum(n for _, _, n in keep) * S
     print(f"== dumping {len(keep)} partitions, {total / 2**30:.2f} GiB ==", flush=True)

@@ -429,7 +429,18 @@ only commands it ever sends the phone are \`<configure>\` and \`<read>\`.
 **Restoring a backup** (any OS, phone in EDL, from the \`edl\` folder; Windows:
 \`.\qdl.exe\` and no \`sudo\`):
 
+    sudo ./qdl --dry-run --storage emmc --include backup-DATE pvg100_firehose.elf backup-DATE/rawprogram_restore.xml
     sudo ./qdl --storage emmc --include backup-DATE pvg100_firehose.elf backup-DATE/rawprogram_restore.xml
+
+Run the \`--dry-run\` line first: it parses the XML and finds every file
+without sending anything to the phone, and must print \`flashed "<name>"
+successfully\` for each partition you mean to write. Only then run the real
+line.
+
+A backup made with a kit from before 2026-11-02 has a restore XML that qdl
+rejects (\`errors while parsing program tag\`); nothing is written, but the
+restore can't run. Rewrite it from the backup's own partition table first
+(Python 3, no phone needed): \`python3 fh_dump.py --fix-restore-xml backup-DATE\`.
 
 Keep the backup somewhere safe — it contains your phone's unique calibration
 and IMEI data and cannot be recreated from anyone else's phone.

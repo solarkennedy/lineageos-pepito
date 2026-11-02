@@ -257,7 +257,7 @@ test("backup reads partitions back byte-for-byte and writes a restore manifest",
   assert.equal(seen.at(-1).read, seen.at(-1).total);
 
   const manifest = files["rawprogram_restore.xml"].toString();
-  assert.match(manifest, new RegExp(`filename="boot.bin" label="boot" num_partition_sectors="${boot.sectors}" physical_partition_number="0" start_sector="${boot.start}"`));
+  assert.match(manifest, new RegExp(`filename="boot.bin" label="boot" num_partition_sectors="${boot.sectors}" partofsingleimage="false" physical_partition_number="0" readbackverify="false" size_in_KB="${boot.sectors / 2}.0" sparse="false" start_byte_hex="0x${(boot.start * 512).toString(16)}" start_sector="${boot.start}"`));
   assert.doesNotMatch(manifest, /gpt-lun0/);
 });
 

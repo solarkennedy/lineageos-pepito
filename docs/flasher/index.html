@@ -360,7 +360,9 @@ sudo udevadm control --reload-rules</pre>
             also do it, with the phone in EDL mode, from the folder that holds the loader:
           </p>
           <pre>qdl --storage emmc --include palm-pvg100-backup-DATE pvg100_firehose.elf palm-pvg100-backup-DATE/rawprogram_restore.xml</pre>
-          <p>On a PVG100E use <code>pvg100e_firehose.elf</code>.</p>
+          <p>On a PVG100E use <code>pvg100e_firehose.elf</code>. Run it with <code>--dry-run</code> first: qdl checks
+            the list and every file without touching the phone. A backup made before 2026-11-02 has an incomplete
+            list that qdl rejects (<code>errors while parsing program tag</code>); the Restore tab still works for it.</p>
           <p>Copy the finished folder somewhere safe.</p>
         </details>
       </section>

@@ -195,13 +195,19 @@ export function backupPlan(session, { exclude = ["userdata"] } = {}) {
 }
 
 /** A manifest that linux-msm qdl can flash to put the backup back. Same shape as scripts/qdl-dump.sh writes. */
+// qdl's <program> parser requires every attribute the ROM's rawprogram XML
+// carries; with fewer it fails ("errors while parsing program tag") before it
+// touches the phone.
 export function restoreManifest(plan) {
   const lines = plan
     .filter((step) => step.name !== "PrimaryGPT")
     .map(
       (step) =>
-        `  <program SECTOR_SIZE_IN_BYTES="${SECTOR_SIZE}" filename="${step.file}" label="${step.name}" ` +
-        `num_partition_sectors="${step.sectors}" physical_partition_number="0" start_sector="${step.start}"/>`,
+        `  <program SECTOR_SIZE_IN_BYTES="${SECTOR_SIZE}" file_sector_offset="0" filename="${step.file}" ` +
+        `label="${step.name}" num_partition_sectors="${step.sectors}" partofsingleimage="false" ` +
+        `physical_partition_number="0" readbackverify="false" ` +
+        `size_in_KB="${((step.sectors * SECTOR_SIZE) / 1024).toFixed(1)}" sparse="false" ` +
+        `start_byte_hex="0x${(step.start * SECTOR_SIZE).toString(16)}" start_sector="${step.start}"/>`,
     );
   return `<?xml version="1.0" ?>\n<data>\n${lines.join("\n")}\n</data>\n`;
 }

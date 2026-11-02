@@ -88,7 +88,12 @@ images can be written in a row.
 
 Restoring from the command line is done with `qdl`:
 
+    qdl --dry-run --storage emmc --include <backup dir> pvg100_firehose.elf <backup dir>/rawprogram_restore.xml
     qdl --storage emmc --include <backup dir> pvg100_firehose.elf <backup dir>/rawprogram_restore.xml
+
+`restoreManifest()` writes every attribute qdl's `<program>` parser requires
+(the same set as the ROM rawprogram XML); backups from before 2026-11-02 lack
+six of them and qdl refuses them.
 
 Neither rawprogram XML is used at flash time, so the wrong-XML mistake that
 overwrites bootloader or modem NV on the other variant cannot happen here.

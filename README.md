@@ -172,7 +172,7 @@ python fh_dump.py COM10 backup-today --exclude userdata --rom-xml rawprogram0.pv
 
 `--rom-xml` cross-checks your phone's real partition table against the XML you're about to flash. If it reports anything but `OK - every partition offset and size matches`, **stop** — wrong variant.
 
-To restore a backup later (any OS): `qdl --storage emmc --include backup-DATE pvg100_firehose.elf backup-DATE/rawprogram_restore.xml`.
+To restore a backup later (any OS): `qdl --storage emmc --include backup-DATE pvg100_firehose.elf backup-DATE/rawprogram_restore.xml`. Run it once with `--dry-run` first: it checks the XML and every file without touching the phone. If qdl says `errors while parsing program tag`, the backup was made before 2026-11-02 and its restore XML is incomplete; fix it with `python3 fh_dump.py --fix-restore-xml backup-DATE` (no phone needed).
 
 #### 4. Flash
 
