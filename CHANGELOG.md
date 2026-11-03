@@ -21,6 +21,7 @@
 - (first tagged in 20261102 — no prior anchor)
 
 ### landing (docs/scripts) (since pepito-24.0-20261101)
+- changelog: 20261102
 - release-all --stage: stage the packaged zip's own ota2raw images, not flash-staging/
 - changelog: 20261102
 - PLAN-android17: Scott's logs weaken modem_evs as the VoLTE cause (+cdmaless; MO fails, MT works)
