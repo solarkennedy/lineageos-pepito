@@ -1,5 +1,22 @@
 [
   {
+    "datetime": 1793668481,
+    "type": "UNOFFICIAL",
+    "version": "24.0",
+    "files": [
+      {
+        "filename": "lineage-24.0-20261102-UNOFFICIAL-Mi8937.zip",
+        "sha256": "7371f4bb94981319159d5f19ee0f0d3e8f94b9c7988c289633a3d9358b3c7da5",
+        "size": 1230799926,
+        "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261102/lineage-24.0-20261102-UNOFFICIAL-Mi8937.zip",
+        "os_sdk_level": 37,
+        "os_patch_level": "2026-10-01",
+        "ota_property_files": "metadata:69:352,metadata.pb:489:258"
+      }
+    ],
+    "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261102"
+  },
+  {
     "datetime": 1792794136,
     "type": "SNAPSHOT",
     "version": "24.0",
