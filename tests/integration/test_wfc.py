@@ -135,6 +135,12 @@ def run_call(dut, imsa_probe, number, artifacts, hold_s, wifi_off_s=None):
     dut.push(Path(__file__).parent / DRIVER, f"{DEV_DIR}/wfc-call.sh")
     out = f"{DEV_DIR}/run"
     args = f"{out} {number} {hold_s} {wifi_off_s or ''}"
+    # Clear the last run first, here, not only in the driver: the driver runs in
+    # the background, so the wait below could read the previous run's marks
+    # (ending "done") before the driver's own rm, return at once and pull from
+    # a directory the driver is wiping (and the next test then starts a second
+    # driver over a live call). 2026-11-02, dut1 + new2.
+    dut.sh(f"rm -rf {out}")
     dut.sh(f"IMSA={imsa_probe} setsid sh {DEV_DIR}/wfc-call.sh {args} >/dev/null 2>&1 </dev/null &")
     try:
         dut.wait_for(f"cat {out}/marks 2>/dev/null || true",
