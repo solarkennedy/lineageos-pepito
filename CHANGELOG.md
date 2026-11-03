@@ -1,12 +1,13 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
-## 20261102 (2026-11-02)
+## 20261102 (2026-11-03)
 
 ### device/Mi8937 (since pepito-24.0-20261101)
 - qmux: modem_evs: cap only the T-Mobile EVS layout; undo caps elsewhere
 - Mi8937: pepito: "Use assisted GPS" on by default
 
 ### device/mithorium-common (since pepito-24.0-20261101)
+- mithorium-common: gps: retry a failed XTRA injection after 2 and 10 min
 - mithorium-common: gps: inject XTRA from the framework's PSDS download
 
 ### frameworks/base (since pepito-24.0-20261101)
@@ -20,6 +21,8 @@
 - (first tagged in 20261102 — no prior anchor)
 
 ### landing (docs/scripts) (since pepito-24.0-20261101)
+- release-all --stage: stage the packaged zip's own ota2raw images, not flash-staging/
+- changelog: 20261102
 - PLAN-android17: Scott's logs weaken modem_evs as the VoLTE cause (+cdmaless; MO fails, MT works)
 - release: publish exactly the zip that was tested (--stage / --publish)
 - PLAN-android17: R8 root cause: duplicate INetworkStatsService on the lib line, first-arrival wins
