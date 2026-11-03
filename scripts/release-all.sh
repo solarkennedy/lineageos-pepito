@@ -300,10 +300,25 @@ for f in "${FLAVORS[@]}"; do
     [[ -f "$STAMP" ]] || { echo "error: the $f build has no stamp ($STAMP), so no test run could be tied to it" >&2; exit 1; }
     say "Packaging ${f^^} (release.sh --package-only)"
     "$SCRIPT_DIR/release-remotely.sh" $(flavor_args "$f") --package-only --notes-file "$NOTES_FILE" --tag "$VERSION"
+    # Stage the images the PACKAGED zip yields, converted by its own ota2raw
+    # (which checks each against the zip's manifest), not flash-staging/: the
+    # build's out/ images differ from the zip's (target-files adds
+    # vendor/bin/install-recovery.sh, vendor/etc/recovery.img, ...), so they
+    # would not be the bits users install.
+    zip=$(ssh "$TARGET" -- "ls $(dist_zip_glob "$f")")
+    conv="$REMOTE_TREE/release-dist/$(basename "$zip" .zip)-edl"
+    ssh "$TARGET" -- "set -eo pipefail; rm -rf '$conv'; mkdir -p '$conv'; cd '$conv'
+        unzip -oq '$zip' edl/ota2raw-linux-x86_64; chmod +x edl/ota2raw-linux-x86_64
+        ./edl/ota2raw-linux-x86_64 -o images '$zip' | grep -E 'verified|MISMATCH'"
     rm -rf "$dir"
     mkdir -p "$dir"
-    find "$LOCAL_FLASH_DIR" -maxdepth 1 -type f -exec cp -al {} "$dir"/ \;
-    echo "Staged $f: $dir (build $(stamp_get "$dir/build-stamp.json" date_utc))"
+    cp "$STAMP" "$dir/build-stamp.json"
+    rsync -az --partial-dir=.rsync-partial --progress \
+        $(for i in boot.bin boot-magisk.bin recovery.bin system.bin vendor.bin config.bin splash.bin \
+                   pvg100_firehose.elf pvg100e_firehose.elf rawprogram0.pvg100.xml rawprogram0.pvg100e.xml; do
+              printf '%s:%s/images/%s ' "$TARGET" "$conv" "$i"; done) "$dir"/ | tail -3
+    ssh "$TARGET" -- "rm -rf '$conv'"
+    echo "Staged $f: $dir (build $(stamp_get "$dir/build-stamp.json" date_utc), images from $(basename "$zip"))"
 done
 
 if [[ "$PHASE" == stage ]]; then
