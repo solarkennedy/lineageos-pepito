@@ -313,10 +313,21 @@ for f in "${FLAVORS[@]}"; do
     rm -rf "$dir"
     mkdir -p "$dir"
     cp "$STAMP" "$dir/build-stamp.json"
-    rsync -az --partial-dir=.rsync-partial --progress \
-        $(for i in boot.bin boot-magisk.bin recovery.bin system.bin vendor.bin config.bin splash.bin \
-                   pvg100_firehose.elf pvg100e_firehose.elf rawprogram0.pvg100.xml rawprogram0.pvg100e.xml; do
-              printf '%s:%s/images/%s ' "$TARGET" "$conv" "$i"; done) "$dir"/ | tail -3
+    # Seed with the build's own images (same files, different ext4 layout) so
+    # rsync's delta sends only what differs instead of all 3.5 GB; the link to
+    # the builder is slow and drops connections, so retry and resume.
+    for i in system.bin vendor.bin; do
+        [[ -f "$LOCAL_FLASH_DIR/$i" ]] && cp "$LOCAL_FLASH_DIR/$i" "$dir/$i"
+    done
+    for n in 1 2 3 4 5 6; do
+        rsync -az --partial-dir=.rsync-partial --info=progress2 --no-inc-recursive \
+            $(for i in boot.bin boot-magisk.bin recovery.bin system.bin vendor.bin config.bin splash.bin \
+                       pvg100_firehose.elf pvg100e_firehose.elf rawprogram0.pvg100.xml rawprogram0.pvg100e.xml; do
+                  printf '%s:%s/images/%s ' "$TARGET" "$conv" "$i"; done) "$dir"/ && break
+        [[ $n -lt 6 ]] || { echo "error: could not copy the $f images from $TARGET" >&2; exit 1; }
+        echo "!! rsync failed (attempt $n/6), retrying in $((n * 10)) s" >&2
+        sleep $((n * 10))
+    done
     ssh "$TARGET" -- "rm -rf '$conv'"
     echo "Staged $f: $dir (build $(stamp_get "$dir/build-stamp.json" date_utc), images from $(basename "$zip"))"
 done

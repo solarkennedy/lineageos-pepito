@@ -46,6 +46,18 @@ notify() {
 # system.bin got flashed to new2 that way (10-14). Partials wait in
 # .rsync-partial/ and are resumed from on the next run.
 RSYNC_COMMON=(-az --partial-dir=.rsync-partial --progress --human-readable)
+# The netbook <-> builder link corrupts the odd packet ("message authentication
+# code incorrect", ssh drops the connection: 2026-11-02, twice in one stage).
+# Retry; --partial-dir makes each attempt resume where the last one stopped.
+rsync_retry() {
+    local n
+    for n in 1 2 3 4 5 6; do
+        rsync "$@" && return 0
+        echo "!! rsync failed (attempt $n/6), retrying in $((n * 10)) s" >&2
+        sleep $((n * 10))
+    done
+    return 1
+}
 
 # The images prepare-flash.sh produces per build (desparsified system/vendor,
 # signed boot/recovery, the Magisk-patched boot variant, and the boot logo
@@ -275,6 +287,6 @@ for f in pvg100_firehose.elf pvg100e_firehose.elf rawprogram0.pvg100.xml rawprog
     [[ -e "$LOCAL_FLASH_DIR/$f" ]] || cp -p "/home/kyle/android/lineage-23/flash-staging/$f" "$LOCAL_FLASH_DIR/$f"
 done
 ln -sfn "$LANDING_ROOT/scripts/flash-staging.sh" "$LOCAL_FLASH_DIR/flash-staging.sh"
-rsync "${RSYNC_COMMON[@]}" "${STAGE_FILTERS[@]}" \
+rsync_retry "${RSYNC_COMMON[@]}" "${STAGE_FILTERS[@]}" \
     "$TARGET:$REMOTE_ROOT/flash-staging"/ "$LOCAL_FLASH_DIR"/ | tail -20
 echo "==> Ready to flash: $LOCAL_FLASH_DIR/flash-staging.sh"
