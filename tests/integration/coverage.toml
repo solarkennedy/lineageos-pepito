@@ -52,6 +52,9 @@ description = "Wi-Fi calling: IWLAN bridge + TH2 steering, WfcBridge, IMS/QMI pl
 tests = [
     "test_wfc.py::test_call_hold",
     "test_wfc.py::test_call_walkaway",
+    "test_wfc.py::test_call_cellular",
+    "test_wfc.py::test_call_incoming[wlan]",
+    "test_wfc.py::test_call_incoming[lte]",
 ]
 paths = [
     "device/xiaomi/Mi8937/qmux/*",

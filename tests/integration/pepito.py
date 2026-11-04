@@ -96,6 +96,12 @@ class Device:
         self.sh("input keyevent KEYCODE_WAKEUP")
         if not self.keyguard_showing():
             return True
+        # A swipe-only keyguard (no credential, e.g. a freshly reset dut1) just
+        # dismisses; the pattern helper would only draw on it.
+        self.sh("wm dismiss-keyguard")
+        time.sleep(1)
+        if not self.keyguard_showing():
+            return True
         if Device._unlock_failed:
             return False
         subprocess.run([f"android-unlock-{self.nick}"], capture_output=True, timeout=60,

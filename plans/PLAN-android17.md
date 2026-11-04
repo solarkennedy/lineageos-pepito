@@ -1246,3 +1246,16 @@ modem EFS) exists but the item is not that layout, write the saved byte back.
   modemst images (broken vs restored): look for the 32-byte
   qipcall_evs_codec_config contents and /data/pepito_evs_bw in each.
   f84b0e5b stays: it is right regardless.
+
+### 2026-11-04 — LTE-only call soak (Neil never uses Wi-Fi/WFC), dut1 T-Mobile + new2 Verizon
+
+Build 24.0-20261104 test build (gapps), Wi-Fi off the whole run, a call every 5 min alternating MT (Twilio
+trial, holds ~10 s before Twilio's trial hang-up) and MO (InfoTel test line). `tests/integration/soak_lte.py`,
+results `tests/integration/results/soak-20261104-085058-dut1/` and `soak-20261104-085819-new2/`.
+
+- FACT: MT 13/13 PASS (dut1 7, new2 6) over ~1 h: rang, answered, connected on LTE (voip rat 1), far-end hang-up.
+  Neil's T-Mobile "call drops on answer" did NOT reproduce on dut1 in ~1 h (modem EVS capped).
+- FACT: MO 8/12 PASS; all 4 failures were the far end: 486 Busy (dut1 #9, #11) and ALERTING then 487 Request
+  Terminated (new2 #9, #11). The public test line gets busy; the soak now classifies these (busy / no_answer).
+- Also new: `test_call_cellular` (MO over LTE) + `test_call_incoming[wlan|lte]` (Twilio) in test_wfc.py, all PASS
+  on new2 and dut1 (lte). Gaps: hold > 14 s on MT needs a paid Twilio account; soak stopped at ~1 h (dut1 reflash).

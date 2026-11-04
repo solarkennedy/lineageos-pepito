@@ -7,8 +7,10 @@ vendor.qmux.wfc_th2) and WfcBridge (system app, mirrors the sub's wfc_ims_mode
 into persist.sys.pepito.wfc_mode and the framework's Wi-Fi VALIDATED verdict into
 sys.pepito.wfc_wifi_ok; init copies both to vendor.qmux.*).
 
-The read-only tests run anywhere. The call tests need a SIM with Wi-Fi calling
-registered on WLAN, and the walk-away disables Wi-Fi mid-call.
+The read-only tests run anywhere. The Wi-Fi call tests need a SIM with Wi-Fi
+calling registered on WLAN, and the walk-away disables Wi-Fi mid-call. The
+cellular call test is the control: a plain VoLTE call over LTE, which the Wi-Fi
+tests never place (they start on WLAN and at most hand over).
 """
 import re
 import time
@@ -16,6 +18,7 @@ from pathlib import Path
 
 import pytest
 
+import twilio_call
 from pepito import DEV_DIR
 
 WIFI_ONLY, CELLULAR_PREFERRED, WIFI_PREFERRED = 0, 1, 2
@@ -28,6 +31,8 @@ HOLD_S = 42          # the test line hangs up on its own ~47 s in
 WALK_OFF_S = 15      # Wi-Fi off this long after dialling
 ON_WLAN_WAIT_S = 180  # modem t_minonwwan is 120 s; give the tunnel time after a walk-away
 SURVIVE_S = 22       # the WIFI_LOST drop lands ~20 s after link loss
+ON_WWAN_WAIT_S = 120  # IMS re-registers on LTE after Wi-Fi goes off
+WWAN = 1             # IMSA voip_service_rat for LTE (0 = WLAN)
 
 
 def eventually(fn, timeout=10, interval=1):
@@ -130,25 +135,43 @@ def _num(v):
     return int(v) if re.fullmatch(r"-?\d+", v or "") else None
 
 
-def run_call(dut, imsa_probe, number, artifacts, hold_s, wifi_off_s=None):
-    """Push and run the on-device driver, wait for it, pull and parse its output."""
+RING_S = 90          # driver waits this long for an MT call to ring
+TRIAL_HOLD_S = 8     # Twilio trial calls end ~14 s in; require this much connected
+
+
+def run_call(dut, imsa_probe, number, artifacts, hold_s, wifi_off_s=None, pre_wwan_s=None,
+             on_armed=None):
+    """Push and run the on-device driver, wait for it, pull and parse its output.
+    pre_wwan_s: first get IMS voice onto LTE (Wi-Fi off if needed), waiting up to
+    that long; the driver marks on_wwan, or no_wwan and skips the call.
+    number "-" is an MT call: on_armed() is called once the driver is waiting
+    for the ring, and should make the phone ring."""
     dut.push(Path(__file__).parent / DRIVER, f"{DEV_DIR}/wfc-call.sh")
     out = f"{DEV_DIR}/run"
     args = f"{out} {number} {hold_s} {wifi_off_s or ''}"
+    env = f"IMSA={imsa_probe}" + (f" PRE_WWAN={pre_wwan_s}" if pre_wwan_s else "")
     # Clear the last run first, here, not only in the driver: the driver runs in
     # the background, so the wait below could read the previous run's marks
     # (ending "done") before the driver's own rm, return at once and pull from
     # a directory the driver is wiping (and the next test then starts a second
     # driver over a live call). 2026-11-02, dut1 + new2.
     dut.sh(f"rm -rf {out}")
-    dut.sh(f"IMSA={imsa_probe} setsid sh {DEV_DIR}/wfc-call.sh {args} >/dev/null 2>&1 </dev/null &")
+    dut.sh(f"{env} RING_S={RING_S} setsid sh {DEV_DIR}/wfc-call.sh {args} >/dev/null 2>&1 </dev/null &")
     try:
+        budget = hold_s + (pre_wwan_s or 0) + 90
+        if on_armed:
+            marks = dut.wait_for(f"cat {out}/marks 2>/dev/null || true",
+                                 lambda m: " armed" in m or m.rstrip().endswith(" done"),
+                                 timeout=(pre_wwan_s or 0) + 60)
+            if " armed" in marks:
+                on_armed()
+            budget += RING_S + 30
         dut.wait_for(f"cat {out}/marks 2>/dev/null || true",
-                     lambda m: m.rstrip().endswith(" done"), timeout=hold_s + 90)
+                     lambda m: m.rstrip().endswith(" done"), timeout=budget)
     finally:
         # Leave the phone as found even if the driver wedged or we timed out:
         # Wi-Fi on and back on its network, no call up.
-        if wifi_off_s is not None:
+        if wifi_off_s is not None or pre_wwan_s:
             dut.wait_for("svc wifi enable && echo ok", lambda o: "ok" in o, timeout=120)
             dut.wait_for("cmd wifi status", lambda o: "Wifi is connected" in o, timeout=120)
         dut.end_call()
@@ -251,3 +274,92 @@ def test_call_walkaway(dut, imsa_probe, test_number, artifacts, on_wlan):
               f"TH2 released {released[0]['t'] - lost[0]['t']} s after that")
         assert released[0]["t"] - lost[0]["t"] <= 3, "TH2 not released within 3 s of the Wi-Fi loss"
     assert dut.wifi()["enabled"], "Wi-Fi was not re-enabled"
+
+
+def ims_failures(artifacts):
+    """The framework's reason lines for a failed or dropped IMS call, for the failure message."""
+    log = (artifacts / "logcat").read_text(errors="replace").splitlines()
+    return "\n".join([l for l in log if "ImsReasonInfo" in l or "DisconnectCause" in l][-8:])
+
+
+@pytest.mark.call
+@pytest.mark.disruptive
+@pytest.mark.timeout(HOLD_S + ON_WWAN_WAIT_S + 300)
+def test_call_cellular(dut, sub, imsa_probe, test_number, artifacts, radio_quiet, awake):
+    """A VoLTE call over LTE: connects, stays on LTE and lasts to the hang-up.
+    Wi-Fi is turned off first if IMS voice is on WLAN, which puts the call where a
+    phone with Wi-Fi calling off places it (US Mobile Verizon "Server error",
+    2026-11-03: a SIP refusal on the LTE path, which no other test dials on)."""
+    marks, samples = run_call(dut, imsa_probe, test_number, artifacts, HOLD_S,
+                              pre_wwan_s=ON_WWAN_WAIT_S)
+    if "no_wwan" in marks:
+        pytest.skip(f"IMS voice not on LTE after {ON_WWAN_WAIT_S} s")
+    call = in_call(samples, marks["dial"], marks["hangup"])
+    print(summary(call))
+    assert len(call) >= 15, f"call never came up (or dropped early):\n{ims_failures(artifacts)}"
+    assert call[-1]["t"] >= marks["hangup"] - 5, f"call dropped before the hang-up:\n{ims_failures(artifacts)}"
+    off_lte = [s for s in call if s["rat"] not in (WWAN, None)]
+    assert not off_lte, f"left LTE mid-call:\n{summary(off_lte)}"
+    assert dut.wifi()["enabled"], "Wi-Fi was not re-enabled"
+
+
+@pytest.fixture(scope="session")
+def twilio(dut):
+    creds = twilio_call.load()
+    if creds is None:
+        pytest.skip(f"Twilio not set up ({twilio_call.CONF})")
+    to = twilio_call.unit_number(dut.nick)
+    if to is None:
+        pytest.skip(f"no number for {dut.nick} in {twilio_call.NUMBERS}")
+    return creds, to
+
+
+@pytest.mark.call
+@pytest.mark.timeout(HOLD_S + ON_WWAN_WAIT_S + ON_WLAN_WAIT_S + RING_S + 300)
+@pytest.mark.parametrize("path", [
+    "wlan",
+    pytest.param("lte", marks=pytest.mark.disruptive),
+])
+def test_call_incoming(dut, sub, imsa_probe, twilio, artifacts, radio_quiet, awake, request, path):
+    """An MT call from Twilio rings, is answered, and lasts until Twilio hangs up,
+    on the path it started on: Wi-Fi calling (wlan) or VoLTE over LTE with Wi-Fi
+    off (lte). US Mobile Verizon 2026-11-03: incoming calls hung up as well as the
+    outgoing "Server error"; nothing else in the suite receives a call."""
+    if path == "wlan":
+        request.getfixturevalue("on_wlan")   # skips unless IMS voice is on WLAN
+    creds, to = twilio
+    placed = {}
+
+    def ring():
+        placed["sid"] = twilio_call.call(creds, to, HOLD_S)
+
+    marks, samples = run_call(dut, imsa_probe, "-", artifacts, HOLD_S,
+                              pre_wwan_s=ON_WWAN_WAIT_S if path == "lte" else None, on_armed=ring)
+    if "no_wwan" in marks:
+        pytest.skip(f"IMS voice not on LTE after {ON_WWAN_WAIT_S} s")
+    far = twilio_call.status(creds, placed["sid"]) if "sid" in placed else {}
+    print(f"twilio {far}")
+    assert "sid" in placed, "driver never armed, so no call was placed"
+    assert "no_ring" not in marks, f"never rang in {RING_S} s (twilio {far}):\n{ims_failures(artifacts)}"
+    assert "rejected" not in marks, \
+        f"ended while ringing, before the answer (call screening? the Twilio number must be a contact):\n{ims_failures(artifacts)}"
+
+    # A trial call hangs up by itself ~14 s in, so a trial run proves ring, answer,
+    # setup and a clean far-end hang-up, but not the full hold.
+    hold = TRIAL_HOLD_S if twilio_call.trial() else HOLD_S - 5
+    end = marks.get("ended", marks.get("hangup"))
+    call = in_call(samples, marks["answer"], end)
+    print(summary(call))
+    assert len(call) >= hold, f"answer did not hold (twilio {far}):\n{ims_failures(artifacts)}"
+    assert "ended" in marks and marks["ended"] - marks["answer"] >= hold, \
+        f"call dropped {end - marks['answer']} s after answer (twilio {far}):\n{ims_failures(artifacts)}"
+    if twilio_call.trial():
+        log = (artifacts / "logcat").read_text(errors="replace")
+        assert "CODE_USER_TERMINATED_BY_REMOTE" in log, \
+            f"ended early, but not by the far end:\n{ims_failures(artifacts)}"
+    want = 0 if path == "wlan" else WWAN
+    moved = [s for s in call if s["rat"] not in (want, None)]
+    assert not moved, f"left {path} mid-call:\n{summary(moved)}"
+    assert far.get("status") == "completed" and far.get("duration", 0) >= hold, f"twilio says {far}"
+    if path == "lte":
+        assert dut.wifi()["enabled"], "Wi-Fi was not re-enabled"
