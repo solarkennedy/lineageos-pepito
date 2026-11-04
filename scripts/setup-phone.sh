@@ -42,9 +42,9 @@
 # mode's side effects: persist.sys.test_harness, lock screen disabled, stay-awake,
 # OTA auto-update off, account auto-sync off.
 #
-# The setup wizard is finished through its own FinishActivity (as upstream's
-# packages/apps/SetupWizard/exit_wizard.sh does), which marks the device
-# provisioned and disables the wizard's HOME activity.
+# The setup wizard is finished the way its own finishSetupWizard() does it: the
+# provisioned flags, then its HOME activity disabled. (Its FinishActivity, which
+# upstream's exit_wizard.sh starts, only finishes on a tap of its button.)
 #
 # The unit is resolved through ~/.config/pepito/units.conf ($PEPITO_UNITS) like
 # flash-staging.sh, and every adb call is pinned to its USB serial. Runs straight
@@ -62,6 +62,9 @@ GOOGLE=0
 WIPE=0
 AUTH_WAIT=600
 SUW=org.lineageos.setupwizard
+# Default HOME: the build ships Launcher3 and PepitoLauncher2, so a fresh /data
+# shows the "choose a home app" picker. test_system expects Launcher3.
+HOME_ACTIVITY=${PEPITO_HOME:-com.android.launcher3/.uioverrides.QuickstepLauncher}
 WIFI_CONF=${PEPITO_WIFI_CONF:-$HOME/.config/pepito/wifi.conf}
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -221,25 +224,29 @@ finish_wizard() {
     if [[ "$(setting secure user_setup_complete)" == 1 && "$(setting global device_provisioned)" == 1 \
             && "$(home)" != $SUW/* ]]; then
         echo "   already finished"
+        set_home
         return 0
     fi
+    # What finishSetupWizard() does that matters here (SetupWizardUtils.kt): the two
+    # flags, then disable the wizard's HOME activity. Its FinishActivity is no use from a
+    # script: it only finishes when its button is tapped. Force-stopping the wizard drops
+    # the status-bar disable it holds (StatusBarManager token dies with the process).
+    sh_ settings put global device_provisioned 1
+    sh_ settings put secure user_setup_complete 1
+    sh_ pm disable $SUW/.SetupWizardActivity >/dev/null
+    sh_ am force-stop $SUW
+    set_home
     sh_ input keyevent KEYCODE_WAKEUP
-    sh_ pm enable $SUW/.FinishActivity >/dev/null || true
-    sh_ am start -n $SUW/.FinishActivity >/dev/null || true
-    local i
-    for i in $(seq 1 30); do
-        [[ "$(setting secure user_setup_complete)" == 1 ]] && break
-        sleep 1
-    done
-    if [[ "$(setting secure user_setup_complete)" != 1 ]]; then
-        warn "FinishActivity didn't complete the wizard; marking it done by hand"
-        sh_ settings put global device_provisioned 1
-        sh_ settings put secure user_setup_complete 1
-        sh_ pm disable $SUW/.SetupWizardActivity >/dev/null || true
-    fi
-    sleep 2
     sh_ input keyevent KEYCODE_HOME
+    [[ "$(home)" != $SUW/* ]] || warn "HOME still resolves to the setup wizard"
     echo "   provisioned=$(setting global device_provisioned) user_setup_complete=$(setting secure user_setup_complete) home=$(home)"
+}
+
+# Pick the default launcher only when nothing is (the chooser): never override a choice.
+set_home() {
+    [[ "$(home)" == android/com.android.internal.app.ResolverActivity ]] || return 0
+    sh_ cmd package set-home-activity "$HOME_ACTIVITY" >/dev/null \
+        && echo "   default launcher: $HOME_ACTIVITY" || warn "couldn't set $HOME_ACTIVITY as HOME"
 }
 
 join_wifi() {
@@ -261,8 +268,9 @@ join_wifi() {
     fi
     local i
     for i in $(seq 1 60); do
-        if sh_ cmd wifi status | grep -qF "connected to \"$WIFI_SSID\""; then
-            echo "   on $WIFI_SSID: $(sh_ cmd wifi status | grep -o 'IP: /[0-9.]*' | head -1)"
+        if sh_ cmd wifi status | grep -qF "connected to \"$WIFI_SSID\"" \
+                && ip=$(sh_ cmd wifi status | grep -o 'IP: /[0-9.]*' | head -1) && [[ -n "$ip" ]]; then
+            echo "   on $WIFI_SSID: $ip"
             return 0
         fi
         sleep 1
