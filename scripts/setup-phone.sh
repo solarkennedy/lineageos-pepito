@@ -6,8 +6,7 @@
 #   ./setup-phone.sh dut1                  # set up a unit that has just booted from a wipe
 #   ./setup-phone.sh dut1 --wipe           # factory-reset it first (Test Harness Mode), then set up
 #   ./setup-phone.sh dut1 --google         # ...then open Google sign-in and wait for it
-#   ./setup-phone.sh dut1 --enroll         # once per unit, BEFORE the wipe (see below)
-#   ./setup-phone.sh dut1 --unenroll       # forget the enrolled keys (do this before a sale)
+#   ./setup-phone.sh dut1 --save-wifi      # write wifi.conf from the network the unit is on
 #   ./setup-phone.sh dut1 --status         # what is and isn't set up, change nothing
 #
 # Options:
@@ -24,15 +23,9 @@
 # nobody at it. It refuses a secure lockscreen, so the roster pattern is cleared
 # first (and put back at the end). flash-staging.sh --wipe ends with this.
 #
-# ADB AUTHORIZATION after any other wipe (recovery, flash-staging.sh --bcb-wipe). A wipe takes the phone's list of trusted adb hosts with it,
-# and nothing host-side can get that back: the "Allow USB debugging" dialog
-# needs a tap. Builds with device/xiaomi/Mi8937 e176ec0a (init.pepito-adbkeys.rc)
-# restore the list from /mnt/vendor/persist/pepito/adb_keys on the first boot
-# after a wipe; /persist survives it. `--enroll` writes that file: this host's
-# ~/.android/adbkey.pub plus any keys in ~/.config/pepito/adb_keys (other
-# machines that drive the bench), and needs an authorized, rooted adb, so run
-# it once while the unit is still set up. A unit that isn't enrolled (or runs an
-# older build) still works: the script waits for someone to tap "Allow".
+# Any other wipe (recovery, flash-staging.sh --bcb-wipe) takes the phone's list
+# of trusted adb hosts with it, and nothing host-side gets that back: the script
+# waits for someone to tap "Allow USB debugging" on the phone.
 #
 # WI-FI comes from ~/.config/pepito/wifi.conf (never committed), shell syntax:
 #   WIFI_SSID='🏞 Guest'
@@ -69,9 +62,7 @@ GOOGLE=0
 WIPE=0
 AUTH_WAIT=600
 SUW=org.lineageos.setupwizard
-PERSIST_KEYS=/mnt/vendor/persist/pepito/adb_keys
 WIFI_CONF=${PEPITO_WIFI_CONF:-$HOME/.config/pepito/wifi.conf}
-EXTRA_KEYS=$HOME/.config/pepito/adb_keys
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 say() { echo "== $*"; }
@@ -80,8 +71,7 @@ warn() { echo "WARNING: $*" >&2; }
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --wipe)         WIPE=1 ;;
-        --enroll)       MODE=enroll ;;
-        --unenroll)     MODE=unenroll ;;
+        --save-wifi)    MODE=save_wifi ;;
         --status)       MODE=status ;;
         --no-wifi)      WIFI=0 ;;
         --no-pattern)   PATTERN_ON=0 ;;
@@ -89,7 +79,7 @@ while [[ $# -gt 0 ]]; do
         --root-on-boot) ROOT_ON_BOOT=1 ;;
         --google)       GOOGLE=1 ;;
         --auth-wait)    [[ -n "${2:-}" ]] || die "$1 needs a value"; AUTH_WAIT=$2; shift ;;
-        -h|--help)      sed -n '2,58p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)      sed -n '2,51p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)             die "unknown option $1 (try --help)" ;;
         *)              UNIT=$1 ;;
     esac
@@ -138,9 +128,9 @@ wait_authorized() {
                 unauth_since=${unauth_since:-$SECONDS}
                 if [[ $told -eq 0 ]] && (( SECONDS - unauth_since >= AUTH_GRACE )); then
                     say "$NICK is on adb but this host isn't authorized."
-                    echo "   Tap \"Allow\" on the phone (tick \"Always allow\"). Next time, enroll the unit"
-                    echo "   while it's still set up so wipes don't need this:  $0 $NICK --enroll"
-                    notify "Setup: tap Allow on $NICK" "USB debugging prompt is up (unit not enrolled)"
+                    echo "   Tap \"Allow\" on the phone (tick \"Always allow\"). Wiping with --wipe"
+                    echo "   (Test Harness Mode) next time keeps the authorization."
+                    notify "Setup: tap Allow on $NICK" "USB debugging prompt is up"
                     told=1
                 fi ;;
         esac
@@ -194,35 +184,7 @@ root_toggle_on() {
     sh_ setprop ctl.restart adb_root 2>/dev/null || warn "couldn't restart adb_root; the toggle shows on after a reboot"
 }
 
-# ---- enrollment ------------------------------------------------------------
-
-host_keys() {
-    [[ -f $HOME/.android/adbkey.pub ]] || die "no $HOME/.android/adbkey.pub (run any adb command once)"
-    {
-        cat "$HOME/.android/adbkey.pub"; echo
-        if [[ -f "$EXTRA_KEYS" ]]; then grep -v '^\s*#' "$EXTRA_KEYS" || true; fi
-    } | { grep -v '^\s*$' || true; } | sort -u
-}
-
-enroll() {
-    wait_authorized; wait_boot; get_root
-    local tmp; tmp=$(mktemp)
-    host_keys > "$tmp"
-    # Keep keys enrolled from other hosts: merge, don't replace.
-    sh_ "cat $PERSIST_KEYS 2>/dev/null" | grep -v '^\s*$' >> "$tmp" || true
-    sort -u -o "$tmp" "$tmp"
-    dadb push "$tmp" /data/local/tmp/adb_keys.enroll >/dev/null
-    rm -f "$tmp"
-    sh_ "mkdir -p ${PERSIST_KEYS%/*} && chmod 0755 ${PERSIST_KEYS%/*} \
-        && cat /data/local/tmp/adb_keys.enroll > $PERSIST_KEYS && chmod 0644 $PERSIST_KEYS \
-        && rm /data/local/tmp/adb_keys.enroll && sync"
-    say "enrolled $NICK: $(sh_ "wc -l < $PERSIST_KEYS") key(s) in $PERSIST_KEYS"
-    sh_ "ls -Z $PERSIST_KEYS"
-    [[ -f "$WIFI_CONF" ]] || save_wifi
-    if [[ -z "$(sh_ 'ls /system_ext/etc/init/init.pepito-adbkeys.rc 2>/dev/null')" ]]; then
-        warn "this build has no init.pepito-adbkeys.rc: the keys are stored, but only a build with it restores them after a wipe"
-    fi
-}
+# ---- Wi-Fi config ----------------------------------------------------------
 
 # Write $WIFI_CONF from the network the (rooted) phone is on now.
 save_wifi() {
@@ -239,7 +201,7 @@ for blk in re.findall(r"<WifiConfiguration>(.*?)</WifiConfiguration>", sys.stdin
     k = re.search(r"name=\"PreSharedKey\">(.*?)<", blk)
     psk = html.unescape(k.group(1)).strip("\"") if k else ""
     with open(out, "w") as f:
-        f.write("# written by setup-phone.sh --enroll\n")
+        f.write("# written by setup-phone.sh --save-wifi\n")
         f.write("WIFI_SSID=%s\nWIFI_PSK=%s\nWIFI_SECURITY=%s\n"
                 % (shlex.quote(ssid), shlex.quote(psk), "wpa2" if psk else "open"))
     print("   saved Wi-Fi %r to %s" % (ssid, out))
@@ -247,12 +209,6 @@ for blk in re.findall(r"<WifiConfiguration>(.*?)</WifiConfiguration>", sys.stdin
 else:
     print("WARNING: %r not in WifiConfigStore.xml" % ssid, file=sys.stderr)
 ' "$ssid" "$WIFI_CONF")
-}
-
-unenroll() {
-    wait_authorized; wait_boot; get_root
-    sh_ "rm -f $PERSIST_KEYS; rmdir ${PERSIST_KEYS%/*} 2>/dev/null; sync"
-    say "unenrolled $NICK (a wipe will need a tap on \"Allow\" again)"
 }
 
 # ---- setup steps -----------------------------------------------------------
@@ -392,19 +348,11 @@ gsf_id() {
 
 status() {
     wait_authorized
-    local enrolled=no
-    if is_root; then
-        sh_ "test -s $PERSIST_KEYS" && enrolled="yes ($(sh_ "wc -l < $PERSIST_KEYS") keys)"
-    else
-        enrolled="unknown (adbd not root)"
-    fi
     printf '%-22s %s\n' \
         build "$(sh_ getprop ro.lineage.version)" \
         "adbd root" "$(is_root && echo yes || echo no)" \
         "rooted debugging" "$(is_root && sh_ cat /data/adbroot/enabled 2>/dev/null || echo '?')" \
-        "adbkeys hook" "$(sh_ 'ls /system_ext/etc/init/init.pepito-adbkeys.rc 2>/dev/null' | grep -q . && echo present || echo 'absent (older build)')" \
-        "seeded this wipe" "$(sh_ getprop persist.vendor.xiaomi.adbkeys_seeded)" \
-        enrolled "$enrolled" \
+        "test harness" "$(sh_ getprop persist.sys.test_harness)" \
         provisioned "$(setting global device_provisioned)/$(setting secure user_setup_complete)" \
         wifi "$(sh_ cmd wifi status | grep -o 'connected to "[^"]*"' || echo 'not connected')" \
         "mobile data" "$(setting global mobile_data)" \
@@ -412,8 +360,7 @@ status() {
 }
 
 case "$MODE" in
-    enroll)   enroll; exit 0 ;;
-    unenroll) unenroll; exit 0 ;;
+    save_wifi) wait_authorized; wait_boot; get_root; save_wifi; exit 0 ;;
     status)   status; exit 0 ;;
 esac
 
@@ -450,10 +397,6 @@ if [[ "$ROOT_ON_BOOT" -eq 1 ]]; then sh_ setprop persist.vendor.xiaomi.adbroot 1
 sh_ settings put global development_settings_enabled 1
 sh_ settings put global adb_allowed_connection_time 0
 tcp_adb
-# The re-seed can't see a key that was only ever allowed through the dialog.
-if sh_ "test -s $PERSIST_KEYS" && ! sh_ "cat $PERSIST_KEYS" | grep -qF "$(cut -d' ' -f1 "$HOME/.android/adbkey.pub")"; then
-    warn "$NICK is enrolled but not with this host's key: re-run with --enroll"
-fi
 undo_test_harness
 say "setup wizard"
 finish_wizard

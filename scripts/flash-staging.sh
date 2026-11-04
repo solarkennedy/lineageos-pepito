@@ -30,9 +30,8 @@
 # /metadata, clears the block and reboots. Only the BCB is written — misc keeps
 # vendor data past 0x8000 — and misc.bin is deleted again afterwards so a later
 # flash can't re-wipe. That wipe loses the adb keys: setup-phone.sh then waits
-# for a tap on "Allow" (or an enrolled unit on a build with
-# init.pepito-adbkeys.rc re-seeds them). config.bin (zeroed FRP) is always
-# flashed, so FRP stays in lockstep.
+# for a tap on "Allow". config.bin (zeroed FRP) is always flashed, so FRP stays
+# in lockstep.
 #
 # The unit is resolved through the fleet roster (~/.config/pepito/units.conf,
 # $PEPITO_UNITS overrides); a serial not in the roster is used as-is. Every adb
@@ -67,7 +66,7 @@ while [[ $# -gt 0 ]]; do
         --wipe)        WIPE=1 ;;
         --no-unlock)   UNLOCK=0 ;;
         --bcb-wipe)    WIPE=1; BCB_WIPE=1 ;;
-        -h|--help)     sed -n '2,47p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)     sed -n '2,46p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)            die "unknown option $1 (try --help)" ;;
         *)             UNIT=$1 ;;
     esac
