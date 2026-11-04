@@ -10,6 +10,7 @@
 #   ./flash-staging.sh -s 9c2e6b00    # explicit serial (also --serial)
 #   ./flash-staging.sh --no-adb       # skip ADB trigger, wait for manual EDL entry
 #   ./flash-staging.sh new2 --wipe    # flash, then boot straight into recovery and wipe /data
+#   ./flash-staging.sh new2 --wipe --setup   # ...then setup-phone.sh: adb root, wizard done, Wi-Fi
 #   ./flash-staging.sh --no-unlock    # leave the lockscreen up after the post-flash boot
 #
 # --wipe stages a 4 KiB misc.bin holding a bootloader control block
@@ -18,6 +19,8 @@
 # into the fresh system. Only the BCB is written — misc keeps vendor data past
 # 0x8000 — and misc.bin is deleted again afterwards so a later flash can't
 # re-wipe. config.bin (zeroed FRP) is always flashed, so FRP stays in lockstep.
+# --setup (with --wipe) then runs scripts/setup-phone.sh on the fresh unit; see
+# its --help for the one-time --enroll that makes that hands-off.
 #
 # The unit is resolved through the fleet roster (~/.config/pepito/units.conf,
 # $PEPITO_UNITS overrides); a serial not in the roster is used as-is. Every adb
@@ -39,6 +42,7 @@ EDL_USB_ID="05c6:9008"
 NO_ADB=0
 WIPE=0
 UNLOCK=1
+SETUP=0
 UNIT=dut1   # flashed most often
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -50,7 +54,8 @@ while [[ $# -gt 0 ]]; do
         --serial=*)    UNIT=${1#--serial=} ;;
         --wipe)        WIPE=1 ;;
         --no-unlock)   UNLOCK=0 ;;
-        -h|--help)     sed -n '2,31p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --setup)       SETUP=1 ;;
+        -h|--help)     sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)            die "unknown option $1 (try --help)" ;;
         *)             UNIT=$1 ;;
     esac
@@ -70,6 +75,7 @@ else
     NICK=$UNIT
     SERIAL=$UNIT
 fi
+[[ "$SETUP" -eq 0 || "$WIPE" -eq 1 ]] || die "--setup only goes with --wipe (run setup-phone.sh $NICK on its own)"
 echo "Target: $NICK ($SERIAL)"
 
 dadb() { adb -s "$SERIAL" "$@"; }
@@ -207,6 +213,11 @@ now waiting for adb to come back up"
 echo
 ADB_WAIT=${PEPITO_ADB_WAIT:-600}
 echo "Flash done. Waiting up to ${ADB_WAIT}s for $NICK ($SERIAL) on adb..."
+if [[ "$WIPE" -eq 1 && "$SETUP" -eq 1 ]]; then
+    notify "Flash + wipe done — $NICK" "running setup-phone.sh"
+    # Resolve through the symlink: this runs as flash-staging/flash-staging.sh.
+    exec "$(dirname "$(readlink -f "$0")")/setup-phone.sh" "$SERIAL" --auth-wait "$ADB_WAIT"
+fi
 if [[ "$WIPE" -eq 1 ]]; then
     # The wipe takes the adb authorization (and the USB-debugging toggle) with
     # it, so adb staying away is the expected outcome — not a failure.
