@@ -71,6 +71,10 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > build and the attestation are not it; new2's `/data` side is: GMS 26.43.30 / Play Store
 > 53.8.11 vs dut1's bundled 26.11.36 / 47.9.30, or new2's device record (unwiped since Sept),
 > or the unit.
+>
+> **new2 12:30, rooted debugging fully OFF** (`persist.vendor.xiaomi.adbroot` 0 — the opt-in
+> root-at-boot switch in `init.xiaomi.device.rc` — `/data/adbroot/enabled` 0, rebooted, adbd
+> uid 2000, `adb root` refused) → still `[]`. Rooted debugging is not the new2/dut1 difference.
 
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer
