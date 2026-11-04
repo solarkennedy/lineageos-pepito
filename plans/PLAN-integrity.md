@@ -64,6 +64,13 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > What new2 (`[]`) has that dut1 doesn't: updated GMS 26.43.30 + Play Store 53.8.11, a long-lived
 > device record (not wiped since Sept, months of -12), different unit. Next: re-check dut1 after
 > GMS/Play Store self-update (→ `[]` = version-driven; stays BASIC = new2's record/unit).
+>
+> **new2 2026-11-04 12:24–12:25, reflashed to the same 20261104 build dut1 passed on (no wipe):**
+> control (nothing set) → `[]`; cell I (honest identity + attestation hidden in DroidGuard AND
+> Play Store — `Finsky: Integrity key attestation record generation failed`) → `[]`. ⇒ the
+> build and the attestation are not it; new2's `/data` side is: GMS 26.43.30 / Play Store
+> 53.8.11 vs dut1's bundled 26.11.36 / 47.9.30, or new2's device record (unwiped since Sept),
+> or the unit.
 
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer
