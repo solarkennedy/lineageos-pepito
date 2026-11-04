@@ -4,6 +4,7 @@
 #
 # Usage:
 #   ./setup-phone.sh dut1                  # set up a unit that has just booted from a wipe
+#   ./setup-phone.sh dut1 --wipe           # factory-reset it first (Test Harness Mode), then set up
 #   ./setup-phone.sh dut1 --google         # ...then open Google sign-in and wait for it
 #   ./setup-phone.sh dut1 --enroll         # once per unit, BEFORE the wipe (see below)
 #   ./setup-phone.sh dut1 --unenroll       # forget the enrolled keys (do this before a sale)
@@ -17,7 +18,13 @@
 #   --google         after setup, open "Add account > Google" and wait for the sign-in
 #   --auth-wait <s>  how long to wait for adb authorization (default 600)
 #
-# ADB AUTHORIZATION. A wipe takes the phone's list of trusted adb hosts with it,
+# --wipe runs `cmd testharness enable`: Android's own factory reset that keeps
+# the adb keys (parked in the FRP block, our `config` partition, restored on the
+# first boot) and marks the unit provisioned, so it comes back authorized with
+# nobody at it. It refuses a secure lockscreen, so the roster pattern is cleared
+# first (and put back at the end). flash-staging.sh --wipe ends with this.
+#
+# ADB AUTHORIZATION after any other wipe (recovery, flash-staging.sh --bcb-wipe). A wipe takes the phone's list of trusted adb hosts with it,
 # and nothing host-side can get that back: the "Allow USB debugging" dialog
 # needs a tap. Builds with device/xiaomi/Mi8937 e176ec0a (init.pepito-adbkeys.rc)
 # restore the list from /mnt/vendor/persist/pepito/adb_keys on the first boot
@@ -38,13 +45,17 @@
 # and restarts adbd, then turns the Settings toggle on (/data/adbroot/enabled)
 # so later `adb root`s work and Settings shows the truth.
 #
+# After a Test Harness Mode wipe (flash-staging.sh --wipe) it also undoes that
+# mode's side effects: persist.sys.test_harness, lock screen disabled, stay-awake,
+# OTA auto-update off, account auto-sync off.
+#
 # The setup wizard is finished through its own FinishActivity (as upstream's
 # packages/apps/SetupWizard/exit_wizard.sh does), which marks the device
 # provisioned and disables the wizard's HOME activity.
 #
 # The unit is resolved through ~/.config/pepito/units.conf ($PEPITO_UNITS) like
 # flash-staging.sh, and every adb call is pinned to its USB serial. Runs straight
-# after `flash-staging.sh <unit> --wipe`, which chains into it with --setup.
+# after `flash-staging.sh <unit> --wipe`, which chains into it.
 
 set -euo pipefail
 
@@ -55,6 +66,7 @@ PATTERN_ON=1
 DEXOPT=1
 ROOT_ON_BOOT=0
 GOOGLE=0
+WIPE=0
 AUTH_WAIT=600
 SUW=org.lineageos.setupwizard
 PERSIST_KEYS=/mnt/vendor/persist/pepito/adb_keys
@@ -67,6 +79,7 @@ warn() { echo "WARNING: $*" >&2; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --wipe)         WIPE=1 ;;
         --enroll)       MODE=enroll ;;
         --unenroll)     MODE=unenroll ;;
         --status)       MODE=status ;;
@@ -76,7 +89,7 @@ while [[ $# -gt 0 ]]; do
         --root-on-boot) ROOT_ON_BOOT=1 ;;
         --google)       GOOGLE=1 ;;
         --auth-wait)    [[ -n "${2:-}" ]] || die "$1 needs a value"; AUTH_WAIT=$2; shift ;;
-        -h|--help)      sed -n '2,47p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)      sed -n '2,58p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)             die "unknown option $1 (try --help)" ;;
         *)              UNIT=$1 ;;
     esac
@@ -111,14 +124,19 @@ notify() { /home/kyle/.bin/ntfy-main "$1" "$2" "${3:-default}" >/dev/null 2>&1 |
 
 # ---- adb: present, authorized, booted, right phone -------------------------
 
+# Seconds to sit on "unauthorized" before asking for a tap: after a Test Harness
+# wipe the keys only come back late in the first boot (boot phase completed).
+AUTH_GRACE=0
+
 wait_authorized() {
-    local t0=$SECONDS st told=0
+    local t0=$SECONDS st told=0 unauth_since=""
     while :; do
         st=$(state)
         case "$st" in
             device) break ;;
             *unauthorized*)
-                if [[ $told -eq 0 ]]; then
+                unauth_since=${unauth_since:-$SECONDS}
+                if [[ $told -eq 0 ]] && (( SECONDS - unauth_since >= AUTH_GRACE )); then
                     say "$NICK is on adb but this host isn't authorized."
                     echo "   Tap \"Allow\" on the phone (tick \"Always allow\"). Next time, enroll the unit"
                     echo "   while it's still set up so wipes don't need this:  $0 $NICK --enroll"
@@ -239,8 +257,13 @@ unenroll() {
 
 # ---- setup steps -----------------------------------------------------------
 
+home() { sh_ cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME | tail -1; }
+
 finish_wizard() {
-    if [[ "$(setting secure user_setup_complete)" == 1 && "$(setting global device_provisioned)" == 1 ]]; then
+    # Provisioned is not enough: Test Harness Mode sets both flags without running the
+    # wizard, whose HOME activity then still starts (and hides the status bar) at boot.
+    if [[ "$(setting secure user_setup_complete)" == 1 && "$(setting global device_provisioned)" == 1 \
+            && "$(home)" != $SUW/* ]]; then
         echo "   already finished"
         return 0
     fi
@@ -260,7 +283,7 @@ finish_wizard() {
     fi
     sleep 2
     sh_ input keyevent KEYCODE_HOME
-    echo "   provisioned=$(setting global device_provisioned) user_setup_complete=$(setting secure user_setup_complete)"
+    echo "   provisioned=$(setting global device_provisioned) user_setup_complete=$(setting secure user_setup_complete) home=$(home)"
 }
 
 join_wifi() {
@@ -299,6 +322,36 @@ set_pattern() {
         echo "   pattern already set"
     else
         warn "$NICK has a lock credential that isn't the roster pattern; left alone"
+    fi
+}
+
+# Master sync, through IContentService: no shell command exposes it. Transaction
+# numbers move between releases, so only on the SDK they were read from (37: 22 =
+# setMasterSyncAutomaticallyAsUser(bool, user), 23 = getMasterSyncAutomatically),
+# and only when the getter answers like a boolean before and after.
+master_sync() {   # prints 0/1, or nothing when unsure
+    [[ "$(sh_ getprop ro.build.version.sdk)" == 37 ]] || return 0
+    sh_ service call content 23 | sed -n "s/^Result: Parcel(\s*00000000 0000000\([01]\) .*/\1/p"
+}
+
+# Test Harness Mode (flash-staging.sh --wipe) leaves the unit unlike a normal one:
+# undo what it set (TestHarnessModeService.configureSettings/configureUser) except
+# the adb-friendly bits (no key TTL, developer options) and location on.
+undo_test_harness() {
+    [[ "$(sh_ getprop persist.sys.test_harness)" == 1 ]] || return 0
+    say "undoing Test Harness Mode settings"
+    sh_ setprop persist.sys.test_harness 0      # apps check isRunningInUserTestHarness()
+    sh_ locksettings set-disabled false >/dev/null
+    sh_ settings put global stay_on_while_plugged_in 0
+    sh_ settings put global ota_disable_automatic_update 0
+    sh_ settings delete global package_verifier_include_adb >/dev/null
+    local before; before=$(master_sync)
+    if [[ "$before" == 0 ]]; then
+        sh_ service call content 22 i32 1 i32 0 >/dev/null
+        [[ "$(master_sync)" == 1 ]] && echo "   account auto-sync back on" \
+            || warn "couldn't turn account auto-sync back on (Settings > Passwords & accounts)"
+    elif [[ -z "$before" ]]; then
+        warn "account auto-sync is off (Test Harness Mode); turn it on in Settings > Passwords & accounts"
     fi
 }
 
@@ -364,7 +417,27 @@ case "$MODE" in
     status)   status; exit 0 ;;
 esac
 
+# Test Harness Mode factory reset; see the header.
+thm_wipe() {
+    wait_authorized; wait_boot
+    if ! sh_ locksettings verify >/dev/null 2>&1; then   # fails only when a credential is set
+        [[ -n "$PATTERN" ]] || die "$NICK has a lock credential and no PATTERN line in $UNITS_CONF: clear it first"
+        sh_ locksettings clear --old "$PATTERN" >/dev/null \
+            || die "couldn't clear $NICK's lock with the roster pattern; not wiping"
+        echo "   cleared the lock pattern (put back after the wipe)"
+    fi
+    local out
+    out=$(sh_ cmd testharness enable 2>&1) || die "cmd testharness enable failed: $out"
+    echo "   Test Harness Mode wipe started${out:+: $out}"
+    notify "Wiping $NICK" "Test Harness Mode factory reset"
+    # Wait for it to leave adb (reboot to recovery), so the pre-wipe system isn't mistaken for the fresh one.
+    local i
+    for i in $(seq 1 60); do [[ "$(state)" == device ]] || return 0; sleep 2; done
+    die "$NICK still on adb 2 min after cmd testharness enable"
+}
+
 T0=$SECONDS
+if [[ "$WIPE" -eq 1 ]]; then say "wipe (Test Harness Mode)"; thm_wipe; AUTH_GRACE=240; fi
 say "waiting for $NICK on adb"
 wait_authorized
 say "waiting for boot to complete"
@@ -381,6 +454,7 @@ tcp_adb
 if sh_ "test -s $PERSIST_KEYS" && ! sh_ "cat $PERSIST_KEYS" | grep -qF "$(cut -d' ' -f1 "$HOME/.android/adbkey.pub")"; then
     warn "$NICK is enrolled but not with this host's key: re-run with --enroll"
 fi
+undo_test_harness
 say "setup wizard"
 finish_wizard
 if [[ "$WIFI" -eq 1 ]]; then say "Wi-Fi"; join_wifi; fi

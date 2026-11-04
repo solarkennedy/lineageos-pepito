@@ -9,18 +9,30 @@
 #   ./flash-staging.sh new2           # same, for another unit (nick, serial or IMEI)
 #   ./flash-staging.sh -s 9c2e6b00    # explicit serial (also --serial)
 #   ./flash-staging.sh --no-adb       # skip ADB trigger, wait for manual EDL entry
-#   ./flash-staging.sh new2 --wipe    # flash, then boot straight into recovery and wipe /data
-#   ./flash-staging.sh new2 --wipe --setup   # ...then setup-phone.sh: adb root, wizard done, Wi-Fi
+#   ./flash-staging.sh new2 --wipe    # flash, factory-reset keeping adb authorized, then setup-phone.sh
+#   ./flash-staging.sh new2 --wipe --bcb-wipe   # wipe from recovery instead (stock /data, no adb)
 #   ./flash-staging.sh --no-unlock    # leave the lockscreen up after the post-flash boot
 #
-# --wipe stages a 4 KiB misc.bin holding a bootloader control block
-# (command "boot-recovery", args "--wipe_data"): aboot sees it and boots
-# recovery, recovery formats /data + /metadata, clears the block and reboots
-# into the fresh system. Only the BCB is written — misc keeps vendor data past
-# 0x8000 — and misc.bin is deleted again afterwards so a later flash can't
-# re-wipe. config.bin (zeroed FRP) is always flashed, so FRP stays in lockstep.
-# --setup (with --wipe) then runs scripts/setup-phone.sh on the fresh unit; see
-# its --help for the one-time --enroll that makes that hands-off.
+# --wipe flashes as usual, boots the unit on its old /data, clears the roster
+# lock pattern (Test Harness Mode refuses a secure lockscreen) and runs
+# `cmd testharness enable`: Android's own factory reset that keeps the adb keys
+# (it parks them in the FRP block, our `config` partition, and restores them on
+# the first boot) and marks the unit provisioned. So the unit comes back
+# authorized with nobody at it, and scripts/setup-phone.sh takes it the rest of
+# the way (root, wizard, Wi-Fi, pattern; and it undoes Test Harness Mode's own
+# settings). The enable must come AFTER the flash: config.bin is zeroed on
+# every flash, which would erase the parked keys.
+#
+# --bcb-wipe (implied by --no-adb; use it for a unit coming from stock, whose
+# foreign /data boot-loops so adb never comes up) wipes from recovery instead: a
+# 4 KiB misc.bin holding a bootloader control block (command "boot-recovery",
+# args "--wipe_data") makes aboot boot recovery, which formats /data +
+# /metadata, clears the block and reboots. Only the BCB is written — misc keeps
+# vendor data past 0x8000 — and misc.bin is deleted again afterwards so a later
+# flash can't re-wipe. That wipe loses the adb keys: setup-phone.sh then waits
+# for a tap on "Allow" (or an enrolled unit on a build with
+# init.pepito-adbkeys.rc re-seeds them). config.bin (zeroed FRP) is always
+# flashed, so FRP stays in lockstep.
 #
 # The unit is resolved through the fleet roster (~/.config/pepito/units.conf,
 # $PEPITO_UNITS overrides); a serial not in the roster is used as-is. Every adb
@@ -42,7 +54,7 @@ EDL_USB_ID="05c6:9008"
 NO_ADB=0
 WIPE=0
 UNLOCK=1
-SETUP=0
+BCB_WIPE=0
 UNIT=dut1   # flashed most often
 
 die() { echo "ERROR: $*" >&2; exit 1; }
@@ -54,8 +66,8 @@ while [[ $# -gt 0 ]]; do
         --serial=*)    UNIT=${1#--serial=} ;;
         --wipe)        WIPE=1 ;;
         --no-unlock)   UNLOCK=0 ;;
-        --setup)       SETUP=1 ;;
-        -h|--help)     sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        --bcb-wipe)    WIPE=1; BCB_WIPE=1 ;;
+        -h|--help)     sed -n '2,47p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)            die "unknown option $1 (try --help)" ;;
         *)             UNIT=$1 ;;
     esac
@@ -75,7 +87,8 @@ else
     NICK=$UNIT
     SERIAL=$UNIT
 fi
-[[ "$SETUP" -eq 0 || "$WIPE" -eq 1 ]] || die "--setup only goes with --wipe (run setup-phone.sh $NICK on its own)"
+# Without adb there is no booted unit to run Test Harness Mode on.
+[[ "$WIPE" -eq 1 && "$NO_ADB" -eq 1 ]] && BCB_WIPE=1
 echo "Target: $NICK ($SERIAL)"
 
 dadb() { adb -s "$SERIAL" "$@"; }
@@ -193,7 +206,7 @@ done
 echo -e "\nEDL device detected${QDL_SERIAL[1]:+ (serial ${QDL_SERIAL[1]})}."
 
 # Run from FLASH_DIR so qdl resolves the rawprogram XML's filenames relative to it.
-if [[ "$WIPE" -eq 1 ]]; then
+if [[ "$BCB_WIPE" -eq 1 ]]; then
     # struct bootloader_message: command[32] @0, status[32] @32, recovery[768] @64.
     trap 'rm -f "$FLASH_DIR/misc.bin"' EXIT
     head -c 4096 /dev/zero > "$FLASH_DIR/misc.bin"
@@ -213,27 +226,16 @@ now waiting for adb to come back up"
 echo
 ADB_WAIT=${PEPITO_ADB_WAIT:-600}
 echo "Flash done. Waiting up to ${ADB_WAIT}s for $NICK ($SERIAL) on adb..."
-if [[ "$WIPE" -eq 1 && "$SETUP" -eq 1 ]]; then
-    notify "Flash + wipe done — $NICK" "running setup-phone.sh"
-    # Resolve through the symlink: this runs as flash-staging/flash-staging.sh.
-    exec "$(dirname "$(readlink -f "$0")")/setup-phone.sh" "$SERIAL" --auth-wait "$ADB_WAIT"
-fi
-if [[ "$WIPE" -eq 1 ]]; then
-    # The wipe takes the adb authorization (and the USB-debugging toggle) with
-    # it, so adb staying away is the expected outcome — not a failure.
-    if timeout "$ADB_WAIT" adb -s "$SERIAL" wait-for-device; then
-        echo "$NICK is up after the wipe: $(dadb shell getprop ro.lineage.version 2>/dev/null | tr -d '\r')"
-    else
-        echo "$NICK wiped; adb didn't come back (expected — re-enable USB debugging in setup)."
-    fi
-    notify "Flash + wipe done — $NICK" "finish first-boot setup on the phone"
-    exit 0
+SETUP_PHONE="$(dirname "$(readlink -f "$0")")/setup-phone.sh"   # through the flash-staging/ symlink
+if [[ "$BCB_WIPE" -eq 1 ]]; then
+    notify "Flash + wipe done — $NICK" "running setup-phone.sh (may need a tap on Allow)"
+    exec "$SETUP_PHONE" "$SERIAL" --auth-wait "$ADB_WAIT"
 fi
 if ! timeout "$ADB_WAIT" adb -s "$SERIAL" wait-for-device; then
     notify "Flash: $NICK never came back on adb" "waited ${ADB_WAIT}s after qdl — check the phone" high
     die "$NICK ($SERIAL) did not come back on adb within ${ADB_WAIT}s"
 fi
-dadb root
+dadb root || true   # refused while Rooted debugging is off; nothing below needs it
 timeout 60 adb -s "$SERIAL" wait-for-device || true   # adbd restarts as root
 echo "$NICK is up: $(dadb shell getprop ro.lineage.version 2>/dev/null | tr -d '\r')"
 
@@ -241,7 +243,7 @@ echo "$NICK is up: $(dadb shell getprop ro.lineage.version 2>/dev/null | tr -d '
 # failed pepito-unlock run counts as a wrong pattern (5 = 30 s lockout).
 PATTERN=""
 [[ -f "$UNITS_CONF" ]] && PATTERN=$(awk -v n="$NICK" '$1=="PATTERN" && $2==n {print $3; exit}' "$UNITS_CONF")
-if [[ "$UNLOCK" -eq 1 && -n "$PATTERN" ]] && command -v pepito-unlock >/dev/null; then
+if [[ "$UNLOCK" -eq 1 && "$WIPE" -eq 0 && -n "$PATTERN" ]] && command -v pepito-unlock >/dev/null; then
     echo "Waiting for boot_completed to unlock $NICK..."
     if timeout 300 adb -s "$SERIAL" wait-for-device shell \
             'while [ "$(getprop sys.boot_completed)" != 1 ]; do sleep 2; done'; then
@@ -252,3 +254,8 @@ if [[ "$UNLOCK" -eq 1 && -n "$PATTERN" ]] && command -v pepito-unlock >/dev/null
         echo "WARNING: $NICK never reported boot_completed; not unlocking" >&2
     fi
 fi
+
+[[ "$WIPE" -eq 1 ]] || exit 0
+
+# Test Harness Mode wipe (see the header), then the rest of the setup.
+exec "$SETUP_PHONE" "$SERIAL" --wipe --auth-wait "$ADB_WAIT"
