@@ -1,0 +1,16 @@
+{
+  "_comment": "H: E (Pixel canary identity + attestation hidden) + Play Store SDK_INT 32 (spoofVendingSdk)",
+  "MANUFACTURER": "Google",
+  "BRAND": "google",
+  "MODEL": "Pixel 10 Pro XL",
+  "PRODUCT": "mustang_beta",
+  "DEVICE": "mustang",
+  "FINGERPRINT": "google/mustang_beta/mustang:CANARY/ZP11.260717.006/16004061:user/release-keys",
+  "SECURITY_PATCH": "2026-08-05",
+  "spoofBuild": "1",
+  "spoofVendingFinger": "1",
+  "spoofVendingSdk": "1",
+  "spoofProvider": "1",
+  "spoofSignature": "0",
+  "verboseLogs": "1"
+}

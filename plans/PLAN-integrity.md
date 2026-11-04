@@ -12,6 +12,145 @@ account fixed and changing *only* the OS flips the result between graded and `-1
 no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even work).
 **Do not reopen without a genuinely new idea.**
 
+> ⏸️ **PAUSED 2026-11-04 (Kyle).** State when paused: graded `[]` on every cell below (8 PIF
+> cells + 2 prop builds). Mi8937 `c59a377c` + `7f6afdc5` (system-wide stock 8.1 identity)
+> REVERTED 2026-11-04 (`8570516a`, `506530ba`; re-apply with `git revert` of those to retry). Still in the tree: frameworks/base
+> `3f0cda8daad6` + `f3eb992bb125` (PIF hooks, inert unless `spoof_pif_config` set — safe to
+> keep). Unrun next steps, in order: our 23.2/A16 release on dut1; ask Zach his exact recipe +
+> build type; attestation hide in Play Store too; fresh GSF ID (wipe). Native-prop hook judged
+> low value (only `security_patch` still differs natively). PlayIntegrityFork's A17 JNI
+> `SetStaticObjectField` route would `LOG(FATAL)` on our ART with GMS targetSdk=37 (by source
+> reading, untested); our Unsafe path works.
+>
+> **Zach's Key2 recipe, read from source 2026-11-04** (github.com/Lineage-BBKey2): LOS 22.2
+> (A15, branch `lineage-22.2-kernel-4.19`) and 23.2; **userdebug** (release notes tell users to
+> `adb root`); device-tree `PRODUCT_BUILD_PROP_OVERRIDES` BuildFingerprint/BuildDesc = stock
+> 8.1 ("need to keep old FPs from oreo for play certification") + DeviceProduct/DeviceName;
+> `PRODUCT_SHIPPING_API_LEVEL := 27`. frameworks/base fork = keyboard/backlight/IME/SystemUI
+> only, **no integrity spoof** (23.2 branch is 0 commits ahead of upstream). ⇒ userdebug +
+> root-adb + 8.1 fingerprint gets BASIC on A15/A16. Every one of those we matched → `[]`. The
+> difference left is the Android version (A17 vs A15/16) or the device/hardware → test our
+> final 23.2 (A16) release on dut1 next.
+>
+> **⭐ Boot-signing lead (2026-11-04):** Zach's Key2 users UNLOCK the bootloader (`kibo unlock`,
+> MODE PRODUCT→FACTORY; relock optional per the guide) and flash unsigned boot — the TEE
+> honestly attests unlocked/unverified, and he gets BASIC. Ours graft the stock signature:
+> new2 `verifiedbootstate=green`, `flash.locked=1`, and the July attestation = GREEN + locked +
+> Palm's own verifiedBootKey + osVersion 8.1/2020-09 — a "sealed stock" cert on an A17 OS,
+> which may read as tampering. Fits every row of the July table (stock untouched → full; stock
+> rooted / all our builds → empty). Cells C–H did NOT test it: Play Store does its own key
+> attestation, unhidden. Next (on dut1, not new2): (1) boot signed with our OWN RSA-2048 key →
+> honest YELLOW (Gold-style; July only ever saw -12 on it) — ⚠️ ROT change may invalidate
+> keymaster keys (memory `boot-signing-own-key`); (2) attestation hide in Play Store too.
+>
+> **(1) STAGED 2026-11-04, unflashed:** `~/android/lineage-24/flash-staging/held-yellow-ownkey-20261102-gapps/`
+> = release-20261102-gapps with only boot.bin re-signed by our July boot key
+> (`~/Projects/aboot-re-e3/sign-boot-with-key.py`, fp `0A:BA:BC:AE:…:5C:77`; emulator → YELLOW).
+> Zach's builds have no attestation hiding either (no keystore/security/ActivityThread changes
+> in his frameworks/base; no system/security fork). Flash: `FLASH_DIR=… flash-staging.sh dut1 --wipe`.
+>
+> **🎉 RESULT 2026-11-04 10:10 + 10:12: dut1 (`c39a6acf`), held-yellow-ownkey-20261102-gapps,
+> `--wipe`, fresh account, stock GMS 26.11.36 → `Labels: [MEETS_BASIC_INTEGRITY]` (twice).**
+> `ro.boot.verifiedbootstate=yellow`, `ro.boot.flash.locked` EMPTY (graft reports 1). Honest
+> fingerprint, no PIF, no prop spoof. ⚠️ Confounded with: different unit (dut1 vs new2), fresh
+> wipe → new GSF ID, old bundled GMS. Control needed: same dut1 back on the grafted
+> release-20261102-gapps + `--wipe` + same account → if `[]`, the boot signature is the cause.
+>
+> **❌ CONTROL 2026-11-04 11:44: the boot signature is NOT the cause.** dut1, gapps 20261104
+> (frameworks/base `585e149dd567` hooks inert, no `spoof_pif_config`, honest fingerprint),
+> grafted GREEN boot, `--wipe`, same account, bundled GMS 26.11.36 / Play Store 47.9.30 →
+> **`[MEETS_BASIC_INTEGRITY]`**. (Correction: `ro.boot.flash.locked` is empty on GREEN too —
+> new2's `1` came from the reverted libinit spoof.) Graft and own-key both pass on a fresh dut1.
+> What new2 (`[]`) has that dut1 doesn't: updated GMS 26.43.30 + Play Store 53.8.11, a long-lived
+> device record (not wiped since Sept, months of -12), different unit. Next: re-check dut1 after
+> GMS/Play Store self-update (→ `[]` = version-driven; stays BASIC = new2's record/unit).
+
+> 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
+> 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer
+> options → Check integrity: **`Labels: []`** with a TestId, log shows a clean
+> `requestIntegrityToken() finished` (no Volley 500 / `DF-DFERH-01`). Nothing changed on
+> our side. Independent report the same week (XDA, zjays/Zach, BlackBerry Key2/Key2LE on
+> LOS 22.2/23.2 with an 8.1 fingerprint spoof): `-12` stopped by 2026-10-31 and he now gets
+> **BASIC**. So the 500 was a Google backend fault that Google fixed, and it hit more than
+> (PVG100 × A16) — the "backend gap for our identity" read below was partly right
+> (backend-side) but the trigger wasn't unique to us. **New open question:** why do we get
+> `[]`, not even BASIC, when the Key2 builds get BASIC? (He spoofs the stock 8.1
+> fingerprint, we ship the honest `Palm/PVG100/pepito:17/…`; he is also on A15/A16, not
+> A17.) BASIC is now a real, measurable target again.
+>
+> **Staged 2026-11-03: fingerprint A/B.** Mi8937 `c59a377c` (pushed, unbuilt): pepito
+> libinit reports the stock `Palm/PVG100/Pepito:8.1.0/OPM1.171019.019/v1AML-0:user/release-keys`
+> (+ stock `Pepito-user …` description) on every `ro.*build.fingerprint`, after the honest
+> identity rewrite; `ro.build.version.*` stay real. Test = gapps build →
+> `check-integrity.py <unit>`; compare with the `[]` baseline. **Test-only: revert before a
+> release.**
+>
+> **Result 2026-11-03 17:35 (new2, gapps 20261104 + `c59a377c`): still `Labels: []`.** All
+> fingerprint props read the stock v1AML-0 string, SDK still 37; re-run after a forced
+> checkin broadcast, also `[]`. Not yet ruled out: a slow server-side refresh of the
+> device record (re-check after ~24 h), and `ro.product.device` — ours is `pepito`, stock is
+> `Pepito` (the dialog shows `Device: pepito`).
+>
+> **Staged 2026-11-03: full stock identity.** Mi8937 `7f6afdc5` (on top of `c59a377c`) also
+> sets, from a silver-vs-new2 getprop diff: `ro.*build.id` OPM1.171019.019, `ro.*build.type`
+> user, `ro.product.*device` + `ro.build.product` `Pepito`, `ro.product.board`
+> QC_Reference_Phone, `ro.product.first_api_level` 27 (ours was 25 from the siblings),
+> `ro.bootloader` unknown, `ro.boot.flash.locked` 1 (absent on ours), `ro.com.google.gmsversion`
+> 8.1_201812. Left real: `ro.build.version.*`, `display.id`, `characteristics`, clientidbase.
+>
+> **Result 2026-11-03 19:03 (new2, gapps 20261104 + `7f6afdc5`): still `Labels: []`.** All
+> props applied (dialog now shows `Device: Pepito`) except `ro.bootloader`, which init
+> re-derives from `ro.boot.bootloader` after libinit. ⇒ Build-prop identity is NOT what
+> separates us from the Key2's BASIC. Remaining differences: Android 17 vs 15/16 (the real
+> `ro.build.version.*`), and whatever DroidGuard measures beyond props. Re-check in ~24 h for
+> a slow device-record refresh, then revert `7f6afdc5` + `c59a377c`.
+>
+> **2026-11-03 19:15: adbd non-root (`adb unroot`, `service.adb.root=0`, no su binary) → still
+> `[]`.** A live root adb session is not the flag.
+>
+> **Staged 2026-11-03: the September PIF graft, ported to 24.0.** frameworks/base
+> `3f0cda8daad6` (pushed): `android.security.pif.PlayIntegritySpoofService` +
+> `PifKeyStoreProvider` (recovered from the builder's 23.2 tree, untracked) and the
+> `ActivityThread.handleBindApplication` hook. Inert unless `Settings.Secure spoof_pif_config`
+> is set. In 23.2 (Sept, memory `evolution-x-pif-graft`) four cells — Pixel identity,
+> attestation-hide, signature, global Pixel fingerprint — all fired and all hit `-12`, so they
+> were never *graded*. Now they can be. Bench: `diag-tools/play-integrity/pif.sh <unit>
+> {apply|clear|status|cell|sweep}`, configs in `diag-tools/play-integrity/configs/`:
+> A stock-8.1 identity in DroidGuard (incl. RELEASE 8.1.0, patch 2020-09-01, initial SDK 27),
+> B = A + SDK_INT 27, C = A + hide attestation, D = B + C. Note the Mi8937 system-wide prop
+> experiment (`c59a377c`, `7f6afdc5`) is still in the build underneath.
+>
+> **⚠️ A17 ART blocks reflective writes to `static final` fields** for apps targeting > B
+> (`art/runtime/art_field-inl.h` `IsUnmodifiable`; GMS targets 37) — the first flash logged
+> `Cannot set public static final field … Build$VERSION.SECURITY_PATCH`, i.e. PIF-style spoofs
+> silently do nothing on A17. Fixed in frameworks/base `f3eb992bb125`: fall back to
+> `jdk.internal.misc.Unsafe` (staticFieldBase/Offset + put*Volatile), read back to confirm.
+>
+> **Cells 2026-11-04 02:03–02:10, new2 (gapps 20261103-20:52 = `f3eb992` + `7f6afdc5`), every
+> spoof confirmed live in the DroidGuard log — ALL `Labels: []`:**
+>
+> | Cell | DroidGuard sees | Result |
+> |---|---|---|
+> | A | stock 8.1 identity, RELEASE 8.1.0, patch 2020-09-01, initial SDK 27 | `[]` |
+> | B | A + SDK_INT 37→27 | `[]` |
+> | C | A + HW attestation chain hidden (`Hiding hardware attestation chain for alias 'unstable.…'`) | `[]` |
+> | D | B + C | `[]` |
+> | E | Sept Pixel 10 Pro XL canary identity + attestation hidden (+ Play Store fingerprint) | `[]` |
+> | F | E + Google platform signature for "android" | `[]` |
+> | G | C + Play Store SDK_INT 37→32 (`spoofVendingSdk`, PIF's switch to the <A13 verdict rules) | `[]` |
+> | H | E + Play Store SDK_INT 32 | `[]` |
+>
+> Gaps left by these cells: **Play Store (com.android.vending) does its OWN key attestation**
+> (`Finsky: Integrity key attestation record generated successfully`, pid = vending) and the
+> hook only hides attestation in DroidGuard → needs a vending-side provider hide (code
+> change). Java-field spoofs don't reach DroidGuard's native property reads
+> (`ro.build.version.*` stay 37 / 2026-10 natively). PlayIntegrityFork does this with a libc hook
+> (`spoofProps`, ShadowHook) in DroidGuard only, and its README says DEVICE "requires at least
+> spoofProps"; we have no equivalent. (Don't do it system-wide: keystore2 takes the OS patch
+> level from `ro.build.version.security_patch`, so a system-wide change risks key upgrades /
+> rollback on the lockscreen + FBE keys.) Still untested: fresh device record
+> (wipe → new GSF ID), our 23.2/A16 build (Zach gets BASIC on LOS 23.2), Zach's exact recipe.
+
 > ⚠️ **This supersedes the 2026-07-23 "model-specific / not our build" conclusion.** That
 > earlier read ("the A11 GSI got `-12` too, so the fault can't be our software") was
 > **wrong** — it rested on a single primary-account GSI observation. When re-tested cleanly
@@ -200,6 +339,11 @@ Would **not** qualify: more prop/fingerprint spoofing (proven inert), or keybox 
 (out of scope).
 
 ## Method notes worth keeping
+
+- ⭐ **One command:** `diag-tools/play-integrity/check-integrity.py <unit>` drives the Play
+  Store's Check integrity over adb (unlocks, enables Play Store dev options if hidden),
+  prints the dialog + GRADED/ERROR verdict, saves screenshot/logcat/result.txt to
+  `~/android/lineage-24/integrity-checks/` (off-repo: the dialog has a TestId). Exit 0 = graded.
 
 - `-12` vs graded is unambiguous in logcat: `-12` = the Volley 500 / `DF-DFERH-01` above; a
   graded-but-failing request is a clean 200 with an empty `deviceRecognitionVerdict`. Don't

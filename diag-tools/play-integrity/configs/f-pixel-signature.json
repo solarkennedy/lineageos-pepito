@@ -1,0 +1,16 @@
+{
+  "_comment": "F: E + Google platform signature for \"android\" (Sept cell 3); September's Pixel 10 Pro XL canary identity in DroidGuard (Sept cell 1, stale 2026-08 canary) + Play Store fingerprint",
+  "MANUFACTURER": "Google",
+  "BRAND": "google",
+  "MODEL": "Pixel 10 Pro XL",
+  "PRODUCT": "mustang_beta",
+  "DEVICE": "mustang",
+  "FINGERPRINT": "google/mustang_beta/mustang:CANARY/ZP11.260717.006/16004061:user/release-keys",
+  "SECURITY_PATCH": "2026-08-05",
+  "spoofBuild": "1",
+  "spoofVendingFinger": "1",
+  "spoofVendingSdk": "0",
+  "spoofProvider": "1",
+  "spoofSignature": "1",
+  "verboseLogs": "1"
+}

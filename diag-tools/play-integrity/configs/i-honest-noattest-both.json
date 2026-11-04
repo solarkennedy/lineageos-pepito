@@ -1,0 +1,10 @@
+{
+  "_comment": "I: honest identity (no Build fields touched); hide HW key attestation in BOTH DroidGuard and the Play Store. The 'green boot, withhold attestation' middle path.",
+  "spoofBuild": "0",
+  "spoofVendingFinger": "0",
+  "spoofVendingSdk": "0",
+  "spoofProvider": "1",
+  "spoofVendingProvider": "1",
+  "spoofSignature": "0",
+  "verboseLogs": "1"
+}
