@@ -45,6 +45,13 @@ always = [
     "test_system.py::test_pepito_screens_open",
     # Flash power tweak: setting -> kernel cap. Read-only.
     "test_camera.py::test_flash_cap_follows_setting",
+    # A VoLTE call each way over LTE with Wi-Fi off: what most users do, and where
+    # both 2026-11 user regressions showed up (US Mobile Verizon "Server error",
+    # T-Mobile calls dropping on answer). Two real calls (test line + Twilio),
+    # ~4 min; they skip in quiet hours and under a capture, which the gate counts
+    # as not passed, so run them in the daytime on a free unit.
+    "test_wfc.py::test_call_cellular",
+    "test_wfc.py::test_call_incoming[lte]",
 ]
 
 [groups.wfc]
@@ -52,9 +59,7 @@ description = "Wi-Fi calling: IWLAN bridge + TH2 steering, WfcBridge, IMS/QMI pl
 tests = [
     "test_wfc.py::test_call_hold",
     "test_wfc.py::test_call_walkaway",
-    "test_wfc.py::test_call_cellular",
     "test_wfc.py::test_call_incoming[wlan]",
-    "test_wfc.py::test_call_incoming[lte]",
 ]
 paths = [
     "device/xiaomi/Mi8937/qmux/*",

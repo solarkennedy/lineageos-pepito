@@ -23,6 +23,7 @@ vendor/
 *.swp
 .DS_Store
 .release-notes.md
+.release-notes-next.md
 .release-xda-post.txt
 
 # Magisk APK for scripts/make-magisk-boot.sh — upstream binary, not ours to vendor.
