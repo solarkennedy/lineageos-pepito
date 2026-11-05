@@ -119,6 +119,12 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > (`ro.build.version.*` still 17/37/2026-10 natively; PlayIntegrityFork says DEVICE needs
 > spoofProps).
 >
+> **Result 2026-11-05 17:27–17:30 UTC, dut1 gapps 20261105 (Mi8937 `76e7ba5a`, system-wide stock
+> 8.1 fingerprint/device/build id/type, `Device: Pepito`), grafted GREEN, no wipe:** control →
+> BASIC; J (+ DroidGuard Java 8.1 fields, Play Store SDK 32 confirmed, attestation visible) →
+> BASIC; B → BASIC. ⇒ the 8.1 identity (props + Java) is inert on a passing unit too. Left:
+> native `ro.build.version.*` in DroidGuard (lever 2).
+>
 > **Staged 2026-11-05: lever 1 on dut1.** Mi8937 `844118a7` + `76e7ba5a` (pushed, unbuilt) re-apply
 > the system-wide stock 8.1 identity (`c59a377c` + `7f6afdc5`). **Test-only: revert both before a
 > release.** Test = gapps build → dut1 (no wipe) → control, then `pif.sh dut1 cell configs/j-…`.
