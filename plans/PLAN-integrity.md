@@ -119,6 +119,10 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > (`ro.build.version.*` still 17/37/2026-10 natively; PlayIntegrityFork says DEVICE needs
 > spoofProps).
 >
+> **Staged 2026-11-05: lever 1 on dut1.** Mi8937 `844118a7` + `76e7ba5a` (pushed, unbuilt) re-apply
+> the system-wide stock 8.1 identity (`c59a377c` + `7f6afdc5`). **Test-only: revert both before a
+> release.** Test = gapps build → dut1 (no wipe) → control, then `pif.sh dut1 cell configs/j-…`.
+>
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer
 > options → Check integrity: **`Labels: []`** with a TestId, log shows a clean
