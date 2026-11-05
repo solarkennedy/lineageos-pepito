@@ -75,6 +75,13 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > **new2 12:30, rooted debugging fully OFF** (`persist.vendor.xiaomi.adbroot` 0 — the opt-in
 > root-at-boot switch in `init.xiaomi.device.rc` — `/data/adbroot/enabled` 0, rebooted, adbd
 > uid 2000, `adb root` refused) → still `[]`. Rooted debugging is not the new2/dut1 difference.
+>
+> **dut1 2026-11-05 05:23, after GMS/Play Store self-updated to new2's exact versions (26.43.30 /
+> 53.8.11), alt account, green graft, no config → still `[MEETS_BASIC_INTEGRITY]`.** ⇒ GMS
+> version is NOT it. A fresh install of the current build passes on current GMS. What's left on
+> new2: its device record / GSF ID and GMS state (not reset since Sept; months of -12), or the unit.
+> Non-destructive-ish next: clear Google Services Framework data on new2 (new GSF android_id →
+> new device record) — side effects on a daily phone (push re-registration), ask first.
 
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer

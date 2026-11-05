@@ -120,7 +120,25 @@ def unlock(phone, unit):
 def open_dev_options(phone):
     phone.sh(f"am force-stop {VENDING}")
     phone.sh(f"am start -n {VENDING}/com.google.android.finsky.activities.MainActivity", check=True)
-    phone.wait_tap(r"^Signed in as|Account and settings", timeout=30, what="account avatar")
+    # Signed out, the account avatar is replaced by an "Options" menu that
+    # still has Settings (the integrity API works without an account).
+    # A fresh account first gets a "local recommendations" prompt; decline it.
+    avatar = r"^Signed in as|Account and settings|^Options$"
+    deadline = time.time() + 30
+    while True:
+        nodes = phone.nodes()
+        c = phone.find(r"^No thanks$", nodes)
+        if c:
+            phone.tap(*c)
+            time.sleep(2)
+            continue
+        c = phone.find(avatar, nodes)
+        if c:
+            phone.tap(*c)
+            break
+        if time.time() > deadline:
+            sys.exit("couldn't find 'account avatar or Options menu' on screen")
+        time.sleep(0.7)
     time.sleep(2)
     phone.wait_tap(r"^Settings$", timeout=20, scrolls=4)
     time.sleep(2)
