@@ -143,7 +143,7 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 >    prefix-based, global-area — not reused; ours is truly process-local.)
 >  - **libpifprop** (`frameworks/base/pif/jni`, shipped via Mi8937 `e2572517`): JNI bridge to
 >    those setters, `System.loadLibrary` from the ActivityThread bind hook in DroidGuard only.
->  - **frameworks/base** `3a928828747d`: wires the inert `spoofProps` key — dotted config keys
+>  - **frameworks/base** `d5348f02f344`: wires the inert `spoofProps` key — dotted config keys
 >    (`ro.build.version.*`) become native overrides in DroidGuard; `spoofProps(processName)` is
 >    gated on `isDroidGuard` + `spoofProps=1`.
 >  - **config K** (`k-stock81-nativeprops.json`) = J + the 5 native props still real on the
