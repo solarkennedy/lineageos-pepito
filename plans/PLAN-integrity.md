@@ -108,6 +108,17 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > `/dev/__properties__`) and in-memory checks are invisible to this. Remaining suspect: something
 > server-side keyed on new2's hardware identity (serial / IMEI / attestation key).
 
+> **dut1 spoof matrix 2026-11-05 16:38–16:44 UTC** (every earlier spoof cell ran on new2 only,
+> so they were never tested on a unit that can pass). dut1 `c39a6acf`, gapps 20261104, grafted
+> GREEN (TEE cert = stock-identical GREEN/locked/Palm key/8.1.0/2020-09), alt account, GMS
+> 26.43.30: control → BASIC; **J** (new: stock 8.1 identity in DroidGuard + Play Store SDK 32,
+> attestation VISIBLE) → BASIC; A, B, G → BASIC. All spoofs confirmed live (`PIF/Java:DG` fields,
+> `PIF/Java:PS: [SDK_INT]: 37 -> 32`, attestation record generated). ⇒ Java-level spoofs neither
+> hurt nor buy DEVICE on a passing unit. Untried on dut1: the system-wide libinit 8.1 identity
+> (revert `8570516a` + `506530ba`; needs a build) under J, and native props in DroidGuard
+> (`ro.build.version.*` still 17/37/2026-10 natively; PlayIntegrityFork says DEVICE needs
+> spoofProps).
+>
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer
 > options → Check integrity: **`Labels: []`** with a TestId, log shows a clean
