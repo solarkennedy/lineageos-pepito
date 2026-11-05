@@ -125,6 +125,36 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > BASIC; B → BASIC. ⇒ the 8.1 identity (props + Java) is inert on a passing unit too. Left:
 > native `ro.build.version.*` in DroidGuard (lever 2).
 >
+> **Lever 2 built 2026-11-05: native prop spoofing in DroidGuard, the SELinux-clean way.**
+> ShadowHook (PIF's inline hook of `__system_property_read_callback`) is a dead end for us:
+> DroidGuard runs in the `gmscore_app` app domain, enforcing, and an inline hook needs
+> `execmod` (patch libc .text in place), which has a CTS neverallow and no grant — PIF only
+> gets away with it from Magisk's privileged context. (`execmem` for trampolines IS granted to
+> app domains, so that part was a red herring.) ShadowHook 2.0.1 itself works on A17; the A17
+> breakage reports are Zygisk-injection problems, which we sidestep by injecting from the
+> framework. But the execmod wall is real. Chose instead a **process-local override in bionic**:
+> no inline hook, no execmod, no `mprotect`, libc-on-disk == libc-in-memory.
+>  - **bionic fork** `solarkennedy/android_bionic` `pepito-24` (`27c7bb28c5`, in manifest): a
+>    per-process table in libc, empty until populated via `__system_property_override_add`
+>    (LIBC_PLATFORM); `SystemProperties::Read`/`ReadCallback` return the override for a matching
+>    name. Nothing hits the shared `__properties__` area (invisible to other processes and to
+>    getprop; keystore OS patch level untouched). bionic IS built from source here, so it takes
+>    effect. (Note: bionic already has an unrelated appcompat override — `EnableOverrides`,
+>    prefix-based, global-area — not reused; ours is truly process-local.)
+>  - **libpifprop** (`frameworks/base/pif/jni`, shipped via Mi8937 `e2572517`): JNI bridge to
+>    those setters, `System.loadLibrary` from the ActivityThread bind hook in DroidGuard only.
+>  - **frameworks/base** `3a928828747d`: wires the inert `spoofProps` key — dotted config keys
+>    (`ro.build.version.*`) become native overrides in DroidGuard; `spoofProps(processName)` is
+>    gated on `isDroidGuard` + `spoofProps=1`.
+>  - **config K** (`k-stock81-nativeprops.json`) = J + the 5 native props still real on the
+>    libinit-8.1 build: `ro.build.version.{release,release_or_codename,sdk,security_patch,incremental}`
+>    → 8.1. Symbol export verified in the apex libc (`__system_property_override_add@@LIBC_PLATFORM`).
+> Test = gapps build (picks up all four forks) → dut1 → control, then `pif.sh dut1 cell configs/k-…`.
+> ⚠️ Expected payoff is DEVICE on top of BASIC, and may still fail without a keybox (out of scope);
+> may also perturb DroidGuard (it reads sdk=27 of itself). Test-only stack; revert `844118a7`,
+> `76e7ba5a` (identity) before release; the bionic/libpifprop/spoofProps plumbing is inert when
+> unconfigured and safe to keep.
+>
 > **Staged 2026-11-05: lever 1 on dut1.** Mi8937 `844118a7` + `76e7ba5a` (pushed, unbuilt) re-apply
 > the system-wide stock 8.1 identity (`c59a377c` + `7f6afdc5`). **Test-only: revert both before a
 > release.** Test = gapps build → dut1 (no wipe) → control, then `pif.sh dut1 cell configs/j-…`.
