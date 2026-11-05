@@ -82,7 +82,7 @@ phone. Other agent sessions may be running captures on bench phones (look for
 `diag_mdlog` or strace jobs in `ps`) — don't toggle a radio, Wi-Fi or
 Bluetooth under them.
 
-Pattern-locked phones: run `android-unlock-<nick>` (`new2`, `dut1`, `silver`)
+Pattern-locked phones: run `android-unlock-<nick>` (`new2`, `silver`; dut1 has no lock)
 whenever you need the screen unlocked; no need to ask. The patterns live in the
 units.conf header, never in this repo. Each failed run counts as a wrong
 attempt (five trigger a 30 s lockout), so don't loop it.

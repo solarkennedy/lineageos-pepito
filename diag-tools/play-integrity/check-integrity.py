@@ -122,12 +122,13 @@ def open_dev_options(phone):
     phone.sh(f"am start -n {VENDING}/com.google.android.finsky.activities.MainActivity", check=True)
     # Signed out, the account avatar is replaced by an "Options" menu that
     # still has Settings (the integrity API works without an account).
-    # A fresh account first gets a "local recommendations" prompt; decline it.
+    # A fresh account (or cleared GMS data) first gets promo prompts ("local
+    # recommendations", "Introducing Google Play Points", ...); decline them.
     avatar = r"^Signed in as|Account and settings|^Options$"
     deadline = time.time() + 30
     while True:
         nodes = phone.nodes()
-        c = phone.find(r"^No thanks$", nodes)
+        c = phone.find(r"^(No thanks|Not now|Maybe later|Skip|Got it)$", nodes)
         if c:
             phone.tap(*c)
             time.sleep(2)

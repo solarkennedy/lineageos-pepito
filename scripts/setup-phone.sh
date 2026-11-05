@@ -33,10 +33,8 @@
 #   WIFI_SECURITY=wpa2        # optional: open | owe | wpa2 | wpa3 (cmd wifi connect-network)
 #
 # Rooting: `adb root` refuses while Settings > Developer options > Rooted
-# debugging is off, which it is after a wipe. adbd itself only reads
-# service.adb.root (a prop shell may set) when it starts, so the script sets it
-# and restarts adbd, then turns the Settings toggle on (/data/adbroot/enabled)
-# so later `adb root`s work and Settings shows the truth.
+# debugging is off, which it is after a wipe. root-phone.sh (also usable on
+# its own) gets a root adbd anyway and turns the Settings toggle on.
 #
 # After a Test Harness Mode wipe (flash-staging.sh --wipe) it also undoes that
 # mode's side effects: persist.sys.test_harness, lock screen disabled, stay-awake,
@@ -82,7 +80,7 @@ while [[ $# -gt 0 ]]; do
         --root-on-boot) ROOT_ON_BOOT=1 ;;
         --google)       GOOGLE=1 ;;
         --auth-wait)    [[ -n "${2:-}" ]] || die "$1 needs a value"; AUTH_WAIT=$2; shift ;;
-        -h|--help)      sed -n '2,51p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)      sed -n '2,49p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)             die "unknown option $1 (try --help)" ;;
         *)              UNIT=$1 ;;
     esac
@@ -153,38 +151,10 @@ wait_boot() {
 
 # ---- root ------------------------------------------------------------------
 
+# Root adbd now and Rooted debugging on: scripts/root-phone.sh does both.
 get_root() {
-    is_root && return 0
-    local out
-    out=$(dadb root 2>&1 | tr -d '\r' || true)
-    if grep -q "disabled by system setting" <<<"$out"; then
-        # Rooted debugging is off (it always is after a wipe). adbd reads
-        # service.adb.root at startup; shell may set it, and `adb usb`/`adb tcpip`
-        # make adbd exit so init restarts it. tcpip on units reached over the
-        # network: `adb usb` would set service.adb.tcp.port=0 and close TCP until
-        # the next reboot.
-        echo "   Rooted debugging is off; restarting adbd with service.adb.root=1"
-        # Even a refused root: restarts adbd (exit_on_close), so let it come back first.
-        sleep 3
-        timeout 60 adb -s "$SERIAL" wait-for-device </dev/null || true
-        sh_ setprop service.adb.root 1
-        if [[ "$TS_IP" != "-" || "$LAN_IP" != "-" ]]; then dadb tcpip 5555 >/dev/null; else dadb usb >/dev/null; fi
-    elif [[ -n "$out" ]]; then
-        echo "   $out"
-    fi
-    sleep 3
-    timeout 60 adb -s "$SERIAL" wait-for-device </dev/null || true
-    local i
-    for i in $(seq 1 20); do is_root && return 0; sleep 1; done
-    die "could not get a root adbd on $NICK (adb root said: ${out:-nothing})"
-}
-
-# Settings > Developer options > Rooted debugging, as adb_root keeps it.
-root_toggle_on() {
-    [[ "$(sh_ cat /data/adbroot/enabled 2>/dev/null)" == 1 ]] && return 0
-    sh_ 'mkdir -p /data/adbroot && echo 1 > /data/adbroot/enabled'
-    # adb_root reads the file only when it starts.
-    sh_ setprop ctl.restart adb_root 2>/dev/null || warn "couldn't restart adb_root; the toggle shows on after a reboot"
+    is_root && [[ "$(sh_ cat /data/adbroot/enabled 2>/dev/null)" == 1 ]] && return 0
+    "$(dirname "$(readlink -f "$0")")/root-phone.sh" "$SERIAL" | grep -v '^Target:' || die "root-phone.sh failed on $NICK"
 }
 
 # ---- Wi-Fi config ----------------------------------------------------------
@@ -399,7 +369,6 @@ say "waiting for boot to complete"
 wait_boot
 say "root"
 get_root
-root_toggle_on
 if [[ "$ROOT_ON_BOOT" -eq 1 ]]; then sh_ setprop persist.vendor.xiaomi.adbroot 1; echo "   root on boot"; fi
 # Developer options shown; never time out this host's authorization.
 sh_ settings put global development_settings_enabled 1

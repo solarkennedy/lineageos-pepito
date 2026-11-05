@@ -82,6 +82,14 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > new2: its device record / GSF ID and GMS state (not reset since Sept; months of -12), or the unit.
 > Non-destructive-ish next: clear Google Services Framework data on new2 (new GSF android_id →
 > new device record) — side effects on a daily phone (push re-registration), ask first.
+>
+> **new2 2026-11-05, each still `[]`:** `pm clear com.google.android.gsf` (fresh GSF ID; checkin
+> SUCCESS) → `[]`; no root leftovers (`/data/adb` empty, no su, no Magisk/KSU/APatch/LSPosed
+> packages, only our own overlay mounts); `pm clear com.google.android.gms` → `[]`. User apps:
+> 31 ordinary daily apps on new2, none root/hooking tools. Ruled out on new2 so far: build,
+> identity, boot signature, attestation, rooted debugging, GMS/Play Store version, GSF ID, GMS
+> state, root leftovers. Left: the unit's hardware identity (serial/IMEI/attestation key — Google
+> may have flagged it during the -12 months), other /data state, or the second account.
 
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer
