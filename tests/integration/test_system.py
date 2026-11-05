@@ -3,7 +3,8 @@ upstream rebase (PLAN-android17.md, "Upstream rebase 2026-10-23"), made repeatab
 
 What they guard: the build being the one we stamped, a security patch level
 that isn't stale, no platform crash or unknown SELinux denial since boot, GApps
-privileged on gapps builds, the pepito UI patches carried in rebased forks
+privileged on gapps builds, the modem_evs EVS cap left on T-Mobile's item only,
+the Play Integrity hooks inert without a config, the pepito UI patches carried in rebased forks
 (3-button nav in Launcher3 + the vendor/lineage taskbar flag, the QS volume
 slider, the torch tile, Updater, the PVG100 Tweaks pages) and cellular service.
 
@@ -46,6 +47,15 @@ PEPITO_SCREENS = [
     "org.lineageos.lineageparts/.radio.ModemTweaksSettings",   # PVG100 Modem Tweaks
 ]
 GMS = "com.google.android.gms"
+
+# modem_evs (device/xiaomi/Mi8937/qmux/modem_evs.c): byte 9 of the 32-byte EFS
+# item qipcall_evs_codec_config is the max EVS bandwidth (02 WB, 03 SWB). Only
+# the T-Mobile layout (every other byte as below) may ever be capped: 20261101
+# capped Verizon's hvolte item and its EVS calls failed until modemst was restored.
+EVS_TMO_LAYOUT = bytes.fromhex("0000100000000000" "02") + bytes(23)
+EVS_BW_BYTE = 9
+# A run takes up to 150 s to reach the modem, then flushes for 180 s.
+EVS_SETTLE_S = 420
 
 
 # --- helpers -----------------------------------------------------------------
@@ -191,6 +201,66 @@ def test_cell_service(dut):
     if dut.sh("settings get global mobile_data") == "1":
         dut.wait_for("dumpsys telephony.registry | grep -m1 mDataConnectionState",
                      lambda out: "mDataConnectionState=2" in out, timeout=60, interval=5)
+
+
+# --- modem tweaks ------------------------------------------------------------
+
+@pytest.mark.timeout(EVS_SETTLE_S + 60)
+def test_modem_evs_cap(dut):
+    """modem_evs settled without failing, caps EVS at WB on the T-Mobile item
+    unless SWB is allowed, and never wrote a cap on any other carrier's item."""
+    if dut.prop("ro.vendor.qmux.enable") != "1":
+        pytest.skip("qmux off: modem_evs never runs")
+    if not dut.active_sub():
+        pytest.skip(f"{dut.nick} has no active SIM: no carrier profile loaded")
+    keys = ("vendor.pepito.modem.evs", "vendor.pepito.modem.evs_item",
+            "vendor.pepito.modem.evs_write", "vendor.pepito.modem.evs_marker",
+            "persist.gotweak.modem_evs_swb", "init.svc.qmux_modem_evs")
+    settled = lambda p: (p.get("init.svc.qmux_modem_evs") != "running"
+                         and p.get("vendor.pepito.modem.evs") not in ("", "saving"))
+    end = time.monotonic() + EVS_SETTLE_S
+    p = dut.props(*keys)
+    while not settled(p) and time.monotonic() < end:
+        time.sleep(10)
+        p = dut.props(*keys)
+    status, write = p.get("vendor.pepito.modem.evs"), p.get("vendor.pepito.modem.evs_write", "")
+    info = ", ".join(f"{k.rsplit('.', 1)[-1]}={v}" for k, v in p.items())
+    assert settled(p), f"modem_evs still running or saving after {EVS_SETTLE_S} s: {info}"
+    assert status not in ("failed", "off"), f"modem_evs {status}: {info} (logcat -s modem_evs)"
+
+    item = bytes.fromhex(p.get("vendor.pepito.modem.evs_item", ""))
+    if len(item) != len(EVS_TMO_LAYOUT):
+        assert status == "none", f"no full EVS item ({p.get('vendor.pepito.modem.evs_item')}) but {info}"
+        return
+    tmo = all(a == b for i, (a, b) in enumerate(zip(item, EVS_TMO_LAYOUT)) if i != EVS_BW_BYTE)
+    if not tmo:
+        assert not write.startswith("cap"), f"capped a non-T-Mobile EVS item (the 20261101 bug): {info}"
+        assert status in ("none", "unsupported", "restart"), f"non-T-Mobile item: {info}"
+        return
+    swb = p.get("persist.gotweak.modem_evs_swb") == "1"
+    want = 0x03 if swb else 0x02
+    assert item[EVS_BW_BYTE] == want, \
+        f"T-Mobile item byte 9 = {item[EVS_BW_BYTE]:02x}, want {want:02x} (SWB allowed: {swb}): {info}"
+    assert status in (("swb" if swb else "capped"), "restart"), f"T-Mobile item: {info}"
+    if not swb:
+        assert p.get("vendor.pepito.modem.evs_marker") == "3", \
+            f"capped without its marker: allowing SWB couldn't restore it: {info}"
+
+
+# --- Play Integrity ----------------------------------------------------------
+
+def test_pif_hooks_inert(dut):
+    """Without a config the Play Integrity spoof hooks (frameworks/base
+    ActivityThread -> android.security.pif) change nothing: no config is set or
+    shipped, and no process loaded one since boot."""
+    cfg = dut.sh("settings get secure spoof_pif_config")
+    if cfg not in ("null", ""):
+        pytest.skip(f"{dut.nick} carries a PIF experiment config (spoof_pif_config set); "
+                    "run on a unit without one")
+    assert dut.sh("[ -e /system/etc/pif.json ] && echo y || true") != "y", \
+        "/system/etc/pif.json is shipped: the hooks are live on every install"
+    loaded = dut.sh("logcat -d -b main -s PIF 2>/dev/null | grep 'PIF config loaded' || true")
+    assert not loaded, f"PIF hooks acted with no config set:\n{loaded[-2000:]}"
 
 
 # --- pepito UI (rebased forks) ---------------------------------------------

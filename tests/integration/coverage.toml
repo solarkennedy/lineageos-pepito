@@ -43,6 +43,12 @@ always = [
     "test_system.py::test_quick_settings",
     "test_system.py::test_three_button_nav",
     "test_system.py::test_pepito_screens_open",
+    # modem_evs: EVS capped at WB on the T-Mobile item only (20261101 capped
+    # Verizon's and was withdrawn); the PIF spoof hooks, which run in every app's
+    # handleBindApplication, inert with no config. Read-only; the EVS one waits
+    # up to 7 min for a fresh boot's run to settle.
+    "test_system.py::test_modem_evs_cap",
+    "test_system.py::test_pif_hooks_inert",
     # Flash power tweak: setting -> kernel cap. Read-only.
     "test_camera.py::test_flash_cap_follows_setting",
     # A VoLTE call each way over LTE with Wi-Fi off: what most users do, and where
