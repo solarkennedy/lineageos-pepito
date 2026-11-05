@@ -90,6 +90,12 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > identity, boot signature, attestation, rooted debugging, GMS/Play Store version, GSF ID, GMS
 > state, root leftovers. Left: the unit's hardware identity (serial/IMEI/attestation key — Google
 > may have flagged it during the -12 months), other /data state, or the second account.
+>
+> ⚠️ Correction: the GSF/GMS-clear and rooted-debugging-off runs had attestation VISIBLE (pif
+> config is cleared after each sweep cell). The combination was then run explicitly — cell I
+> (attestation hidden in DroidGuard + Play Store, `Integrity key attestation record generation
+> failed`) on the post-GSF/GMS-clear new2, 2026-11-05 05:59 → still `[]`. (05:57 attempt was a
+> `-3` network error from a Wi-Fi reconnect; the check script now reports error dialogs.)
 
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer

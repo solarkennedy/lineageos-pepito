@@ -208,7 +208,8 @@ def main():
         time.sleep(2)
         nodes = phone.nodes()
         if any(t.startswith("Labels:") or re.search(r"(?i)error|failed|try again", t) for t, _, _ in nodes):
-            if phone.find(r"^Dismiss$", nodes):
+            # A verdict dialog ends in Dismiss; an error dialog (-3, -12, ...) in Retry.
+            if phone.find(r"^(Dismiss|Retry)$", nodes):
                 dialog = [t for t, _, _ in nodes if t]
                 break
     elapsed = time.time() - started
@@ -225,13 +226,15 @@ def main():
     # The dialog sits on top of the Developer options page; keep only its lines.
     if "Play Integrity" in dialog:
         dialog = dialog[len(dialog) - dialog[::-1].index("Play Integrity") - 1:]
-    dialog = [t for t in dialog if t not in ("Dismiss", "Share")
+    dialog = [t for t in dialog if t not in ("Dismiss", "Retry", "Share")
               and not re.match(r"^(Games|Apps|Search|Books|Developer options)$", t)]
     labels = next((t for t in dialog if t.startswith("Labels:")), None)
+    if not labels:
+        labels = next((t.splitlines()[0] for t in dialog if t.startswith("Error:")), None)
     log500 = re.findall(r".*(?:DF-DFERH|fdfe/integrity.*\b500\b|Unexpected response code 500).*", log)
     finished = re.findall(r".*requestIntegrityToken\(\) finished.*", log)
 
-    if labels and not log500:
+    if labels and labels.startswith("Labels:") and not log500:
         verdict = "GRADED"
     elif log500 or dialog:
         verdict = "ERROR"
