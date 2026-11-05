@@ -96,6 +96,17 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > (attestation hidden in DroidGuard + Play Store, `Integrity key attestation record generation
 > failed`) on the post-GSF/GMS-clear new2, 2026-11-05 05:59 → still `[]`. (05:57 attempt was a
 > `-3` network error from a Wi-Fi reconnect; the check script now reports error dialogs.)
+>
+> **DroidGuard path trace, 2026-11-05** (`diag-tools/play-integrity/dg-pathtrace.sh`: kretprobe on
+> `getname_flags`, raw-word fetch of `struct filename` iname — the kernel's `:string` fetch faults;
+> no ptrace, so DroidGuard can't see it: dut1 still **BASIC under trace**). Fresh DroidGuard on
+> both units: 145 (dut1) vs 154 (new2) probe-like paths, the same root sweep (`/sbin/su`,
+> `/system/xbin/su`, `/data/local/tmp/su`, `/proc/self/{maps,mounts,status}`, selinux, …).
+> new2-only lookups all benign: `/sys/class/net/` (no VPN up; same interfaces), `/system/etc/hosts`
+> (identical sha), `cacerts-removed/*` (empty dir — conscrypt's per-cert check), cpufreq/cpuinfo.
+> ⇒ DroidGuard's file-level view of the two phones is equivalent. Property reads (mmap of
+> `/dev/__properties__`) and in-memory checks are invisible to this. Remaining suspect: something
+> server-side keyed on new2's hardware identity (serial / IMEI / attestation key).
 
 > 🆕 **2026-11-03: `-12` IS GONE — we are now GRADED (empty verdict).** new2 (`9c2e6b00`,
 > 24.0 gapps `20261102`, primary account), Play Store → Settings → General → Developer
