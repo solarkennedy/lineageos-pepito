@@ -125,6 +125,14 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > BASIC; B → BASIC. ⇒ the 8.1 identity (props + Java) is inert on a passing unit too. Left:
 > native `ro.build.version.*` in DroidGuard (lever 2).
 >
+> **🧹 REVERTED 2026-11-05 (Kyle): everything from both levers.** Mi8937 `3032cd63`/`88c9fa99`
+> (8.1 identity) + `7f5cfb10` (libpifprop packaging); frameworks/base `5f1ad28ebe3b` (spoofProps +
+> pif/jni). bionic fork removed from the manifest (back to upstream LineageOS bionic); GitHub fork
+> `solarkennedy/android_bionic` dropped. Kept: the inert PIF DroidGuard/Play-Store hooks in
+> frameworks/base (`3f0cda8`, `f3eb992`, `585e149`). The honest plain build gets BASIC on dut1; that
+> is the achievable ceiling without a keybox. diag-tools configs (J/K/K2/K3) + this plan are the
+> record. Next build is clean (no test spoof); dut1 keeps BASIC on its current build until reflashed.
+>
 > **❌ RESULT 2026-11-05 20:36–20:42 UTC: lever 2 makes it WORSE, not better.** dut1 gapps
 > 20261105 (lever-2 build, libinit 8.1 identity underneath), grafted GREEN: control → BASIC;
 > **cell K (native `ro.build.version.*` -> 8.1 via the bionic override, 5 props applied) → `[]`**.

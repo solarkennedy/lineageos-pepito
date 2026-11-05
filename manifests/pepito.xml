@@ -22,8 +22,6 @@
   <project path="kernel/xiaomi/msm8937" name="android_kernel_xiaomi_msm8937" remote="pepito" revision="pepito-24" />
 
   <!-- AOSP-repo forks rebased onto lineage-24.0 (2026-10-06). Not carried: system/core (fs_mgr moved to system/fs/fs_mgr). -->
-  <remove-project name="LineageOS/android_bionic" />
-  <project path="bionic" name="android_bionic" remote="pepito" revision="pepito-24" groups="pdk" />
   <remove-project name="LineageOS/android_frameworks_base" />
   <project path="frameworks/base" name="android_frameworks_base" remote="pepito" revision="pepito-24" groups="pdk-cw-fs,pdk-fs,sysui-studio" />
   <remove-project name="LineageOS/android_frameworks_native" />
