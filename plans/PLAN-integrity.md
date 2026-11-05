@@ -125,6 +125,22 @@ no ROM-side fix that isn't a dishonest spoof (and the spoofs we tried don't even
 > BASIC; B → BASIC. ⇒ the 8.1 identity (props + Java) is inert on a passing unit too. Left:
 > native `ro.build.version.*` in DroidGuard (lever 2).
 >
+> **❌ RESULT 2026-11-05 20:36–20:42 UTC: lever 2 makes it WORSE, not better.** dut1 gapps
+> 20261105 (lever-2 build, libinit 8.1 identity underneath), grafted GREEN: control → BASIC;
+> **cell K (native `ro.build.version.*` -> 8.1 via the bionic override, 5 props applied) → `[]`**.
+> Narrowing: K2 (the 4 version props, NO sdk) → `[]`; K3 (sdk=27 ALONE) → `[]`. So ANY native
+> build.version override via the libc path drops BASIC to empty — not sdk-specific. Clearing
+> restores BASIC (control after clear → BASIC), so the override is confirmed fully reversible and
+> process-local; the mechanism works, the spoof just backfires. Most likely DroidGuard reads
+> these props a second way it trusts (direct mmap of `/dev/__properties__`, or the server-side
+> checkin/Play Store report) and the one-sided libc-path change reads as tampering. PIF's
+> `__system_property_read_callback` hook touches the same single path, so it would plausibly be
+> caught here too; consistent with the ecosystem signal that DEVICE now needs a keybox (out of
+> scope). **Conclusion: prop spoofing cannot buy DEVICE for us, and native prop spoofing actively
+> breaks BASIC.** The bionic override / libpifprop / spoofProps plumbing works and is inert when
+> unconfigured, but buys nothing; keep only if there's a future use, else revert the lever-2 stack
+> with the 8.1 identity.
+>
 > **Lever 2 built 2026-11-05: native prop spoofing in DroidGuard, the SELinux-clean way.**
 > ShadowHook (PIF's inline hook of `__system_property_read_callback`) is a dead end for us:
 > DroidGuard runs in the `gmscore_app` app domain, enforcing, and an inline hook needs
