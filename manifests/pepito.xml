@@ -51,6 +51,8 @@
   <project path="hardware/lineage/interfaces" name="android_hardware_lineage_interfaces" remote="pepito" revision="pepito-24" />
   <remove-project name="platform/system/bpfprogs" />
   <project path="system/bpfprogs" name="android_system_bpfprogs" remote="pepito" revision="pepito-24" groups="pdk" />
+  <remove-project name="platform/frameworks/opt/net/ims" />
+  <project path="frameworks/opt/net/ims" name="android_frameworks_opt_net_ims" remote="pepito" revision="pepito-24" groups="frameworks_ims,pdk-cw-fs,pdk-fs" />
   <remove-project name="LineageOS/android_build" />
   <project path="build/make" name="android_build" remote="pepito" revision="pepito-24" groups="pdk,sysui-studio" >
     <linkfile src="CleanSpec.mk" dest="build/CleanSpec.mk" />

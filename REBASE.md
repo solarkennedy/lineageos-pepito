@@ -154,6 +154,7 @@ anything step 1 flagged:
 | LineageParts | PVG100 System Tweaks / Modem Tweaks pages open, toggles stick |
 | Updater | "What's new" shows; Install dialog doesn't crash |
 | Dialer | Phone ⋮ > Call history > ⋮ > Clear call history: the "Clearing…" dialog closes |
+| `frameworks/opt/net/ims` | outgoing call to a phone left ringing: caller hears ringing; logcat START_RINGBACK with no STOP_RINGBACK until answer/hang-up |
 | recovery | boots; sideload works |
 | `system/sepolicy`, `hardware/*` | `adb shell dmesg | grep avc:` no new denials; boot to home |
 
