@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 import twilio_call
-from conftest import TEST_NUMBER_FILE, quiet_now
+from conftest import TEST_NUMBER_FILE
 from pepito import Device, roster
 from test_wfc import HOLD_S, TRIAL_HOLD_S, WWAN, in_call, run_call
 
@@ -76,11 +76,8 @@ def main():
     ap.add_argument("--unit", required=True)
     ap.add_argument("--hours", type=float, default=2)
     ap.add_argument("--every", type=float, default=5, help="minutes between call starts")
-    ap.add_argument("--ignore-quiet-hours", action="store_true")
     a = ap.parse_args()
 
-    if quiet_now() and not a.ignore_quiet_hours:
-        raise SystemExit("quiet hours (~/.config/pepito/quiet-hours); pass --ignore-quiet-hours")
     dut = Device(a.unit)
     if dut.prop("ro.serialno") != roster()[a.unit]:
         raise SystemExit(f"{a.unit}: serial mismatch")

@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 import signal
@@ -12,19 +11,6 @@ from pepito import DEV_DIR, AdbError, Device, find_stamp, roster
 HERE = Path(__file__).parent
 DEFAULT_PROBES = Path.home() / "Projects/pepito-diag-tools/nas-probe"
 TEST_NUMBER_FILE = Path.home() / ".config/pepito/test-number"
-QUIET_FILE = Path.home() / ".config/pepito/quiet-hours"
-DEFAULT_QUIET = "21:00-09:00"
-
-
-def quiet_now(spec=None, now=None):
-    """True inside the house's quiet hours ("HH:MM-HH:MM" local, may wrap midnight,
-    from ~/.config/pepito/quiet-hours; "none" disables). Call tests ring phones."""
-    spec = spec or (QUIET_FILE.read_text().strip() if QUIET_FILE.exists() else DEFAULT_QUIET)
-    if spec.lower() == "none":
-        return False
-    a, b = (datetime.time.fromisoformat(x.strip()) for x in spec.split("-"))
-    t = (now or datetime.datetime.now()).time()
-    return a <= t < b if a <= b else t >= a or t < b
 
 
 def pytest_addoption(parser):
@@ -36,8 +22,6 @@ def pytest_addoption(parser):
     g.addoption("--allow-under-capture", action="store_true",
                 help="run call/radio tests even while a diag_mdlog/strace process is up "
                      "(check its log is not still growing first: it may be another session's capture)")
-    g.addoption("--ignore-quiet-hours", action="store_true",
-                help="place calls even inside the quiet hours (~/.config/pepito/quiet-hours)")
     g.addoption("--allow-bench", action="store_true",
                 help="run the long pressure benches (hog 1.2 GB, kill + relaunch apps, screen on ~15 min)")
     g.addoption("--dial", help="number the call tests dial (default: $PEPITO_TEST_NUMBER, "
@@ -47,13 +31,9 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
-    quiet = quiet_now() and not config.getoption("--ignore-quiet-hours")
     for item in items:
         if "call" in item.keywords and not config.getoption("--allow-calls"):
             item.add_marker(pytest.mark.skip(reason="places a call; pass --allow-calls"))
-        elif "call" in item.keywords and quiet:
-            item.add_marker(pytest.mark.skip(
-                reason="quiet hours (~/.config/pepito/quiet-hours); pass --ignore-quiet-hours"))
         if "disruptive" in item.keywords and not config.getoption("--allow-disruptive"):
             item.add_marker(pytest.mark.skip(reason="toggles a radio; pass --allow-disruptive"))
         if "bench" in item.keywords and not config.getoption("--allow-bench"):
