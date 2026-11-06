@@ -38,6 +38,7 @@
 - LineageParts: "Clear device-is-corrupt warning" row in PVG100 System Tweaks
 
 ### landing (docs/scripts) (since pepito-24.0-20261102)
+- changelog: 20261105
 - tests/integration: test_modem_evs_cap: byte 9 may read 03 while EVS is out of the codec list
 - changelog: 20261105
 - changelog: 20261105
