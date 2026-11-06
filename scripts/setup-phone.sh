@@ -405,11 +405,13 @@ tcp_adb
 undo_test_harness
 say "setup wizard"
 finish_wizard
+# Before Wi-Fi: it may reboot, and with the screen off after a reboot the phone
+# does not rejoin Wi-Fi (no PNO), so the status at the end said "not connected".
+say "Wi-Fi calling (on, Wi-Fi preferred)"
+wfc_setup
 if [[ "$WIFI" -eq 1 ]]; then say "Wi-Fi"; join_wifi; fi
 # Lineage seeds mobile data OFF on every fresh /data (ro.com.android.mobiledata=false).
 sh_ svc data enable
-say "Wi-Fi calling (on, Wi-Fi preferred)"
-wfc_setup
 if [[ "$PATTERN_ON" -eq 1 && -n "$PATTERN" ]]; then say "lock pattern"; set_pattern; fi
 if [[ "$GOOGLE" -eq 1 ]]; then say "Google account"; google_signin; fi
 if [[ "$DEXOPT" -eq 1 ]] && sh_ pm path com.google.android.gms >/dev/null 2>&1; then
