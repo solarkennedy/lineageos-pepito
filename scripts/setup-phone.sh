@@ -335,7 +335,7 @@ status() {
         provisioned "$(setting global device_provisioned)/$(setting secure user_setup_complete)" \
         wifi "$(sh_ cmd wifi status | grep -o 'connected to "[^"]*"' || echo 'not connected')" \
         "mobile data" "$(setting global mobile_data)" \
-        "wi-fi calling" "$(sh_ content query --uri content://telephony/siminfo --projection wfc_ims_enabled:wfc_ims_mode --where 'sim_id>=0' 2>/dev/null | sed 's/^Row: [0-9]* //' | head -1)" \
+        "wi-fi calling" "$(sh_ content query --uri content://telephony/siminfo --projection wfc_ims_enabled:wfc_ims_mode --where "$(q 'sim_id>=0')" 2>/dev/null | sed 's/^Row: [0-9]* //' | head -1)" \
         google "$(sh_ dumpsys account | grep -o 'Account {name=[^,]*, type=com.google}' | head -1 || true)"
 }
 
@@ -343,22 +343,26 @@ status() {
 # tests are written for (test_call_hold asserts it). A fresh /data leaves the
 # sub at -1/-1, i.e. the carrier default, which on T-Mobile is cellular
 # preferred; that silently turned test_call_hold into a different test after a
-# wipe (dut1, 2026-11-05). There is no cmd for it, so write siminfo and restart
-# the phone process so ImsManager and WfcBridge pick it up; only when it changes.
+# wipe (dut1, 2026-11-05). There is no cmd for it, so write siminfo and reboot,
+# only when it changes: A17's SubscriptionManagerService caches siminfo, so a
+# phone-process restart is not enough for WfcBridge to see it (dut1 2026-11-06).
 wfc_setup() {
     local row id en mode
     row=$(sh_ content query --uri content://telephony/siminfo \
-          --projection _id:wfc_ims_enabled:wfc_ims_mode --where "sim_id>=0" 2>/dev/null | head -1 || true)
+          --projection _id:wfc_ims_enabled:wfc_ims_mode --where "$(q 'sim_id>=0')" 2>/dev/null | head -1 || true)
     id=$(sed -n 's/.*_id=\([0-9]*\).*/\1/p' <<<"$row")
     en=$(sed -n 's/.*wfc_ims_enabled=\(-\?[0-9]*\).*/\1/p' <<<"$row")
     mode=$(sed -n 's/.*wfc_ims_mode=\(-\?[0-9]*\).*/\1/p' <<<"$row")
     if [[ -z "$id" ]]; then warn "no active SIM: Wi-Fi calling not set"; return 0; fi
     if [[ "$en" == 1 && "$mode" == 2 ]]; then echo "   already on, Wi-Fi preferred"; return 0; fi
     sh_ content update --uri content://telephony/siminfo \
-        --bind wfc_ims_enabled:i:1 --bind wfc_ims_mode:i:2 --where "_id=$id" >/dev/null \
+        --bind wfc_ims_enabled:i:1 --bind wfc_ims_mode:i:2 --where "$(q "_id=$id")" >/dev/null \
         || { warn "couldn't set Wi-Fi calling in siminfo"; return 0; }
-    sh_ am force-stop com.android.phone >/dev/null 2>&1 || true
-    echo "   sub $id: was enabled=$en mode=$mode, now on + Wi-Fi preferred (phone process restarted)"
+    echo "   sub $id: was enabled=$en mode=$mode, now on + Wi-Fi preferred; rebooting so it takes"
+    sh_ reboot >/dev/null 2>&1 || true
+    local i
+    for i in $(seq 1 60); do [[ "$(state)" == device ]] || break; sleep 2; done
+    wait_authorized; wait_boot; get_root
 }
 
 case "$MODE" in
