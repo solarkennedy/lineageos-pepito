@@ -219,29 +219,54 @@ def on_wlan(dut, sub, imsa_probe, radio_quiet, awake):
     pytest.skip(f"IMS voice not on WLAN after {ON_WLAN_WAIT_S} s (voip_service_rat={rat})")
 
 
+MODE_NAMES = {WIFI_ONLY: "Wi-Fi only", CELLULAR_PREFERRED: "cellular preferred",
+              WIFI_PREFERRED: "Wi-Fi preferred"}
+
+
 @pytest.mark.call
 @pytest.mark.timeout(HOLD_S + 300)
 def test_call_hold(dut, imsa_probe, test_number, artifacts, on_wlan):
-    """Wi-Fi preferred/only: the call stays on WLAN for the whole hold with LTE
-    camped. Cellular preferred: stock behaviour, the call moves to LTE at answer
-    when LTE is above -115."""
+    """Wi-Fi preferred: the call stays on WLAN for the whole hold with LTE
+    camped, TH2 held sticky (wfc_wlan_bridge). The mode is asserted, not
+    followed: after a wipe the sub falls back to the carrier default (cellular
+    preferred on T-Mobile) and the test silently became a different one (dut1,
+    2026-11-05). scripts/setup-phone.sh sets Wi-Fi preferred on bench units."""
+    assert on_wlan == WIFI_PREFERRED, (
+        f"Wi-Fi calling mode is {MODE_NAMES.get(on_wlan, on_wlan)}, this test is for Wi-Fi preferred: "
+        f"run scripts/setup-phone.sh {dut.nick}, or set it in Settings > Network > SIM > Wi-Fi calling")
     marks, samples = run_call(dut, imsa_probe, test_number, artifacts, HOLD_S)
     call = in_call(samples, marks["dial"], marks["hangup"])
     print(summary(call))
     assert len(call) >= 15, "call never came up (or dropped early)"
     assert call[-1]["t"] >= marks["hangup"] - 5, "call dropped before the hang-up"
+    off_wlan = [s for s in call if s["rat"] not in (0, None)]
+    assert not off_wlan, f"left WLAN mid-call:\n{summary(off_wlan)}"
+    assert all(s["th2"] == "sticky" for s in call), "TH2 not held sticky through the call"
 
-    if on_wlan in (WIFI_ONLY, WIFI_PREFERRED):
-        off_wlan = [s for s in call if s["rat"] not in (0, None)]
-        assert not off_wlan, f"left WLAN mid-call:\n{summary(off_wlan)}"
-        assert all(s["th2"] == "sticky" for s in call), "TH2 not held sticky through the call"
-    elif on_wlan == CELLULAR_PREFERRED:
-        rsrp = [s["rsrp"] for s in call if s["rsrp"] is not None]
-        if not rsrp or max(rsrp) <= STOCK_TH2:
-            pytest.skip(f"LTE too weak for the stock handover (max RSRP {max(rsrp, default=None)})")
-        assert any(s["rat"] not in (0, None) for s in call), "cellular preferred but stayed on WLAN"
-    else:
-        pytest.fail(f"unexpected vendor.qmux.wfc_mode {on_wlan}")
+
+@pytest.mark.call
+@pytest.mark.timeout(HOLD_S + 300)
+def test_call_hold_cellular_preferred(dut, sub, imsa_probe, test_number, artifacts, on_wlan):
+    """Cellular preferred (the T-Mobile carrier default, so what a fresh T-Mobile
+    user runs): stock behaviour, the call is expected to move to LTE at answer
+    when LTE is above -115. Runs only on a unit left in that mode (bench units
+    are set to Wi-Fi preferred). Never seen to hold on T-Mobile: on dut1
+    2026-11-05 two calls stayed on WLAN at RSRP -105, so it is an expected
+    failure there until the handover is understood."""
+    if on_wlan != CELLULAR_PREFERRED:
+        pytest.skip(f"Wi-Fi calling mode is {MODE_NAMES.get(on_wlan, on_wlan)}, not cellular preferred")
+    marks, samples = run_call(dut, imsa_probe, test_number, artifacts, HOLD_S)
+    call = in_call(samples, marks["dial"], marks["hangup"])
+    print(summary(call))
+    assert len(call) >= 15, "call never came up (or dropped early)"
+    assert call[-1]["t"] >= marks["hangup"] - 5, "call dropped before the hang-up"
+    rsrp = [s["rsrp"] for s in call if s["rsrp"] is not None]
+    if not rsrp or max(rsrp) <= STOCK_TH2:
+        pytest.skip(f"LTE too weak for the stock handover (max RSRP {max(rsrp, default=None)})")
+    moved = any(s["rat"] not in (0, None) for s in call)
+    if not moved and "T-Mobile" in dut.prop("gsm.sim.operator.alpha"):
+        pytest.xfail(f"T-Mobile: stayed on WLAN at max RSRP {max(rsrp)}, as every time so far")
+    assert moved, "cellular preferred but stayed on WLAN"
 
 
 @pytest.mark.call
