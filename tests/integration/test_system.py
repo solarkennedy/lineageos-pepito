@@ -238,9 +238,12 @@ def test_modem_evs_cap(dut):
         assert status in ("none", "unsupported", "restart"), f"non-T-Mobile item: {info}"
         return
     swb = p.get("persist.gotweak.modem_evs_swb") == "1"
-    want = 0x03 if swb else 0x02
-    assert item[EVS_BW_BYTE] == want, \
-        f"T-Mobile item byte 9 = {item[EVS_BW_BYTE]:02x}, want {want:02x} (SWB allowed: {swb}): {info}"
+    want = (0x03,) if swb else (0x02, 0x03)
+    # Capped, byte 9 may still read 03: once EVS is out of the codec list
+    # (test_modem_evs_codec_list) the modem rebuilds this item from the profile
+    # at every start, and modem_evs leaves it, since no call can use EVS then.
+    assert item[EVS_BW_BYTE] in want, \
+        f"T-Mobile item byte 9 = {item[EVS_BW_BYTE]:02x}, want {want} (SWB allowed: {swb}): {info}"
     assert status in (("swb" if swb else "capped"), "restart"), f"T-Mobile item: {info}"
     if not swb:
         assert p.get("vendor.pepito.modem.evs_marker") == "3", \
