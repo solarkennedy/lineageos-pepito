@@ -1,5 +1,22 @@
 [
   {
+    "datetime": 1793941263,
+    "type": "SNAPSHOT",
+    "version": "24.0",
+    "files": [
+      {
+        "filename": "lineage-24.0-20261105-SNAPSHOT-Mi8937_gapps.zip",
+        "sha256": "0a03e58efba4b04b3f3b61a119919724fc30604f2d0fe0efdfb4dd26965810f9",
+        "size": 1681134264,
+        "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261105/lineage-24.0-20261105-SNAPSHOT-Mi8937_gapps.zip",
+        "os_sdk_level": 37,
+        "os_patch_level": "2026-10-01",
+        "ota_property_files": "metadata:69:358,metadata.pb:495:264"
+      }
+    ],
+    "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261105"
+  },
+  {
     "datetime": 1793939640,
     "type": "UNOFFICIAL",
     "version": "24.0",
