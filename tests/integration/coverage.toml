@@ -48,6 +48,7 @@ always = [
     # handleBindApplication, inert with no config. Read-only; the EVS one waits
     # up to 7 min for a fresh boot's run to settle.
     "test_system.py::test_modem_evs_cap",
+    "test_system.py::test_modem_evs_codec_list",
     "test_system.py::test_pif_hooks_inert",
     # Flash power tweak: setting -> kernel cap. Read-only.
     "test_camera.py::test_flash_cap_follows_setting",

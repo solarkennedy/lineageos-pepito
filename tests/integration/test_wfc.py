@@ -140,7 +140,7 @@ TRIAL_HOLD_S = 8     # Twilio trial calls end ~14 s in; require this much connec
 
 
 def run_call(dut, imsa_probe, number, artifacts, hold_s, wifi_off_s=None, pre_wwan_s=None,
-             on_armed=None):
+             on_armed=None, env_extra=""):
     """Push and run the on-device driver, wait for it, pull and parse its output.
     pre_wwan_s: first get IMS voice onto LTE (Wi-Fi off if needed), waiting up to
     that long; the driver marks on_wwan, or no_wwan and skips the call.
@@ -149,7 +149,7 @@ def run_call(dut, imsa_probe, number, artifacts, hold_s, wifi_off_s=None, pre_ww
     dut.push(Path(__file__).parent / DRIVER, f"{DEV_DIR}/wfc-call.sh")
     out = f"{DEV_DIR}/run"
     args = f"{out} {number} {hold_s} {wifi_off_s or ''}"
-    env = f"IMSA={imsa_probe}" + (f" PRE_WWAN={pre_wwan_s}" if pre_wwan_s else "")
+    env = f"IMSA={imsa_probe}" + (f" PRE_WWAN={pre_wwan_s}" if pre_wwan_s else "") + env_extra
     # Clear the last run first, here, not only in the driver: the driver runs in
     # the background, so the wait below could read the previous run's marks
     # (ending "done") before the driver's own rm, return at once and pull from
@@ -363,3 +363,79 @@ def test_call_incoming(dut, sub, imsa_probe, twilio, artifacts, radio_quiet, awa
     assert far.get("status") == "completed" and far.get("duration", 0) >= hold, f"twilio says {far}"
     if path == "lte":
         assert dut.wifi()["enabled"], "Wi-Fi was not re-enabled"
+
+
+def adsp_crashes(dut):
+    """ADSP fatal errors in the kernel log so far this boot (each takes the modem with it)."""
+    return int(dut.sh("dmesg | grep -c 'Fatal error on adsp' || true").strip() or 0)
+
+
+# Speaker presses after the answer, as Neil's T-Mobile phone logged them on
+# 2026-11-05 19:14: USER_SWITCH_SPEAKER 1.25 s after the call went active and
+# again 1.75 s later; the speaker engaged only ~2.8 s after the first press
+# (the voice path still starting), and the next press, back to the earpiece
+# 1.35 s later and 0.3 s after it engaged, crashed the ADSP and the modem.
+# Intervals in seconds, the first from the answer key.
+SPEAKER_TAPS = {
+    "neil": "1.25 1.75 1.35",
+    "rapid": "0.5 0.5 0.5 0.5 0.5",
+}
+# The in-call Speaker label on the PVG100's 720x1280 screen (LineageOS Dialer,
+# 2026-11-05); a fixed spot so the first press needs no 1-2 s uiautomator lookup.
+# Each press is checked against Telecom's log, so a moved button fails loudly.
+SPEAKER_XY = "599 661"
+ROUTE_PRESS = re.compile(r"Message received: (USER_SWITCH_SPEAKER|USER_SWITCH_BASELINE_ROUTE)")
+
+
+@pytest.mark.call
+@pytest.mark.disruptive
+@pytest.mark.timeout(HOLD_S + ON_WWAN_WAIT_S + RING_S + 300)
+@pytest.mark.parametrize("taps", list(SPEAKER_TAPS))
+def test_call_speaker_toggle(dut, sub, imsa_probe, twilio, artifacts, radio_quiet, awake, taps):
+    """An MT VoLTE call over LTE survives the Speaker button pressed on and off
+    right after answering: no ADSP crash, and the call lasts until Twilio hangs up.
+    Neil's T-Mobile phone, 2026-11-05 19:14, super-wideband capped: three presses
+    in the first 4.5 s crashed the ADSP and the modem (qpaudio_svs.c:4475) and
+    ended the call."""
+    creds, to = twilio
+    placed = {}
+
+    def ring():
+        placed["sid"] = twilio_call.call(creds, to, HOLD_S)
+
+    before = adsp_crashes(dut)
+    marks, samples = run_call(dut, imsa_probe, "-", artifacts, HOLD_S, pre_wwan_s=ON_WWAN_WAIT_S,
+                              on_armed=ring,
+                              env_extra=f' TAPS="{SPEAKER_TAPS[taps]}" SPEAKER_XY="{SPEAKER_XY}"')
+    if "no_wwan" in marks:
+        pytest.skip(f"IMS voice not on LTE after {ON_WWAN_WAIT_S} s")
+    crashed = adsp_crashes(dut) - before
+    try:
+        dut.pull(f"{DEV_DIR}/run/ui.xml", artifacts / "ui.xml")
+    except Exception:
+        pass
+    far = twilio_call.status(creds, placed["sid"]) if "sid" in placed else {}
+    print(f"twilio {far}  evs={dut.sh('getprop vendor.pepito.modem.evs_boot').strip()}")
+    assert "sid" in placed, "driver never armed, so no call was placed"
+    assert "no_ring" not in marks and "rejected" not in marks, f"no answered call:\n{ims_failures(artifacts)}"
+    assert "no_speaker_button" not in marks, "no Speaker button on the in-call screen (see ui.xml)"
+    want = len(SPEAKER_TAPS[taps].split())
+    presses = [k for k in marks if k.startswith("tap")]
+    assert len(presses) == want, f"pressed {len(presses)} times: {marks}"
+    log = (artifacts / "logcat").read_text(errors="replace")
+    routed = ROUTE_PRESS.findall(log)
+    print(f"route presses Telecom saw: {routed}")
+    # At 0.5 s apart the Dialer can swallow a press while its button animates
+    # (dut1 2026-11-05: 4 of 5); none at all means the button is not there.
+    assert len(routed) >= want - 1, f"Telecom saw {len(routed)} of {want} Speaker presses (button moved? see ui.xml)"
+    assert crashed == 0, f"ADSP crashed {crashed}x during the call (modem SSR follows):\n{ims_failures(artifacts)}"
+
+    hold = TRIAL_HOLD_S if twilio_call.trial() else HOLD_S - 5
+    end = marks.get("ended", marks.get("hangup"))
+    call = in_call(samples, marks["answer"], end)
+    print(summary(call))
+    assert "ended" in marks and marks["ended"] - marks["answer"] >= hold, \
+        f"call dropped {end - marks['answer']} s after answer:\n{ims_failures(artifacts)}"
+    if twilio_call.trial():
+        assert "CODE_USER_TERMINATED_BY_REMOTE" in log, f"ended early, but not by the far end:\n{ims_failures(artifacts)}"
+    assert dut.wifi()["enabled"], "Wi-Fi was not re-enabled"

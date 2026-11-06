@@ -247,6 +247,40 @@ def test_modem_evs_cap(dut):
             f"capped without its marker: allowing SWB couldn't restore it: {info}"
 
 
+EFS2_PROBE = Path.home() / "Projects/pepito-diag-tools/efs2-probe/efs2-probe"
+CODEC_LIST = "/nv/item_files/ims/qipcall_audio_codec_list"
+
+
+def test_modem_evs_codec_list(dut):
+    """On the T-Mobile profile, EVS is out of the IMS codec list unless SWB is
+    allowed. Byte 9 only caps what we offer: an incoming EVS-SWB call is still
+    answered SWB and crashes the ADSP and the modem (a T-Mobile user and dut1,
+    2026-11-05); with no EVS in the list both directions are AMR-WB."""
+    if dut.prop("ro.vendor.qmux.enable") != "1":
+        pytest.skip("qmux off: modem_evs never runs")
+    if not dut.active_sub():
+        pytest.skip(f"{dut.nick} has no active SIM: no carrier profile loaded")
+    item = bytes.fromhex(dut.prop("vendor.pepito.modem.evs_item") or "")
+    tmo = len(item) == len(EVS_TMO_LAYOUT) and all(
+        a == b for i, (a, b) in enumerate(zip(item, EVS_TMO_LAYOUT)) if i != EVS_BW_BYTE)
+    if not tmo:
+        pytest.skip("not the T-Mobile EVS profile: the codec list is left alone")
+    if "diag_mdlog" in dut.sh("ps -A -o ARGS"):
+        pytest.skip("a diag_mdlog capture is running: efs2-probe would share DCI with it")
+    if not EFS2_PROBE.exists():
+        pytest.skip(f"no {EFS2_PROBE}")
+    dut.push(EFS2_PROBE, "/data/local/tmp/efs2-probe")
+    out = dut.sh(f"chmod 755 /data/local/tmp/efs2-probe; /data/local/tmp/efs2-probe cat {CODEC_LIST}")
+    entries = out.split("\x00")[0].strip().split(";")
+    swb = dut.prop("persist.gotweak.modem_evs_swb") == "1"
+    print(f"codec list: {entries} (SWB allowed: {swb})")
+    assert "AMR_WB_BE" in entries, f"codec list unreadable or unexpected: {out[:200]!r}"
+    if swb:
+        assert "EVS" in entries, f"SWB allowed but EVS not back in the codec list: {entries}"
+    else:
+        assert "EVS" not in entries, f"EVS still in the T-Mobile codec list: incoming SWB calls crash: {entries}"
+
+
 # --- Play Integrity ----------------------------------------------------------
 
 def test_pif_hooks_inert(dut):

@@ -14,7 +14,9 @@
 # MT (<number> "-"): marks "armed" once the sampler is up, waits up to RING_S
 # (default 90) for the phone to ring (no_ring if it never does), answers, and
 # holds until the far end hangs up ("ended") or hold_s + 30 s pass ("hangup",
-# and we end it).
+# and we end it). TAPS="<s> ..." presses the in-call Speaker button at those
+# intervals after the answer (marks tap1, tap2, ...; no_speaker_button if the
+# in-call screen has none).
 D=$1; NUM=$2; HOLD=$3; OFF=${4:-}
 PRE=${PRE_WWAN:-}; WIFI_DOWN=
 IMSA=${IMSA:-/data/local/tmp/imsa-probe}
@@ -63,7 +65,7 @@ trap 'exit 1' INT TERM HUP
     done >"$D/samples" 2>&1
 ) &
 
-logcat -b radio -b main -v epoch -T "$(date +%s).000" >"$D/logcat" 2>&1 &
+logcat -b radio -b main -b system -v epoch -T "$(date +%s).000" >"$D/logcat" 2>&1 &
 LOGCAT=$!
 
 # IMSA voip_service_rat: 0 WLAN, 1 WWAN; voip_service_status 2 = full service.
@@ -83,6 +85,40 @@ fi
 
 callstate() { dumpsys telephony.registry 2>/dev/null | grep -m1 -oE 'mCallState=[0-9]+' | cut -d= -f2; }
 
+# TAPS (see the MT branch): t0 is the answer key (MT) or the far end answering (MO).
+press_speaker() {
+    # Answering with the key leaves the call in a heads-up notification;
+    # bring the in-call screen (LineageOS Dialer, the default) to the front.
+    # It needs ACTION_MAIN: without an action InCallActivity crashes.
+    am start -a android.intent.action.MAIN -n com.android.dialer/com.android.incallui.InCallActivity >/dev/null 2>&1
+    xy=${SPEAKER_XY:-}; k=0
+    while [ -z "$xy" ] && [ "$k" -lt 4 ]; do
+        k=$((k + 1))
+        uiautomator dump "$D/ui.xml" >/dev/null 2>&1
+        xy=$(grep -oE '<node [^>]*"Speaker"[^>]*>' "$D/ui.xml" | head -1 \
+             | grep -oE 'bounds="\[[0-9]+,[0-9]+\]\[[0-9]+,[0-9]+\]"' \
+             | grep -oE '[0-9]+' | tr '\n' ' ' \
+             | { read -r a b c d; [ -n "$d" ] && echo "$(((a + c) / 2)) $(((b + d) / 2))"; })
+    done
+    if [ -z "$xy" ]; then
+        mark no_speaker_button
+    else
+        first=1; n=0
+        for s in $TAPS; do
+            if [ -n "$first" ]; then
+                # what is left of the first interval since the answer key
+                used=$(( ($(date +%s%N) - t0) / 1000000 ))
+                sleep "$(awk -v s="$s" -v u="$used" 'BEGIN { v = s * 1000 - u; printf "%.3f", (v > 0 ? v : 0) / 1000 }')"
+                first=
+            else
+                sleep "$s"
+            fi
+            input tap $xy
+            n=$((n + 1)); mark "tap$n"
+        done
+    fi
+}
+
 sleep 3
 if [ "$NUM" = - ]; then
     mark armed
@@ -97,9 +133,19 @@ if [ "$NUM" = - ]; then
     # Call screening (GApps dialer spam filter) can reject it before we answer.
     [ "$(callstate)" = 1 ] || { mark rejected; sleep 5; exit 0; }
     input keyevent KEYCODE_CALL
-    sleep 3
-    [ "$(callstate)" = 1 ] && input keyevent KEYCODE_HEADSETHOOK
-    mark answer
+    t0=$(date +%s%N)
+    # TAPS="<s> <s> ...": press the in-call Speaker button at these intervals
+    # (fractions ok), the first counted from the answer key. SPEAKER_XY="x y"
+    # skips looking the button up (uiautomator, 1-2 s, which would come out of
+    # the first interval).
+    if [ -n "${TAPS:-}" ]; then
+        mark answer
+        press_speaker
+    else
+        sleep 3
+        [ "$(callstate)" = 1 ] && input keyevent KEYCODE_HEADSETHOOK
+        mark answer
+    fi
     i=0
     while [ "$i" -lt $((HOLD + 30)) ]; do
         [ "$(callstate)" = 0 ] && { mark ended; sleep 5; exit 0; }
@@ -113,7 +159,19 @@ fi
 
 mark dial
 am start -a android.intent.action.CALL -d "tel:$NUM" >/dev/null 2>&1
-if [ -n "$OFF" ]; then
+if [ -n "${TAPS:-}" ]; then
+    # Wait for the far end to answer (Telecom ACTIVE), then press as in MT.
+    i=0
+    until dumpsys telecom 2>/dev/null | grep -q 'state=ACTIVE'; do
+        i=$((i + 1)); [ "$i" -ge 180 ] && { mark not_answered; break; }
+        sleep 0.5
+    done
+    if [ "$i" -lt 180 ]; then
+        t0=$(date +%s%N); mark answer
+        press_speaker
+    fi
+    sleep "$HOLD"
+elif [ -n "$OFF" ]; then
     sleep "$OFF"; mark wifi_off; svc wifi disable
     sleep $((HOLD - OFF))
 else
