@@ -3,6 +3,7 @@
 ## 20261105 (2026-11-06)
 
 ### device/Mi8937 (since pepito-24.0-20261102)
+- qmux: modem_evs: codec list: say "restart" after a list write; repair it
 - qmux: modem_evs: take EVS out of the T-Mobile codec list too
 - qmux: modem_kamgr: delete a stale keep-alive PDN config
 - Revert "Reapply "Mi8937: pepito: EXPERIMENT: report the stock 8.1 fingerprint""
@@ -30,11 +31,13 @@
 - DataNetworkController: fall back to the PS serving cell under legacy IWLAN
 
 ### LineageParts (since pepito-24.0-20261102)
+- LineageParts: Modem Tweaks save dialog: wait for the save, not just the clock
 - LineageParts: Modem Tweaks save dialog: keep the blank line before the countdown
 - LineageParts: Modem Tweaks save dialog counts down, then offers Restart now
 - LineageParts: "Clear device-is-corrupt warning" row in PVG100 System Tweaks
 
 ### landing (docs/scripts) (since pepito-24.0-20261102)
+- changelog: 20261105
 - tests/integration: speaker-toggle call test; codec-list check for modem_evs
 - Play Integrity: revert both levers (8.1 identity, lever-2 native prop stack); drop bionic fork
 - Play Integrity: lever 2 result — native prop spoof breaks BASIC (reversible), buys no DEVICE
