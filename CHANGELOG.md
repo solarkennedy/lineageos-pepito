@@ -1,5 +1,62 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
+## 20261105 (2026-11-06)
+
+### device/Mi8937 (since pepito-24.0-20261102)
+- qmux: modem_evs: take EVS out of the T-Mobile codec list too
+- qmux: modem_kamgr: delete a stale keep-alive PDN config
+- Revert "Reapply "Mi8937: pepito: EXPERIMENT: report the stock 8.1 fingerprint""
+- Revert "Reapply "Mi8937: pepito: EXPERIMENT: report the full stock 8.1 identity""
+- Revert "Mi8937: ship libpifprop (pif native property bridge)"
+- Mi8937: ship libpifprop (pif native property bridge)
+- Reapply "Mi8937: pepito: EXPERIMENT: report the full stock 8.1 identity"
+- Reapply "Mi8937: pepito: EXPERIMENT: report the stock 8.1 fingerprint"
+- Revert "Mi8937: pepito: re-authorize enrolled bench hosts for adb after a wipe"
+- Mi8937: pepito: re-authorize enrolled bench hosts for adb after a wipe
+- qmux: modem_evs: recover lost markers and interrupted writes; log what it did
+- Revert "Mi8937: pepito: EXPERIMENT: report the stock 8.1 fingerprint"
+- Revert "Mi8937: pepito: EXPERIMENT: report the full stock 8.1 identity"
+- Mi8937: pepito: EXPERIMENT: report the full stock 8.1 identity
+- Mi8937: pepito: EXPERIMENT: report the stock 8.1 fingerprint
+
+### frameworks/base (since pepito-24.0-20261102)
+- Revert "pepito: pif: spoof native build.version props in DroidGuard (libpifprop)"
+- pepito: pif: spoof native build.version props in DroidGuard (libpifprop)
+- pepito: pif: optionally hide key attestation in the Play Store too
+- pepito: pif: write static final Build fields through Unsafe on Android C
+- pepito: Play Integrity spoof hooks for DroidGuard and Play Store (inert)
+
+### frameworks/opt/telephony (since pepito-24.0-20261102)
+- DataNetworkController: fall back to the PS serving cell under legacy IWLAN
+
+### LineageParts (since pepito-24.0-20261102)
+- LineageParts: Modem Tweaks save dialog: keep the blank line before the countdown
+- LineageParts: Modem Tweaks save dialog counts down, then offers Restart now
+- LineageParts: "Clear device-is-corrupt warning" row in PVG100 System Tweaks
+
+### landing (docs/scripts) (since pepito-24.0-20261102)
+- tests/integration: speaker-toggle call test; codec-list check for modem_evs
+- Play Integrity: revert both levers (8.1 identity, lever-2 native prop stack); drop bionic fork
+- Play Integrity: lever 2 result — native prop spoof breaks BASIC (reversible), buys no DEVICE
+- PLAN-integrity: fix fwb commit hash (dlsym fix amend)
+- Play Integrity lever 2: bionic process-local native prop override for DroidGuard
+- PLAN-integrity: dut1 on the system-wide 8.1 identity build still BASIC under J
+- PLAN-integrity: 8.1 identity re-applied for the dut1 test
+- Play Integrity: spoof matrix on dut1 (J = 8.1 identity + Play Store SDK 32, attestation visible); all BASIC, no DEVICE
+- Play Integrity: dg-pathtrace.sh (kprobe path trace of DroidGuard); new2 vs dut1 file probes equivalent
+- Play Integrity: new2 hide-attestation after GSF/GMS clear still empty; check script reports error dialogs
+- scripts: root-phone.sh, the rooted-debugging step pulled out of setup-phone.sh
+- tests/integration: modem_evs cap and inert PIF hooks, every release
+- Play Integrity: dut1 passes on current GMS; check script handles signed-out and first-run Play Store
+- setup-phone.sh: finish the wizard without its FinishActivity; pick a launcher
+- scripts: setup-phone.sh: drop --enroll/--unenroll, the adb-key hook is reverted
+- scripts: --wipe is a Test Harness Mode factory reset that keeps adb
+- scripts: setup-phone.sh, hands-off bench setup after a wipe
+- PLAN-integrity: new2 with rooted debugging fully off is still empty
+- PLAN-integrity: new2 on the dut1-passing build still empty, with and without attestation hidden
+- Play Integrity: -12 is gone; bench tooling and the 2026-11 cells
+- tests/integration: LTE call tests (MO + Twilio MT) are required every release
+- tests/integration: cellular and incoming call tests, LTE soak, quiet hours
 ## 20261102 (2026-11-03)
 
 ### device/Mi8937 (since pepito-24.0-20261101)
