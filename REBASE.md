@@ -153,6 +153,7 @@ anything step 1 flagged:
 | `frameworks/base` | face unlock, QS volume slider, lock-screen charging text, FULL at the charge cap |
 | LineageParts | PVG100 System Tweaks / Modem Tweaks pages open, toggles stick |
 | Updater | "What's new" shows; Install dialog doesn't crash |
+| Dialer | Phone ⋮ > Call history > ⋮ > Clear call history: the "Clearing…" dialog closes |
 | recovery | boots; sideload works |
 | `system/sepolicy`, `hardware/*` | `adb shell dmesg | grep avc:` no new denials; boot to home |
 
