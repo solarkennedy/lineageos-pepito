@@ -3,6 +3,7 @@
 ## 20261105 (2026-11-06)
 
 ### device/Mi8937 (since pepito-24.0-20261102)
+- qmux: modem_evs: leave byte 9 alone while EVS is out of the codec list
 - qmux: modem_evs: codec list: say "restart" after a list write; repair it
 - qmux: modem_evs: take EVS out of the T-Mobile codec list too
 - qmux: modem_kamgr: delete a stale keep-alive PDN config
@@ -37,6 +38,8 @@
 - LineageParts: "Clear device-is-corrupt warning" row in PVG100 System Tweaks
 
 ### landing (docs/scripts) (since pepito-24.0-20261102)
+- tests/integration: test_modem_evs_cap: byte 9 may read 03 while EVS is out of the codec list
+- changelog: 20261105
 - changelog: 20261105
 - tests/integration: speaker-toggle call test; codec-list check for modem_evs
 - Play Integrity: revert both levers (8.1 identity, lever-2 native prop stack); drop bionic fork
