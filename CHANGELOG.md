@@ -1,5 +1,46 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
+## 20261107 (2026-11-07)
+
+### device/Mi8937 (since pepito-24.0-20261105)
+- qmux: pepito_clockfix — keep the AP wall clock across boots (two init oneshots)
+- pepito: report the real data RAT while IMS is on Wi-Fi (data_con_rprt off)
+- qmux: do not start time_daemon — it resets the clock to 1970 without TimeService
+- Mi8937: libinit: force terminal-based call waiting on pepito
+- pepito: route VoIP mic capture through audio-record, not compress-voip
+- qmux: start time_daemon on pepito with the force-ipcr shim
+
+### device/mithorium-common (since pepito-24.0-20261105)
+- mithorium-common: radio: make persist.vendor.radio.data_con_rprt overridable
+- mithorium-common: CarrierConfig: terminal-based call waiting
+- mithorium-common: audio: make vendor.voice.path.for.pcm.voip overridable
+
+### kernel (msm8937) (since pepito-24.0-20261105)
+- soc: qcom: sysmon-qmi: reach the modem SSCTL service over the legacy ipc_router
+- soc: qcom: ipc_router_rpmsg_xprt: bounded, reset-aware, uninterruptible TX wait
+
+### frameworks/opt/telephony (since pepito-24.0-20261105)
+- ImsPhoneCallTracker: let a device force terminal-based call waiting
+
+### Dialer
+- (first tagged in 20261107 — no prior anchor)
+
+### frameworks/opt/net/ims
+- (first tagged in 20261107 — no prior anchor)
+
+### vendor/xiaomi (blobs) (since pepito-24.0-20261105)
+- Mi8937: time_daemon: carry libqmi_force_ipcr.so as DT_NEEDED
+
+### landing (docs/scripts) (since pepito-24.0-20261105)
+- manifests: upstreams.conf lines for the Dialer and frameworks/opt/net/ims forks
+- tests/integration: test_clock.py for pepito_clockfix (no reboot)
+- diag-tools: ipcr-mtu-probe: -m raw request mode, decodes DMS GET_TIME
+- diag-tools: ipcr-mtu-probe, measure the AP->modem router packet limit
+- scripts: setup-vnc.sh, droidVNC-NG on a bench unit with nobody at it
+- scripts: google-signin.py, automatic Google sign-in for setup-phone.sh --google
+- diag-tools/ringback: outgoing-call ringing capture + SIP extractor from qmdl
+- manifest: carry frameworks/opt/net/ims (pepito-24): VoLTE outgoing-call ringback
+- manifest: carry packages/apps/Dialer (pepito-24): clear-call-history dialog fix
 ## 20261105 (2026-11-06)
 
 ### device/Mi8937 (since pepito-24.0-20261102)
