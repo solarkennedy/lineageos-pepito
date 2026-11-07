@@ -19,6 +19,7 @@
 //   ipcr-mtu-probe                    # sweep the built-in size list
 //   ipcr-mtu-probe 1000 8000 20000    # specific padding sizes
 //   ipcr-mtu-probe -s 0x03 ...        # another service (default DMS 0x02)
+//   ipcr-mtu-probe -m 0x2f            # raw empty request, dump TLVs (DMS GET_TIME decoded)
 // Output per size: total QMI bytes sent, sendto result/errno, response
 // (result/error codes) or timeout.
 #include <errno.h>
@@ -30,6 +31,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifndef AF_MSM_IPC
@@ -91,6 +93,80 @@ static int lookup(int fd, uint32_t service, uint32_t instance,
 		return -ENOENT;
 	*out = args.srv_info[0];
 	return args.num_entries_found;
+}
+
+/* GPS epoch (1980-01-06) in Unix seconds; QMI DMS times count from it. */
+#define GPS_EPOCH_UNIX 315964800ULL
+
+static void print_time_tlv(const char *what, uint64_t ms)
+{
+	time_t t = (time_t)(GPS_EPOCH_UNIX + ms / 1000);
+	char buf[64];
+
+	strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S UTC", gmtime(&t));
+	printf("  %-10s %llu ms since GPS epoch = %s\n", what,
+	       (unsigned long long)ms, buf);
+}
+
+/* -m MSG_ID: send an empty request, dump the response TLVs; DMS GET_TIME
+ * (0x002F) gets its time TLVs decoded. */
+static int raw_msg(int fd, const struct sockaddr_msm_ipc *dst,
+		   uint16_t msg_id, uint16_t txn)
+{
+	uint8_t req[7] = { 0x00, txn & 0xff, txn >> 8, msg_id & 0xff,
+			   msg_id >> 8, 0, 0 };
+	uint8_t resp[2048];
+	struct pollfd pfd = { .fd = fd, .events = POLLIN };
+	ssize_t n;
+	size_t off;
+
+	if (sendto(fd, req, sizeof(req), 0, (const struct sockaddr *)dst,
+		   sizeof(*dst)) < 0) {
+		perror("sendto");
+		return 1;
+	}
+	for (;;) {
+		if (poll(&pfd, 1, 3000) <= 0) {
+			printf("msg 0x%04x: NO RESPONSE\n", msg_id);
+			return 2;
+		}
+		n = recv(fd, resp, sizeof(resp), 0);
+		if (n >= 7 && resp[0] == 0x02 && (resp[1] | resp[2] << 8) == txn)
+			break;
+	}
+	printf("msg 0x%04x response %zd B:\n", msg_id, n);
+	for (off = 7; off + 3 <= (size_t)n; ) {
+		uint8_t t = resp[off];
+		uint16_t l = resp[off + 1] | resp[off + 2] << 8;
+		const uint8_t *v = resp + off + 3;
+		size_t i;
+
+		if (off + 3 + l > (size_t)n)
+			break;
+		printf("  TLV 0x%02x len %u:", t, l);
+		for (i = 0; i < l && i < 24; i++)
+			printf(" %02x", v[i]);
+		printf("%s\n", l > 24 ? " ..." : "");
+		if (msg_id == 0x002f && l >= 8) {
+			uint64_t q = 0;
+			for (i = 0; i < 8; i++)
+				q |= (uint64_t)v[i] << (8 * i);
+			if (t == 0x01) {
+				/* device time: 1.25 ms ticks + u16 source */
+				print_time_tlv("device", q * 5 / 4);
+				if (l >= 10)
+					printf("  source     %u (0 unknown, 1 "
+					       "network, 2 user)\n",
+					       v[8] | v[9] << 8);
+			} else if (t == 0x10) {
+				print_time_tlv("sys_time", q);
+			} else if (t == 0x11) {
+				print_time_tlv("user_time", q);
+			}
+		}
+		off += 3 + l;
+	}
+	return 0;
 }
 
 static int one_size(int fd, const struct sockaddr_msm_ipc *dst, int pad,
@@ -171,9 +247,16 @@ int main(int argc, char **argv)
 	int fd, i, rc, argi = 1;
 	uint16_t txn = 0x1000;
 
-	if (argc > 2 && !strcmp(argv[1], "-s")) {
-		service = strtoul(argv[2], NULL, 0);
-		argi = 3;
+	long raw_msg_id = -1;
+
+	while (argi + 1 < argc && argv[argi][0] == '-') {
+		if (!strcmp(argv[argi], "-s"))
+			service = strtoul(argv[argi + 1], NULL, 0);
+		else if (!strcmp(argv[argi], "-m"))
+			raw_msg_id = strtol(argv[argi + 1], NULL, 0);
+		else
+			break;
+		argi += 2;
 	}
 
 	fd = socket(AF_MSM_IPC, SOCK_DGRAM, 0);
@@ -199,6 +282,11 @@ int main(int argc, char **argv)
 	dst.address.addr.port_addr.node_id = srv.node_id;
 	dst.address.addr.port_addr.port_id = srv.port_id;
 
+	if (raw_msg_id >= 0) {
+		rc = raw_msg(fd, &dst, (uint16_t)raw_msg_id, txn);
+		close(fd);
+		return rc;
+	}
 	if (argi < argc) {
 		for (i = argi; i < argc; i++)
 			one_size(fd, &dst, atoi(argv[i]), txn++);
