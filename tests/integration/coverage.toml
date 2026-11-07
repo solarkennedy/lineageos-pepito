@@ -52,6 +52,11 @@ always = [
     "test_system.py::test_pif_hooks_inert",
     # Flash power tweak: setting -> kernel cap. Read-only.
     "test_camera.py::test_flash_cap_follows_setting",
+    # Boot clock: pepito_clockfix saved an offset this boot that matches the live
+    # clock, and Qualcomm's time_daemon (resets the clock to 1970) is not running.
+    # Read-only, ~3 s.
+    "test_clock.py::test_time_daemon_not_started",
+    "test_clock.py::test_clockfix_saved_offset_matches_clock",
     # A VoLTE call each way over LTE with Wi-Fi off: what most users do, and where
     # both 2026-11 user regressions showed up (US Mobile Verizon "Server error",
     # T-Mobile calls dropping on answer). Two real calls (test line + Twilio),
@@ -119,4 +124,18 @@ paths = [
     "device/xiaomi/mithorium-common/sepolicy/vendor/gotweaks.te",
     "packages/apps/LineageParts/src/org/lineageos/lineageparts/perf/GoTweaksSettings.java",
     "packages/apps/LineageParts/res/xml/go_tweaks_settings.xml",
+]
+
+[groups.clock]
+description = "Boot clock: pepito_clockfix (init oneshots that persist wall-minus-RTC and restore it at post-fs-data), its sepolicy domain, the pm8xxx RTC driver. The live test moves the clock to 1970 for ~1 s (--allow-disruptive)"
+tests = [
+    "test_clock.py::test_clockfix_restores_live",
+]
+paths = [
+    "device/xiaomi/Mi8937/qmux/pepito_clockfix.c",
+    "device/xiaomi/Mi8937/qmux/init.pepito-clockfix.rc",
+    "device/xiaomi/Mi8937/sepolicy/vendor/qmux.te",
+    "device/xiaomi/Mi8937/sepolicy/vendor/file_contexts",
+    "kernel/xiaomi/msm8937/drivers/rtc/*",
+    "kernel/xiaomi/msm8937/arch/arm64/boot/dts/*/pm8937.dtsi",
 ]
