@@ -15,7 +15,8 @@
 #   --no-pattern     don't put the roster's lock pattern back
 #   --no-dexopt      skip `pm bg-dexopt-job` (gapps: ~2 min, undoes the post-flash JIT slowness)
 #   --root-on-boot   also set persist.vendor.xiaomi.adbroot=1 (adbd rooted from boot)
-#   --google         after setup, open "Add account > Google" and wait for the sign-in
+#   --google         after setup, sign in to Google: the bench account in google.conf
+#                    (google-signin.py), else open "Add account > Google" and wait
 #   --auth-wait <s>  how long to wait for adb authorization (default 600)
 #
 # --wipe runs `cmd testharness enable`: Android's own factory reset that keeps
@@ -32,6 +33,10 @@
 #   WIFI_SSID='🏞 Guest'
 #   WIFI_PSK='...'
 #   WIFI_SECURITY=wpa2        # optional: open | owe | wpa2 | wpa3 (cmd wifi connect-network)
+#
+# GOOGLE: --google signs in as the bench account in ~/.config/pepito/google.conf
+# (never committed; GOOGLE_EMAIL, GOOGLE_PASSWORD, GOOGLE_TOTP_SECRET if 2FA, see
+# google-signin.py). 2FA, if on, must be an authenticator app.
 #
 # Rooting: `adb root` refuses while Settings > Developer options > Rooted
 # debugging is off, which it is after a wipe. root-phone.sh (also usable on
@@ -65,6 +70,7 @@ SUW=org.lineageos.setupwizard
 # shows the "choose a home app" picker. test_system expects Launcher3.
 HOME_ACTIVITY=${PEPITO_HOME:-com.android.launcher3/.uioverrides.QuickstepLauncher}
 WIFI_CONF=${PEPITO_WIFI_CONF:-$HOME/.config/pepito/wifi.conf}
+GOOGLE_CONF=${PEPITO_GOOGLE_CONF:-$HOME/.config/pepito/google.conf}
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 say() { echo "== $*"; }
@@ -81,7 +87,7 @@ while [[ $# -gt 0 ]]; do
         --root-on-boot) ROOT_ON_BOOT=1 ;;
         --google)       GOOGLE=1 ;;
         --auth-wait)    [[ -n "${2:-}" ]] || die "$1 needs a value"; AUTH_WAIT=$2; shift ;;
-        -h|--help)      sed -n '2,49p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)      sed -n '2,55p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         -*)             die "unknown option $1 (try --help)" ;;
         *)              UNIT=$1 ;;
     esac
@@ -307,7 +313,14 @@ google_signin() {
     if [[ -n "$PATTERN" ]] && command -v pepito-unlock >/dev/null; then
         pepito-unlock "adb -s $SERIAL" "$PATTERN" >/dev/null || warn "couldn't unlock $NICK; unlock it by hand"
     fi
+    # The bench account (google.conf) signs in with nobody at the phone; without it,
+    # or when the driver gets stuck, someone finishes the sign-in by hand.
+    if [[ -f "$GOOGLE_CONF" ]]; then
+        "$(dirname "$(readlink -f "$0")")/google-signin.py" "$SERIAL" --conf "$GOOGLE_CONF" && return 0
+        warn "automatic sign-in didn't finish; falling back to a human"
+    fi
     sh_ svc power stayon true
+    sh_ wm dismiss-keyguard   # the swipe keyguard comes back over the activity otherwise
     sh_ am start -a android.settings.ADD_ACCOUNT_SETTINGS --esa account_types com.google >/dev/null
     say "Google sign-in is open on $NICK: finish it on the phone (waiting up to 15 min)"
     notify "Setup: sign in to Google on $NICK" "the Add account screen is open"
