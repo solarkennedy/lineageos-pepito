@@ -158,7 +158,10 @@ if [ "$NUM" = - ]; then
 fi
 
 mark dial
-am start -a android.intent.action.CALL -d "tel:$NUM" >/dev/null 2>&1
+# Pinned to Telecom: with another ACTION_CALL handler installed (Google Voice)
+# a bare intent opens the "Open with" chooser and nothing is dialled.
+am start -a android.intent.action.CALL -d "tel:$NUM" \
+    -n com.android.server.telecom/.components.UserCallActivity >/dev/null 2>&1
 if [ -n "${TAPS:-}" ]; then
     # Wait for the far end to answer (Telecom ACTIVE), then press as in MT.
     i=0
