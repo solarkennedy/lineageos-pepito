@@ -1,5 +1,12 @@
 # Changelog — LineageOS 24.0 for pepito (Palm PVG100)
 
+## 20261108 (2026-11-08)
+
+### device/Mi8937 (since pepito-24.0-20261107)
+- pepito: map the AEC/NS handset mic devices to the plain handset-mic ACDB
+
+### landing (docs/scripts) (since pepito-24.0-20261107)
+- diag-tools: voip-stream, VoIP/voice-recognition stream opener + earpiece mic capture
 ## 20261107 (2026-11-07)
 
 ### device/Mi8937 (since pepito-24.0-20261105)
