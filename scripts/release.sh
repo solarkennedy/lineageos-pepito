@@ -1008,7 +1008,12 @@ retry() {
 
 if ! $GH release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
     TITLE="LineageOS $VERSION $ROMTYPE $TAG ($DEVICE)"
-    retry $GH release create "$TAG" --repo "$REPO" --title "$TITLE" --notes "${NOTES:-$TITLE}"
+    # --target: without it GitHub creates the tag on the default branch (main),
+    # which stopped moving at 20261013, so every 24.0 date tag landed on that
+    # one commit. The 24.0 branch head is this release's pushed changelog
+    # commit; the annotated pepito-24.0-<date> tag (release-all.sh step 4)
+    # marks the snapshot commit.
+    retry $GH release create "$TAG" --repo "$REPO" --target "$BRANCH" --title "$TITLE" --notes "${NOTES:-$TITLE}"
 else
     echo "release $TAG already exists on $REPO — uploading assets (--clobber)"
 fi
