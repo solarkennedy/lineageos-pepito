@@ -1,5 +1,23 @@
 [
   {
+    "datetime": 1794091912,
+    "type": "UNOFFICIAL",
+    "version": "24.0",
+    "files": [
+      {
+        "filename": "lineage-24.0-20261107-UNOFFICIAL-Mi8937.zip",
+        "sha256": "1946effe60cffd8b23b3a73563ed7359b79e9e399eb7d81b7f54c91106b58066",
+        "size": 1230594071,
+        "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261107/lineage-24.0-20261107-UNOFFICIAL-Mi8937.zip",
+        "os_sdk_level": 37,
+        "os_patch_level": "2026-10-01",
+        "ota_property_files": "metadata:69:352,metadata.pb:489:258"
+      }
+    ],
+    "changelog": "### device/Mi8937\n- qmux: pepito_clockfix \u2014 keep the AP wall clock across boots (two init oneshots)\n- pepito: report the real data RAT while IMS is on Wi-Fi (data_con_rprt off)\n- qmux: do not start time_daemon \u2014 it resets the clock to 1970 without TimeService\n- Mi8937: libinit: force terminal-based call waiting on pepito\n- pepito: route VoIP mic capture through audio-record, not compress-voip\n- qmux: start time_daemon on pepito with the force-ipcr shim\n\n### device/mithorium-common\n- mithorium-common: radio: make persist.vendor.radio.data_con_rprt overridable\n- mithorium-common: CarrierConfig: terminal-based call waiting\n- mithorium-common: audio: make vendor.voice.path.for.pcm.voip overridable\n\n### kernel (msm8937)\n- soc: qcom: sysmon-qmi: reach the modem SSCTL service over the legacy ipc_router\n- soc: qcom: ipc_router_rpmsg_xprt: bounded, reset-aware, uninterruptible TX wait\n\n### frameworks/opt/telephony\n- ImsPhoneCallTracker: let a device force terminal-based call waiting\n\n### vendor/xiaomi (blobs)\n- Mi8937: time_daemon: carry libqmi_force_ipcr.so as DT_NEEDED",
+    "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261107"
+  },
+  {
     "datetime": 1793941263,
     "type": "SNAPSHOT",
     "version": "24.0",
@@ -152,23 +170,6 @@
         "os_sdk_level": 37,
         "os_patch_level": "2026-10-01",
         "ota_property_files": "metadata:69:358,metadata.pb:495:264"
-      }
-    ],
-    "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261011"
-  },
-  {
-    "datetime": 1791763517,
-    "type": "UNOFFICIAL",
-    "version": "24.0",
-    "files": [
-      {
-        "filename": "lineage-24.0-20261011-UNOFFICIAL-Mi8937.zip",
-        "sha256": "0d9cc355beff77c6a0bf437209ee86a7a175064e9a50ceaf48c176559bd4935b",
-        "size": 1232799737,
-        "url": "https://github.com/solarkennedy/lineageos-pepito/releases/download/20261011/lineage-24.0-20261011-UNOFFICIAL-Mi8937.zip",
-        "os_sdk_level": 37,
-        "os_patch_level": "2026-10-01",
-        "ota_property_files": "metadata:69:352,metadata.pb:489:258"
       }
     ],
     "changelog_url": "https://github.com/solarkennedy/lineageos-pepito/releases/tag/20261011"
